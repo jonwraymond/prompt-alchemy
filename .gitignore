@@ -5,64 +5,149 @@
 *.so
 *.dylib
 
-# Main binary
+# Go executables
 prompt-alchemy
 prompt-alchemy-*
 
 # Test binary, built with `go test -c`
 *.test
 
-# Output of the go coverage tool
+# Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 coverage.html
 coverage.out
+cover.html
+
+# Dependency directories (remove the comment when uncomment vendor below)
+vendor/
 
 # Go workspace file
 go.work
+go.work.sum
 
-# Dependency directories
-vendor/
+# Go mod cache
+go.sum
 
-# IDE specific files
+# Air live reload
+tmp/
+
+# Testify mock files
+mock_*.go
+*_mock.go
+mocks/
+
+# IDE and editor files
 .idea/
 .vscode/
 *.swp
 *.swo
 *~
 .DS_Store
+.vs/
+*.code-workspace
 
-# Environment files
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Environment files - all variants
 .env
+.env.*
 .env.local
+.env.development
+.env.test
+.env.production
+.env.staging
+*.env
+!.env.example
 
 # Config files with secrets
 config.yaml
+config.yml
+config.json
 !example-config.yaml
+!example-config.yml
+!config.example.*
 
-# Data directory
+# Application data directories
 .prompt-alchemy/
 data/
+storage/
+logs/
 
 # Log files
 *.log
+*.log.*
+logs/
 
 # Temporary files
 tmp/
 temp/
+.tmp/
 
 # Build artifacts
 dist/
 build/
+bin/
+out/
 
 # Database files
 *.db
 *.db-shm
 *.db-wal
+*.sqlite
+*.sqlite3
 
-# Profiling data
+# Profiling and debugging
 *.prof
 *.pprof
-
-# Debug files
+*.trace
+cpu.prof
+mem.prof
+block.prof
+mutex.prof
 debug
-__debug_bin* 
+__debug_bin*
+dlv-dap.log
+
+# Test and benchmark files
+*.bench
+benchmarks/
+
+# Documentation generated files
+docs/build/
+site/
+
+# Security and credential files
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+secrets.yaml
+secrets.yml
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# Kubernetes
+kustomization.yaml
+
+# GoReleaser
+dist/
+.goreleaser.yml
+
+# Air (Go live reload)
+.air.toml
+
+# Local development overrides
+docker-compose.local.yml
+docker-compose.override.yml 
