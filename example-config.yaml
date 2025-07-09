@@ -1,0 +1,47 @@
+# Example Prompt Alchemy Configuration
+# Copy this to ~/.prompt-alchemy/config.yaml and add your API keys
+
+# Provider configurations
+providers:
+  openai:
+    api_key: "sk-your-openai-api-key-here"
+    model: "gpt-4-turbo-preview"
+    timeout: 30
+  
+  openrouter:
+    api_key: "sk-or-your-openrouter-api-key-here" 
+    model: "openai/gpt-4-turbo-preview"
+    base_url: "https://openrouter.ai/api/v1"
+    timeout: 30
+  
+  claude:
+    api_key: "sk-ant-your-anthropic-api-key-here"
+    model: "claude-3-opus-20240229"
+    timeout: 30
+  
+  gemini:
+    api_key: "your-google-api-key-here"
+    model: "gemini-pro"
+    timeout: 30
+
+# Phase configurations - mix and match providers
+phases:
+  idea:
+    provider: "openai"        # Use ChatGPT for initial ideas
+  human:
+    provider: "claude"        # Use Claude for humanization
+  precision:
+    provider: "gemini"        # Use Gemini for optimization
+
+# Generation settings
+generation:
+  default_temperature: 0.7    # Creativity level (0-1)
+  default_max_tokens: 2000    # Maximum response length
+  default_count: 3            # Number of variants per phase
+  use_parallel: true          # Generate variants in parallel
+
+# Data storage location (defaults to ~/.prompt-alchemy)
+data_dir: "~/.prompt-alchemy"
+
+# Logging level (debug, info, warn, error)
+log_level: "info" 
