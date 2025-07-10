@@ -3,8 +3,7 @@
   "description": "Renovate configuration for Prompt Alchemy - Automated dependency updates",
   "extends": [
     "config:recommended",
-    ":enableVulnerabilityAlertsWithLabel(security)",
-    ":pinAllExceptPeerDependencies"
+    ":enableVulnerabilityAlertsWithLabel(security)"
   ],
   "timezone": "America/Denver",
   "schedule": [
@@ -35,12 +34,6 @@
     "schedule": ["at any time"],
     "stabilityDays": 0,
     "labels": ["security", "vulnerability"]
-  },
-  "lockFileMaintenance": {
-    "enabled": true,
-    "schedule": ["before 9am on monday"],
-    "automerge": true,
-    "automergeType": "branch"
   },
   "packageRules": [
     {
@@ -205,7 +198,6 @@
     "go"
   ],
   "ignorePaths": [
-    "**/node_modules/**",
     "**/vendor/**",
     "**/test-data/**",
     "**/mock-project/**"
