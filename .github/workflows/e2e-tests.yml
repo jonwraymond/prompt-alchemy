@@ -88,7 +88,7 @@ jobs:
         chmod +x ${{ env.BINARY_NAME }}
         echo "binary-path=$PWD/${{ env.BINARY_NAME }}" >> $GITHUB_OUTPUT
         # Verify binary works
-        ./${{ env.BINARY_NAME }} --version
+        ./${{ env.BINARY_NAME }} version
 
     - name: Setup test environment
       id: setup

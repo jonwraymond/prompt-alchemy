@@ -126,7 +126,7 @@ jobs:
       if: matrix.goos != 'windows'
       run: |
         chmod +x ./prompt-alchemy
-        ./prompt-alchemy --version
+        ./prompt-alchemy version
 
     - name: Upload binary artifacts
       uses: actions/upload-artifact@v4
@@ -204,7 +204,7 @@ jobs:
         }
 
     - name: Test binary
-      run: ./${{ matrix.binary_name }} --version
+      run: ./${{ matrix.binary_name }} version
 
     - name: Run integration tests (Linux/macOS)
       if: matrix.os != 'windows-latest'
