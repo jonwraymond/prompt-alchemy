@@ -254,15 +254,65 @@ docker-test: docker-build
 
 # Release build
 .PHONY: release
-release: clean deps fmt lint security test
-	@echo "Building release..."
+release: clean deps fmt lint security test release-archives
+	@echo "Release build complete!"
+	@echo "Binaries and archives available in $(BUILD_DIR)/"
+	@ls -la $(BUILD_DIR)/
+
+# Individual platform build targets
+.PHONY: build-linux-amd64
+build-linux-amd64: deps
+	@echo "Building for Linux AMD64..."
 	@mkdir -p $(BUILD_DIR)
-	@GOOS=linux GOARCH=amd64 $(GOBUILD) $(GOFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-linux-amd64 $(MAIN_PATH)
-	@GOOS=linux GOARCH=arm64 $(GOBUILD) $(GOFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-linux-arm64 $(MAIN_PATH)
-	@GOOS=darwin GOARCH=amd64 $(GOBUILD) $(GOFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-amd64 $(MAIN_PATH)
-	@GOOS=darwin GOARCH=arm64 $(GOBUILD) $(GOFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-arm64 $(MAIN_PATH)
-	@GOOS=windows GOARCH=amd64 $(GOBUILD) $(GOFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-windows-amd64.exe $(MAIN_PATH)
-	@echo "Release builds complete in $(BUILD_DIR)/"
+	@CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GOBUILD) $(GOFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-linux-amd64 $(MAIN_PATH)
+	@echo "Linux AMD64 build complete: $(BUILD_DIR)/$(BINARY_NAME)-linux-amd64"
+
+.PHONY: build-linux-arm64
+build-linux-arm64: deps
+	@echo "Building for Linux ARM64..."
+	@mkdir -p $(BUILD_DIR)
+	@CGO_ENABLED=0 GOOS=linux GOARCH=arm64 $(GOBUILD) $(GOFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-linux-arm64 $(MAIN_PATH)
+	@echo "Linux ARM64 build complete: $(BUILD_DIR)/$(BINARY_NAME)-linux-arm64"
+
+.PHONY: build-darwin-amd64
+build-darwin-amd64: deps
+	@echo "Building for macOS AMD64..."
+	@mkdir -p $(BUILD_DIR)
+	@CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 $(GOBUILD) $(GOFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-amd64 $(MAIN_PATH)
+	@echo "macOS AMD64 build complete: $(BUILD_DIR)/$(BINARY_NAME)-darwin-amd64"
+
+.PHONY: build-darwin-arm64
+build-darwin-arm64: deps
+	@echo "Building for macOS ARM64..."
+	@mkdir -p $(BUILD_DIR)
+	@CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 $(GOBUILD) $(GOFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-arm64 $(MAIN_PATH)
+	@echo "macOS ARM64 build complete: $(BUILD_DIR)/$(BINARY_NAME)-darwin-arm64"
+
+.PHONY: build-windows-amd64
+build-windows-amd64: deps
+	@echo "Building for Windows AMD64..."
+	@mkdir -p $(BUILD_DIR)
+	@CGO_ENABLED=0 GOOS=windows GOARCH=amd64 $(GOBUILD) $(GOFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-windows-amd64.exe $(MAIN_PATH)
+	@echo "Windows AMD64 build complete: $(BUILD_DIR)/$(BINARY_NAME)-windows-amd64.exe"
+
+# Build all architectures
+.PHONY: build-all
+build-all: build-linux-amd64 build-linux-arm64 build-darwin-amd64 build-darwin-arm64 build-windows-amd64
+	@echo "All architecture builds complete!"
+
+# Create release archives
+.PHONY: release-archives
+release-archives: build-all
+	@echo "Creating release archives..."
+	@cd $(BUILD_DIR) && \
+	for binary in $(BINARY_NAME)-linux-amd64 $(BINARY_NAME)-linux-arm64 $(BINARY_NAME)-darwin-amd64 $(BINARY_NAME)-darwin-arm64; do \
+		tar -czf $${binary}-$(VERSION).tar.gz $$binary; \
+		echo "Created $${binary}-$(VERSION).tar.gz"; \
+	done
+	@cd $(BUILD_DIR) && \
+	zip $(BINARY_NAME)-windows-amd64-$(VERSION).zip $(BINARY_NAME)-windows-amd64.exe && \
+	echo "Created $(BINARY_NAME)-windows-amd64-$(VERSION).zip"
+	@echo "Release archives complete in $(BUILD_DIR)/"
 
 # Show version information
 .PHONY: version
@@ -319,10 +369,19 @@ help:
 	@echo "  build          - Build the binary"
 	@echo "  clean          - Clean build artifacts"
 	@echo "  deps           - Install dependencies"
-	@echo "  release        - Build release binaries for all platforms"
+	@echo "  release        - Build release binaries for all platforms with archives"
+	@echo "  build-all      - Build binaries for all platforms"
+	@echo "  release-archives - Create release archives from built binaries"
 	@echo "  pre-release    - Run all pre-release checks"
 	@echo "  version        - Show version information"
 	@echo "  tag            - Create and push a git tag (use TAG=v1.0.0)"
+	@echo ""
+	@echo "Platform-specific builds:"
+	@echo "  build-linux-amd64   - Build for Linux AMD64"
+	@echo "  build-linux-arm64   - Build for Linux ARM64"
+	@echo "  build-darwin-amd64  - Build for macOS AMD64"
+	@echo "  build-darwin-arm64  - Build for macOS ARM64"
+	@echo "  build-windows-amd64 - Build for Windows AMD64"
 	@echo ""
 	@echo "Test targets:"
 	@echo "  test           - Run all tests (unit + integration)"

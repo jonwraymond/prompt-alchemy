@@ -50,6 +50,7 @@ Traditional prompt engineering is often ad-hoc and inconsistent. Prompt Alchemy 
 - [Installation Guide](./installation) - Detailed setup instructions
 - [Usage Guide](./usage) - Command reference and examples
 - [Architecture](./architecture) - Technical design and internals
+- [Multi-Arch Builds](./multi-arch-builds) - Cross-platform build system and CI/CD
 - [Renovate Setup](./renovate-setup) - Automated dependency updates
 - [Release Automation](./release-automation) - Semantic versioning and GitHub releases
 - [Diagrams](./diagrams) - Visual architecture and flow diagrams
