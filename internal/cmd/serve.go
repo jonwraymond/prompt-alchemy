@@ -1297,7 +1297,7 @@ func (s *MCPServer) executeGetProviders(args map[string]interface{}) (MCPToolRes
 				output += "  Embeddings: ❌\n"
 			}
 
-			output += fmt.Sprintf("  Status: Available\n\n")
+			output += "  Status: Available\n\n"
 		}
 	}
 
@@ -1348,7 +1348,7 @@ func (s *MCPServer) executeOptimizePrompt(args map[string]interface{}) (MCPToolR
 
 	// For now, provide a detailed optimization analysis rather than actual optimization
 	// This would be implemented with the optimize command functionality
-	output := fmt.Sprintf("=== Prompt Optimization Analysis ===\n\n")
+	output := "=== Prompt Optimization Analysis ===\n\n"
 	output += fmt.Sprintf("Original Prompt:\n%s\n\n", prompt)
 	output += fmt.Sprintf("Task Context: %s\n", task)
 	output += fmt.Sprintf("Persona: %s\n", persona)
@@ -1392,7 +1392,7 @@ func (s *MCPServer) executeGetConfig(args map[string]interface{}) (MCPToolResult
 		} else {
 			for _, name := range available {
 				output += fmt.Sprintf("Provider: %s\n", name)
-				output += fmt.Sprintf("  Generation: ✅\n")
+				output += "  Generation: ✅\n"
 
 				hasEmbeddings := false
 				for _, embProvider := range embeddingCapable {
@@ -1408,7 +1408,7 @@ func (s *MCPServer) executeGetConfig(args map[string]interface{}) (MCPToolResult
 					output += fmt.Sprintf("  Embeddings: ❌\n")
 				}
 
-				output += fmt.Sprintf("  Status: Available\n\n")
+				output += "  Status: Available\n\n"
 			}
 		}
 	}

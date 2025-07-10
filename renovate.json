@@ -151,9 +151,6 @@
       "description": "Security updates - High priority, immediate processing",
       "matchPackagePatterns": ["*"],
       "matchUpdateTypes": ["patch"],
-      "vulnerabilityAlerts": {
-        "enabled": true
-      },
       "labels": ["security"],
       "prPriority": 20,
       "schedule": ["at any time"],

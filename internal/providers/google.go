@@ -331,7 +331,7 @@ func (p *GoogleProvider) handleAPIError(statusCode int, body []byte, maxTokens i
 	case 400:
 		if strings.Contains(message, "TOKEN") || strings.Contains(message, "INVALID_ARGUMENT") {
 			logger.Warnf("Token limit exceeded or invalid argument: %s", message)
-			return fmt.Errorf("Google API request failed (token limit: %d): %s\n"+
+			return fmt.Errorf("google API request failed (token limit: %d): %s\n"+
 				"💡 Suggestion: Try shorter prompts or reduce max_tokens parameter", maxTokens, message)
 		}
 		return fmt.Errorf("Google API bad request: %s", message)
@@ -347,11 +347,11 @@ func (p *GoogleProvider) handleAPIError(statusCode int, body []byte, maxTokens i
 			"💡 Suggestion: Wait a moment and try again", message)
 	case 500, 502, 503, 504:
 		logger.Errorf("Google API server error: %s", message)
-		return fmt.Errorf("Google API server error: %s\n"+
+		return fmt.Errorf("google API server error: %s\n"+
 			"💡 Suggestion: Try again in a few moments", message)
 	default:
 		logger.Errorf("Unknown Google API error (%d): %s", statusCode, message)
-		return fmt.Errorf("Google API error (%d): %s", statusCode, message)
+		return fmt.Errorf("google API error (%d): %s", statusCode, message)
 	}
 }
 
