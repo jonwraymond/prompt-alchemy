@@ -78,7 +78,7 @@ jobs:
         GIT_TAG=$(git describe --tags --exact-match 2>/dev/null || echo "unknown")
         BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
         
-        CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w \
+        CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w \
           -X 'github.com/jonwraymond/prompt-alchemy/internal/cmd.Version=${VERSION}' \
           -X 'github.com/jonwraymond/prompt-alchemy/internal/cmd.GitCommit=${GIT_COMMIT}' \
           -X 'github.com/jonwraymond/prompt-alchemy/internal/cmd.GitTag=${GIT_TAG}' \
@@ -616,19 +616,19 @@ jobs:
           {
             "input": "Create a login form",
             "persona": "code",
-            "tags": ["ui", "auth"],
+            "tags": "ui,auth",
             "count": 1
           },
           {
             "input": "Write API documentation",
             "persona": "writing",
-            "tags": ["docs", "api"],
+            "tags": "docs,api",
             "count": 1
           },
           {
             "input": "Design data analysis pipeline",
             "persona": "analysis",
-            "tags": ["data", "pipeline"],
+            "tags": "data,pipeline",
             "count": 1
           }
         ]
