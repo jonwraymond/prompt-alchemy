@@ -3,8 +3,10 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
+
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 
 	log "github.com/jonwraymond/prompt-alchemy/internal/log"
 	"github.com/jonwraymond/prompt-alchemy/internal/storage"
@@ -277,7 +279,7 @@ func outputMetricsText(result MetricsResult, reportType string) error {
 	logger := log.GetLogger()
 	title := "Prompt Alchemy Metrics"
 	if reportType != "" {
-		title = fmt.Sprintf("Prompt Alchemy %s Report", strings.Title(reportType))
+		title = fmt.Sprintf("Prompt Alchemy %s Report", cases.Title(language.English).String(reportType))
 	}
 
 	logger.Info(title)
@@ -359,7 +361,7 @@ func outputMetricsText(result MetricsResult, reportType string) error {
 
 	// Activity timeline (if report type specified)
 	if reportType != "" && len(result.Breakdown.ByDate) > 0 {
-		logger.Infof("📅 %s Activity", strings.Title(reportType))
+		logger.Infof("📅 %s Activity", cases.Title(language.English).String(reportType))
 
 		// Sort dates
 		type dateCount struct {

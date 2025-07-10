@@ -12,6 +12,7 @@ import (
 	"sort"
 
 	"github.com/jonwraymond/prompt-alchemy/internal/engine"
+	log "github.com/jonwraymond/prompt-alchemy/internal/log"
 	"github.com/jonwraymond/prompt-alchemy/internal/providers"
 	"github.com/jonwraymond/prompt-alchemy/internal/ranking"
 	"github.com/jonwraymond/prompt-alchemy/internal/storage"
@@ -81,7 +82,11 @@ func runMCPServer(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to initialize storage: %w", err)
 	}
-	defer store.Close()
+	defer func() {
+		if err := store.Close(); err != nil {
+			log.GetLogger().WithError(err).Warn("Failed to close storage")
+		}
+	}()
 
 	// Initialize providers
 	registry := providers.NewRegistry()
@@ -1732,11 +1737,18 @@ func (s *MCPServer) executeGetDatabaseStats(args map[string]interface{}) (MCPToo
 	if err != nil {
 		return MCPToolResult{}, fmt.Errorf("failed to get phase stats: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.GetLogger().WithError(err).Warn("Failed to close rows")
+		}
+	}()
 	for rows.Next() {
 		var phase string
 		var count int
-		rows.Scan(&phase, &count)
+		if err := rows.Scan(&phase, &count); err != nil {
+			log.GetLogger().WithError(err).Warn("Failed to scan phase stats")
+			continue
+		}
 		stats.ByPhase[phase] = count
 	}
 
@@ -1746,11 +1758,18 @@ func (s *MCPServer) executeGetDatabaseStats(args map[string]interface{}) (MCPToo
 	if err != nil {
 		return MCPToolResult{}, fmt.Errorf("failed to get provider stats: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.GetLogger().WithError(err).Warn("Failed to close rows")
+		}
+	}()
 	for rows.Next() {
 		var provider string
 		var count int
-		rows.Scan(&provider, &count)
+		if err := rows.Scan(&provider, &count); err != nil {
+			log.GetLogger().WithError(err).Warn("Failed to scan provider stats")
+			continue
+		}
 		stats.ByProvider[provider] = count
 	}
 
@@ -1760,10 +1779,17 @@ func (s *MCPServer) executeGetDatabaseStats(args map[string]interface{}) (MCPToo
 	if err != nil {
 		return MCPToolResult{}, fmt.Errorf("failed to get configuration: %w", err)
 	}
-	defer configRows.Close()
+	defer func() {
+		if err := configRows.Close(); err != nil {
+			log.GetLogger().WithError(err).Warn("Failed to close config rows")
+		}
+	}()
 	for configRows.Next() {
 		var key, value string
-		configRows.Scan(&key, &value)
+		if err := configRows.Scan(&key, &value); err != nil {
+			log.GetLogger().WithError(err).Warn("Failed to scan config stats")
+			continue
+		}
 		stats.Configuration[key] = value
 	}
 
@@ -1772,11 +1798,18 @@ func (s *MCPServer) executeGetDatabaseStats(args map[string]interface{}) (MCPToo
 		relationships := make(map[string]int)
 		relRows, err := s.store.GetDB().Query("SELECT relationship_type, COUNT(*) FROM prompt_relationships GROUP BY relationship_type")
 		if err == nil {
-			defer relRows.Close()
+			defer func() {
+				if err := relRows.Close(); err != nil {
+					log.GetLogger().WithError(err).Warn("Failed to close relationship rows")
+				}
+			}()
 			for relRows.Next() {
 				var relType string
 				var count int
-				relRows.Scan(&relType, &count)
+				if err := relRows.Scan(&relType, &count); err != nil {
+					log.GetLogger().WithError(err).Warn("Failed to scan relationship stats")
+					continue
+				}
 				relationships[relType] = count
 			}
 		}
@@ -1788,11 +1821,18 @@ func (s *MCPServer) executeGetDatabaseStats(args map[string]interface{}) (MCPToo
 		enhancements := make(map[string]int)
 		enhRows, err := s.store.GetDB().Query("SELECT enhancement_type, COUNT(*) FROM enhancement_history GROUP BY enhancement_type")
 		if err == nil {
-			defer enhRows.Close()
+			defer func() {
+				if err := enhRows.Close(); err != nil {
+					log.GetLogger().WithError(err).Warn("Failed to close enhancement rows")
+				}
+			}()
 			for enhRows.Next() {
 				var enhType string
 				var count int
-				enhRows.Scan(&enhType, &count)
+				if err := enhRows.Scan(&enhType, &count); err != nil {
+					log.GetLogger().WithError(err).Warn("Failed to scan enhancement stats")
+					continue
+				}
 				enhancements[enhType] = count
 			}
 		}

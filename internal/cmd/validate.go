@@ -556,7 +556,7 @@ func validateDataDirectory() []ValidationIssue {
 	} else {
 		// Check write permissions
 		testFile := filepath.Join(dataDir, ".write_test")
-		if err := os.WriteFile(testFile, []byte("test"), 0644); err != nil {
+		if err := os.WriteFile(testFile, []byte("test"), 0600); err != nil {
 			issues = append(issues, ValidationIssue{
 				Category:    "storage",
 				Severity:    "critical",

@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+	log "github.com/jonwraymond/prompt-alchemy/internal/log"
 	"github.com/jonwraymond/prompt-alchemy/internal/storage"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -60,7 +61,11 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to initialize storage: %w", err)
 	}
-	defer store.Close()
+	defer func() {
+		if err := store.Close(); err != nil {
+			log.GetLogger().WithError(err).Warn("Failed to close storage")
+		}
+	}()
 
 	// Get existing prompt
 	prompt, err := store.GetPrompt(promptID)

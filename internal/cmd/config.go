@@ -122,7 +122,7 @@ func init() {
 				return
 			}
 
-			if err := os.WriteFile(configPath, content, 0644); err != nil {
+			if err := os.WriteFile(configPath, content, 0600); err != nil {
 				logger.Errorf("Error writing config file: %v", err)
 				return
 			}

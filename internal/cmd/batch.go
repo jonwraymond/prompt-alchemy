@@ -643,7 +643,7 @@ func saveBatchResults(filename string, results []BatchResult, startTime time.Tim
 		return err
 	}
 
-	return os.WriteFile(filename, data, 0644)
+	return os.WriteFile(filename, data, 0600)
 }
 
 func generateBatchSummary(results []BatchResult, startTime time.Time) BatchSummary {
