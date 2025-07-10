@@ -1,9 +1,10 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
+
+	log "github.com/jonwraymond/prompt-alchemy/internal/log"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -17,6 +18,12 @@ var (
 	logger   *logrus.Logger
 )
 
+// Common constants used across commands
+const (
+	DateFormatISO = "2006-01-02"
+	TimeFormat    = "2006-01-02 15:04:05"
+)
+
 // rootCmd represents the base command
 var rootCmd = &cobra.Command{
 	Use:   "prompt-alchemy",
@@ -26,7 +33,7 @@ to create, refine, and optimize AI prompts. It supports multiple LLM providers a
 advanced features like embeddings, context building, and performance tracking.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		// Initialize logger
-		logger = logrus.New()
+		logger = log.GetLogger()
 		level, err := logrus.ParseLevel(logLevel)
 		if err != nil {
 			logger.Warn("Invalid log level, defaulting to info")
@@ -49,8 +56,25 @@ func Execute() error {
 func init() {
 	cobra.OnInitialize(initConfig)
 
+	// Set defaults before config is loaded (but not for provider models which are in config)
+	viper.SetDefault("providers.ollama.model", "gemma3:4b")
+	viper.SetDefault("providers.ollama.base_url", "http://localhost:11434")
+	viper.SetDefault("providers.ollama.timeout", 120)
+
+	viper.SetDefault("generation.default_temperature", 0.7)
+	viper.SetDefault("generation.default_max_tokens", 2000)
+	viper.SetDefault("generation.default_count", 3)
+	viper.SetDefault("generation.use_parallel", true)
+	viper.SetDefault("generation.default_target_model", "claude-3-5-sonnet-20241022")
+	viper.SetDefault("generation.default_embedding_model", "text-embedding-3-small")
+	viper.SetDefault("generation.default_embedding_dimensions", 1536)
+
+	viper.SetDefault("phases.idea.provider", "openai")
+	viper.SetDefault("phases.human.provider", "anthropic")
+	viper.SetDefault("phases.precision.provider", "google")
+
 	// Global flags
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.prompt-alchemy/config.yaml)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.github.com/jonwraymond/prompt-alchemy/config.yaml)")
 	rootCmd.PersistentFlags().StringVar(&dataDir, "data-dir", "", "data directory (default is $HOME/.prompt-alchemy)")
 	rootCmd.PersistentFlags().StringVar(&logLevel, "log-level", "info", "log level (debug, info, warn, error)")
 
@@ -60,65 +84,87 @@ func init() {
 
 	// Add commands
 	rootCmd.AddCommand(generateCmd)
+	rootCmd.AddCommand(batchCmd)
 	rootCmd.AddCommand(searchCmd)
 	rootCmd.AddCommand(testCmd)
 	rootCmd.AddCommand(metricsCmd)
 	rootCmd.AddCommand(serveCmd)
 	rootCmd.AddCommand(configCmd)
+	rootCmd.AddCommand(validateCmd)
+	rootCmd.AddCommand(providersCmd)
+	rootCmd.AddCommand(optimizeCmd)
+	rootCmd.AddCommand(updateCmd)
+	rootCmd.AddCommand(deleteCmd)
+	rootCmd.AddCommand(migrateCmd)
+	rootCmd.AddCommand(versionCmd)
 }
 
 // initConfig reads in config file and ENV variables
 func initConfig() {
+	// Initialize logger if not already initialized
+	if logger == nil {
+		logger = log.GetLogger()
+		logger.SetLevel(logrus.InfoLevel)
+		logger.SetFormatter(&logrus.TextFormatter{
+			FullTimestamp: true,
+		})
+	}
+	logger.Debug("Initializing configuration")
 	if cfgFile != "" {
 		// Use config file from the flag
 		viper.SetConfigFile(cfgFile)
+		logger.Debugf("Using config file from flag: %s", cfgFile)
 	} else {
-		// Find home directory
-		home, err := os.UserHomeDir()
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
-		}
+		// Check for local .prompt-alchemy directory first
+		localConfigDir := ".prompt-alchemy"
+		localConfigPath := filepath.Join(localConfigDir, "config.yaml")
 
-		// Search config in home directory
-		configDir := filepath.Join(home, ".prompt-alchemy")
-		viper.AddConfigPath(configDir)
-		viper.SetConfigType("yaml")
-		viper.SetConfigName("config")
+		if _, err := os.Stat(localConfigPath); err == nil {
+			// Local config exists, use it
+			viper.SetConfigFile(localConfigPath)
+			logger.Debugf("Found local config file: %s", localConfigPath)
+			if dataDir == "" {
+				dataDir = localConfigDir
+				viper.SetDefault("data_dir", dataDir)
+				logger.Debugf("Setting data directory to local path: %s", dataDir)
+			}
+		} else {
+			// Fall back to global config
+			home, err := os.UserHomeDir()
+			if err != nil {
+				logger.Fatalf("Failed to get user home directory: %v", err)
+			}
 
-		// Set default data directory
-		if dataDir == "" {
-			dataDir = configDir
-			viper.SetDefault("data_dir", dataDir)
-		}
+			// Search config in home directory
+			configDir := filepath.Join(home, ".prompt-alchemy")
+			viper.AddConfigPath(configDir)
+			viper.SetConfigType("yaml")
+			viper.SetConfigName("config")
+			logger.Debugf("Searching for config in: %s", configDir)
 
-		// Create config directory if it doesn't exist
-		if err := os.MkdirAll(configDir, 0755); err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to create config directory: %v\n", err)
+			// Set default data directory
+			if dataDir == "" {
+				dataDir = configDir
+				viper.SetDefault("data_dir", dataDir)
+				logger.Debugf("Setting data directory to default: %s", dataDir)
+			}
+
+			// Create config directory if it doesn't exist
+			if err := os.MkdirAll(configDir, 0755); err != nil {
+				logger.Errorf("Failed to create config directory: %v", err)
+			}
 		}
 	}
 
 	// Environment variables
 	viper.SetEnvPrefix("PROMPT_ALCHEMY")
 	viper.AutomaticEnv()
+	logger.Debug("Checking for environment variables with prefix PROMPT_ALCHEMY")
 
 	// Read config file
-	if err := viper.ReadInConfig(); err == nil {
-		fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
+	if err := viper.ReadInConfig(); err != nil {
+		logger.Warnf("Failed to read config file: %s", err)
+	} else {
+		logger.Infof("Using config file: %s", viper.ConfigFileUsed())
 	}
-
-	// Set defaults
-	viper.SetDefault("providers.openai.model", "gpt-4-turbo-preview")
-	viper.SetDefault("providers.openrouter.model", "openai/gpt-4-turbo-preview")
-	viper.SetDefault("providers.claude.model", "claude-3-opus-20240229")
-	viper.SetDefault("providers.gemini.model", "gemini-pro")
-
-	viper.SetDefault("generation.default_temperature", 0.7)
-	viper.SetDefault("generation.default_max_tokens", 2000)
-	viper.SetDefault("generation.default_count", 3)
-	viper.SetDefault("generation.use_parallel", true)
-
-	viper.SetDefault("phases.idea.provider", "openai")
-	viper.SetDefault("phases.human.provider", "claude")
-	viper.SetDefault("phases.precision.provider", "gemini")
 }

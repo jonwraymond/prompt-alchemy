@@ -1,0 +1,19 @@
+linters:
+  enable:
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - typecheck
+    - unused
+    - gosec
+    - misspell
+    - gofmt
+    - goimports
+    - deadcode
+    - varcheck
+    - structcheck
+
+run:
+  timeout: 5m 

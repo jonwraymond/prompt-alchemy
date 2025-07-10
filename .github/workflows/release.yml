@@ -1,0 +1,448 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: 'Version bump type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      pre_release:
+        description: 'Create pre-release'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  GO_VERSION: '1.21'
+
+permissions:
+  contents: write
+  pull-requests: write
+  packages: write
+
+jobs:
+  # Determine if we should create a release
+  check-release:
+    name: Check Release Conditions
+    runs-on: ubuntu-latest
+    outputs:
+      should_release: ${{ steps.check.outputs.should_release }}
+      current_version: ${{ steps.check.outputs.current_version }}
+      new_version: ${{ steps.check.outputs.new_version }}
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Check release conditions
+      id: check
+      run: |
+        # Get the latest tag
+        LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+        echo "Latest tag: $LATEST_TAG"
+        
+        # Check if this is a manual workflow dispatch
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          echo "Manual release triggered"
+          echo "should_release=true" >> $GITHUB_OUTPUT
+          echo "current_version=$LATEST_TAG" >> $GITHUB_OUTPUT
+          
+          # Calculate new version based on input
+          VERSION_TYPE="${{ github.event.inputs.version_type }}"
+          NEW_VERSION=$(echo $LATEST_TAG | sed 's/v//' | awk -F. -v type=$VERSION_TYPE '
+            {
+              if (type == "major") print "v" ($1+1) ".0.0"
+              else if (type == "minor") print "v" $1 "." ($2+1) ".0"
+              else print "v" $1 "." $2 "." ($3+1)
+            }
+          ')
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          exit 0
+        fi
+        
+        # For push events, check conventional commits since last tag
+        COMMITS_SINCE_TAG=$(git rev-list ${LATEST_TAG}..HEAD --count 2>/dev/null || echo "999")
+        
+        if [ "$COMMITS_SINCE_TAG" -eq 0 ]; then
+          echo "No commits since last tag"
+          echo "should_release=false" >> $GITHUB_OUTPUT
+          exit 0
+        fi
+        
+        # Analyze commit messages for conventional commits
+        COMMIT_MESSAGES=$(git log ${LATEST_TAG}..HEAD --pretty=format:"%s" 2>/dev/null || git log --pretty=format:"%s")
+        
+        # Check for breaking changes or feat/fix commits
+        HAS_BREAKING=$(echo "$COMMIT_MESSAGES" | grep -E "(BREAKING CHANGE|!:)" || true)
+        HAS_FEAT=$(echo "$COMMIT_MESSAGES" | grep -E "^feat(\(.+\))?:" || true)
+        HAS_FIX=$(echo "$COMMIT_MESSAGES" | grep -E "^fix(\(.+\))?:" || true)
+        
+        if [ -n "$HAS_BREAKING" ] || [ -n "$HAS_FEAT" ] || [ -n "$HAS_FIX" ]; then
+          echo "Found release-worthy commits"
+          echo "should_release=true" >> $GITHUB_OUTPUT
+          echo "current_version=$LATEST_TAG" >> $GITHUB_OUTPUT
+          
+          # Determine version bump
+          if [ -n "$HAS_BREAKING" ]; then
+            BUMP_TYPE="major"
+          elif [ -n "$HAS_FEAT" ]; then
+            BUMP_TYPE="minor"
+          else
+            BUMP_TYPE="patch"
+          fi
+          
+          NEW_VERSION=$(echo $LATEST_TAG | sed 's/v//' | awk -F. -v type=$BUMP_TYPE '
+            {
+              if (type == "major") print "v" ($1+1) ".0.0"
+              else if (type == "minor") print "v" $1 "." ($2+1) ".0"
+              else print "v" $1 "." $2 "." ($3+1)
+            }
+          ')
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+        else
+          echo "No release-worthy commits found"
+          echo "should_release=false" >> $GITHUB_OUTPUT
+        fi
+
+  # Run tests before release
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    needs: check-release
+    if: needs.check-release.outputs.should_release == 'true'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+
+    - name: Cache Go modules
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-${{ env.GO_VERSION }}-
+
+    - name: Install dependencies
+      run: go mod download
+
+    - name: Run tests
+      run: go test -v -race ./...
+
+    - name: Run linting
+      uses: golangci/golangci-lint-action@v3
+      with:
+        version: latest
+        args: --timeout=5m
+
+  # Generate changelog
+  changelog:
+    name: Generate Changelog
+    runs-on: ubuntu-latest
+    needs: [check-release, test]
+    if: needs.check-release.outputs.should_release == 'true'
+    outputs:
+      changelog: ${{ steps.generate.outputs.changelog }}
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Generate changelog
+      id: generate
+      run: |
+        CURRENT_VERSION="${{ needs.check-release.outputs.current_version }}"
+        NEW_VERSION="${{ needs.check-release.outputs.new_version }}"
+        
+        # Create changelog content
+        cat > CHANGELOG_TEMP.md << 'EOF'
+        ## What's Changed
+        
+        EOF
+        
+        # Get commits since last tag
+        if [ "$CURRENT_VERSION" != "v0.0.0" ]; then
+          COMMITS=$(git log ${CURRENT_VERSION}..HEAD --pretty=format:"* %s (%h)" --reverse)
+        else
+          COMMITS=$(git log --pretty=format:"* %s (%h)" --reverse)
+        fi
+        
+        # Categorize commits
+        FEATURES=""
+        FIXES=""
+        BREAKING=""
+        OTHER=""
+        
+        while IFS= read -r commit; do
+          if echo "$commit" | grep -qE "\* feat(\(.+\))?:"; then
+            FEATURES="$FEATURES\n$commit"
+          elif echo "$commit" | grep -qE "\* fix(\(.+\))?:"; then
+            FIXES="$FIXES\n$commit"
+          elif echo "$commit" | grep -qE "(BREAKING CHANGE|!:)"; then
+            BREAKING="$BREAKING\n$commit"
+          else
+            OTHER="$OTHER\n$commit"
+          fi
+        done <<< "$COMMITS"
+        
+        # Build changelog
+        if [ -n "$BREAKING" ]; then
+          echo "### 💥 Breaking Changes" >> CHANGELOG_TEMP.md
+          echo -e "$BREAKING" >> CHANGELOG_TEMP.md
+          echo "" >> CHANGELOG_TEMP.md
+        fi
+        
+        if [ -n "$FEATURES" ]; then
+          echo "### ✨ New Features" >> CHANGELOG_TEMP.md
+          echo -e "$FEATURES" >> CHANGELOG_TEMP.md
+          echo "" >> CHANGELOG_TEMP.md
+        fi
+        
+        if [ -n "$FIXES" ]; then
+          echo "### 🐛 Bug Fixes" >> CHANGELOG_TEMP.md
+          echo -e "$FIXES" >> CHANGELOG_TEMP.md
+          echo "" >> CHANGELOG_TEMP.md
+        fi
+        
+        if [ -n "$OTHER" ]; then
+          echo "### 🔧 Other Changes" >> CHANGELOG_TEMP.md
+          echo -e "$OTHER" >> CHANGELOG_TEMP.md
+          echo "" >> CHANGELOG_TEMP.md
+        fi
+        
+        # Add contributors
+        CONTRIBUTORS=$(git log ${CURRENT_VERSION}..HEAD --format='%an' | sort -u | tr '\n' ',' | sed 's/,$//')
+        if [ -n "$CONTRIBUTORS" ]; then
+          echo "### 👥 Contributors" >> CHANGELOG_TEMP.md
+          echo "Thanks to: $CONTRIBUTORS" >> CHANGELOG_TEMP.md
+          echo "" >> CHANGELOG_TEMP.md
+        fi
+        
+        echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/${CURRENT_VERSION}...${NEW_VERSION}" >> CHANGELOG_TEMP.md
+        
+        # Output changelog for use in release
+        CHANGELOG_CONTENT=$(cat CHANGELOG_TEMP.md)
+        echo "changelog<<EOF" >> $GITHUB_OUTPUT
+        echo "$CHANGELOG_CONTENT" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+  # Build release artifacts
+  build:
+    name: Build Release Artifacts
+    runs-on: ubuntu-latest
+    needs: [check-release, test]
+    if: needs.check-release.outputs.should_release == 'true'
+    strategy:
+      matrix:
+        goos: [linux, darwin, windows]
+        goarch: [amd64, arm64]
+        exclude:
+          - goos: windows
+            goarch: arm64
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+
+    - name: Cache Go modules
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-${{ env.GO_VERSION }}-
+
+    - name: Install dependencies
+      run: go mod download
+
+    - name: Build binary
+      env:
+        GOOS: ${{ matrix.goos }}
+        GOARCH: ${{ matrix.goarch }}
+        CGO_ENABLED: 0
+      run: |
+        VERSION="${{ needs.check-release.outputs.new_version }}"
+        COMMIT=$(git rev-parse --short HEAD)
+        BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+        
+        # Set binary name
+        BINARY_NAME="prompt-alchemy"
+        if [ "${{ matrix.goos }}" = "windows" ]; then
+          BINARY_NAME="${BINARY_NAME}.exe"
+        fi
+        
+        # Build with version info
+        go build -ldflags "
+          -X 'prompt-alchemy/internal/cmd.Version=${VERSION}' \
+          -X 'prompt-alchemy/internal/cmd.GitCommit=${COMMIT}' \
+          -X 'prompt-alchemy/internal/cmd.GitTag=${VERSION}' \
+          -X 'prompt-alchemy/internal/cmd.BuildDate=${BUILD_DATE}' \
+          -w -s
+        " -o ${BINARY_NAME} ./cmd/main.go
+        
+        # Create archive
+        ARCHIVE_NAME="prompt-alchemy-${VERSION}-${{ matrix.goos }}-${{ matrix.goarch }}"
+        if [ "${{ matrix.goos }}" = "windows" ]; then
+          zip "${ARCHIVE_NAME}.zip" ${BINARY_NAME}
+        else
+          tar czf "${ARCHIVE_NAME}.tar.gz" ${BINARY_NAME}
+        fi
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: release-artifacts
+        path: |
+          prompt-alchemy-*
+        retention-days: 1
+
+  # Create GitHub release
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [check-release, test, changelog, build]
+    if: needs.check-release.outputs.should_release == 'true'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Download artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: release-artifacts
+        path: ./artifacts
+
+    - name: Create Git tag
+      run: |
+        NEW_VERSION="${{ needs.check-release.outputs.new_version }}"
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git tag -a $NEW_VERSION -m "Release $NEW_VERSION"
+        git push origin $NEW_VERSION
+
+    - name: Create GitHub Release
+      uses: actions/create-release@v1
+      id: create_release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ needs.check-release.outputs.new_version }}
+        release_name: Release ${{ needs.check-release.outputs.new_version }}
+        body: ${{ needs.changelog.outputs.changelog }}
+        draft: false
+        prerelease: ${{ github.event.inputs.pre_release == 'true' }}
+
+    - name: Upload Release Assets
+      run: |
+        RELEASE_ID="${{ steps.create_release.outputs.id }}"
+        
+        for file in ./artifacts/*; do
+          if [ -f "$file" ]; then
+            filename=$(basename "$file")
+            echo "Uploading $filename..."
+            
+            curl -X POST \
+              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Content-Type: application/octet-stream" \
+              --data-binary @"$file" \
+              "https://uploads.github.com/repos/${{ github.repository }}/releases/${RELEASE_ID}/assets?name=${filename}"
+          fi
+        done
+
+  # Update documentation
+  update-docs:
+    name: Update Documentation
+    runs-on: ubuntu-latest
+    needs: [check-release, release]
+    if: needs.check-release.outputs.should_release == 'true'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Update installation docs
+      run: |
+        NEW_VERSION="${{ needs.check-release.outputs.new_version }}"
+        
+        # Update README.md
+        sed -i "s|@v[0-9]\+\.[0-9]\+\.[0-9]\+|@${NEW_VERSION}|g" README.md
+        
+        # Update docs/installation.md
+        if [ -f docs/installation.md ]; then
+          sed -i "s|download/v[0-9]\+\.[0-9]\+\.[0-9]\+|download/${NEW_VERSION}|g" docs/installation.md
+          sed -i "s|@v[0-9]\+\.[0-9]\+\.[0-9]\+|@${NEW_VERSION}|g" docs/installation.md
+        fi
+        
+        # Update docs/getting-started.md
+        if [ -f docs/getting-started.md ]; then
+          sed -i "s|@v[0-9]\+\.[0-9]\+\.[0-9]\+|@${NEW_VERSION}|g" docs/getting-started.md
+        fi
+
+    - name: Commit documentation updates
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        
+        if [ -n "$(git status --porcelain)" ]; then
+          git add README.md docs/
+          git commit -m "docs: update installation instructions for ${{ needs.check-release.outputs.new_version }}"
+          git push origin main
+        fi
+
+  # Notify on completion
+  notify:
+    name: Notify Release Complete
+    runs-on: ubuntu-latest
+    needs: [check-release, release, update-docs]
+    if: always() && needs.check-release.outputs.should_release == 'true'
+    
+    steps:
+    - name: Release Summary
+      run: |
+        echo "🚀 Release ${{ needs.check-release.outputs.new_version }} Complete!"
+        echo ""
+        echo "📦 Artifacts built for:"
+        echo "  - Linux (amd64, arm64)"
+        echo "  - macOS (amd64, arm64)"
+        echo "  - Windows (amd64)"
+        echo ""
+        echo "📋 Release includes:"
+        echo "  - Automated changelog generation"
+        echo "  - Cross-platform binaries"
+        echo "  - Updated documentation"
+        echo "  - Git tag creation"
+        echo ""
+        echo "🔗 View release: https://github.com/${{ github.repository }}/releases/tag/${{ needs.check-release.outputs.new_version }}" 

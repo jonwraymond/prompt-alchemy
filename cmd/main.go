@@ -1,15 +1,13 @@
 package main
 
 import (
-	"fmt"
-	"os"
-
 	"github.com/jonwraymond/prompt-alchemy/internal/cmd"
+	"github.com/jonwraymond/prompt-alchemy/internal/log"
 )
 
 func main() {
+	logger := log.GetLogger()
 	if err := cmd.Execute(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		logger.Fatalf("Failed to execute command: %v", err)
 	}
 }

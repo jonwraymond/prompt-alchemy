@@ -8,9 +8,11 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	log "github.com/jonwraymond/prompt-alchemy/internal/log"
 	"github.com/jonwraymond/prompt-alchemy/internal/providers"
 	"github.com/jonwraymond/prompt-alchemy/pkg/models"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 // Engine handles prompt generation with phased approach
@@ -25,7 +27,7 @@ func NewEngine(registry *providers.Registry, logger *logrus.Logger) *Engine {
 	return &Engine{
 		registry:       registry,
 		phaseTemplates: initializePhaseTemplates(),
-		logger:         logger,
+		logger:         log.GetLogger(),
 	}
 }
 
@@ -73,10 +75,13 @@ type GenerateOptions struct {
 	PhaseConfigs   []providers.PhaseConfig
 	UseParallel    bool
 	IncludeContext bool
+	Persona        string
+	TargetModel    string
 }
 
 // Generate creates prompts using the phased approach
 func (e *Engine) Generate(ctx context.Context, opts GenerateOptions) (*models.GenerationResult, error) {
+	e.logger.Info("Starting prompt generation engine")
 	result := &models.GenerationResult{
 		Prompts:  make([]models.Prompt, 0),
 		Rankings: make([]models.PromptRanking, 0),
@@ -96,6 +101,7 @@ func (e *Engine) Generate(ctx context.Context, opts GenerateOptions) (*models.Ge
 		if err != nil {
 			return nil, fmt.Errorf("failed to get provider for phase %s: %w", phase, err)
 		}
+		e.logger.Debugf("Using provider %s for phase %s", provider.Name(), phase)
 
 		// Generate variants for this phase
 		phasePrompts, err := e.processPhase(ctx, phase, provider, basePrompts, opts)
@@ -111,15 +117,18 @@ func (e *Engine) Generate(ctx context.Context, opts GenerateOptions) (*models.Ge
 		}
 	}
 
+	e.logger.Info("Prompt generation engine finished")
 	return result, nil
 }
 
 // processPhase handles generation for a single phase
 func (e *Engine) processPhase(ctx context.Context, phase models.Phase, provider providers.Provider, inputs []string, opts GenerateOptions) ([]models.Prompt, error) {
+	e.logger.Debugf("Processing phase %s with %d inputs", phase, len(inputs))
 	prompts := make([]models.Prompt, 0, len(inputs))
 
 	if opts.UseParallel {
 		// Process in parallel
+		e.logger.Debug("Processing phase in parallel")
 		var wg sync.WaitGroup
 		var mu sync.Mutex
 		errors := make([]error, len(inputs))
@@ -151,6 +160,7 @@ func (e *Engine) processPhase(ctx context.Context, phase models.Phase, provider 
 		}
 	} else {
 		// Process sequentially
+		e.logger.Debug("Processing phase sequentially")
 		for _, input := range inputs {
 			prompt, err := e.generateSinglePrompt(ctx, phase, provider, input, opts)
 			if err != nil {
@@ -165,6 +175,7 @@ func (e *Engine) processPhase(ctx context.Context, phase models.Phase, provider 
 
 // generateSinglePrompt generates a single prompt for a phase
 func (e *Engine) generateSinglePrompt(ctx context.Context, phase models.Phase, provider providers.Provider, input string, opts GenerateOptions) (*models.Prompt, error) {
+	e.logger.Debugf("Generating single prompt for phase %s", phase)
 	startTime := time.Now()
 
 	// Get the template for this phase
@@ -178,6 +189,7 @@ func (e *Engine) generateSinglePrompt(ctx context.Context, phase models.Phase, p
 
 	// Prepare the prompt content
 	promptContent := e.preparePromptContent(template, input, opts)
+	e.logger.Debugf("Prompt content for provider: %s", promptContent)
 
 	// Generate using the provider
 	resp, err := provider.Generate(ctx, providers.GenerateRequest{
@@ -188,6 +200,10 @@ func (e *Engine) generateSinglePrompt(ctx context.Context, phase models.Phase, p
 	})
 
 	if err != nil {
+		e.logger.WithFields(logrus.Fields{
+			"provider": provider.Name(),
+			"phase":    phase,
+		}).Errorf("Provider generation failed: %v", err)
 		return nil, fmt.Errorf("provider generation failed: %w", err)
 	}
 
@@ -209,18 +225,60 @@ func (e *Engine) generateSinglePrompt(ctx context.Context, phase models.Phase, p
 		UpdatedAt:    time.Now(),
 	}
 
+	// Set original input tracking fields
+	prompt.OriginalInput = opts.Request.Input
+	prompt.PersonaUsed = opts.Persona
+	prompt.TargetModelFamily = opts.TargetModel
+	prompt.SourceType = "generated"
+	prompt.RelevanceScore = 1.0 // Default relevance score for new prompts
+	prompt.UsageCount = 0
+	prompt.GenerationCount = 1
+
+	// Set generation request as PromptRequest object (will be serialized by SavePrompt)
+	prompt.GenerationRequest = &opts.Request
+
+	// Set generation context as string array
+	prompt.GenerationContext = []string{
+		fmt.Sprintf("phase=%s", phase),
+		fmt.Sprintf("provider=%s", provider.Name()),
+		fmt.Sprintf("template=%s", template[:50]+"..."), // Truncate template for brevity
+		fmt.Sprintf("processing_time=%dms", processingTime),
+	}
+	// Add context files if any
+	if len(opts.Request.Context) > 0 {
+		prompt.GenerationContext = append(prompt.GenerationContext, opts.Request.Context...)
+	}
+
 	// Get embedding if available
 	var embeddingModel, embeddingProvider string
 	if opts.IncludeContext {
-		embedding, err := provider.GetEmbedding(ctx, resp.Content)
-		if err != nil {
-			e.logger.WithError(err).Warn("Failed to get embedding")
+		embeddingProvider := providers.GetEmbeddingProvider(provider, e.registry)
+
+		if embeddingProvider.SupportsEmbeddings() {
+			e.logger.Debugf("Getting embedding from provider: %s", embeddingProvider.Name())
+			embedding, err := embeddingProvider.GetEmbedding(ctx, resp.Content, e.registry)
+			if err != nil {
+				e.logger.WithError(err).WithFields(logrus.Fields{
+					"primary_provider":   provider.Name(),
+					"embedding_provider": embeddingProvider.Name(),
+				}).Warn("Failed to get embedding")
+			} else {
+				prompt.Embedding = embedding
+				embeddingModel = getEmbeddingModelName(embeddingProvider.Name())
+				embeddingProviderName := embeddingProvider.Name()
+				prompt.EmbeddingModel = embeddingModel
+				prompt.EmbeddingProvider = embeddingProviderName
+
+				// Log successful embedding with fallback info
+				if provider.Name() != embeddingProvider.Name() {
+					e.logger.WithFields(logrus.Fields{
+						"primary_provider":   provider.Name(),
+						"embedding_provider": embeddingProviderName,
+					}).Info("Using fallback provider for embeddings")
+				}
+			}
 		} else {
-			prompt.Embedding = embedding
-			embeddingModel = getEmbeddingModelName(provider.Name())
-			embeddingProvider = provider.Name()
-			prompt.EmbeddingModel = embeddingModel
-			prompt.EmbeddingProvider = embeddingProvider
+			e.logger.WithField("provider", provider.Name()).Info("Provider does not support embeddings, skipping embedding generation")
 		}
 	}
 
@@ -336,16 +394,26 @@ func extractTheme(input string) string {
 
 // getEmbeddingModelName returns the embedding model name for a provider
 func getEmbeddingModelName(providerName string) string {
+	// Use default embedding model from config for OpenAI provider
+	if providerName == providers.ProviderOpenAI {
+		defaultEmbeddingModel := viper.GetString("generation.default_embedding_model")
+		if defaultEmbeddingModel != "" {
+			return defaultEmbeddingModel
+		}
+	}
+
 	switch providerName {
-	case "openai":
-		return "text-embedding-ada-002"
-	case "openrouter":
-		return "openai/text-embedding-ada-002"
-	case "claude":
-		// Claude doesn't have native embeddings, might use OpenAI through API
-		return "text-embedding-ada-002"
-	case "gemini":
-		return "embedding-001"
+	case providers.ProviderOpenAI:
+		return "text-embedding-3-small"
+	case providers.ProviderOpenRouter:
+		return "openai/text-embedding-3-small"
+	case providers.ProviderAnthropic:
+		// Anthropic doesn't have native embeddings
+		return "none"
+	case providers.ProviderGoogle:
+		return "text-embedding-004"
+	case providers.ProviderOllama:
+		return "nomic-embed-text"
 	default:
 		return "unknown"
 	}
@@ -363,7 +431,7 @@ func calculateCost(provider, model string, tokens int) float64 {
 	costPerToken := 0.0
 
 	switch provider {
-	case "openai":
+	case providers.ProviderOpenAI:
 		switch model {
 		case "gpt-4-turbo-preview", "gpt-4-1106-preview":
 			costPerToken = 0.00003 // $0.03 per 1K tokens (output)
@@ -372,20 +440,22 @@ func calculateCost(provider, model string, tokens int) float64 {
 		default:
 			costPerToken = 0.00002
 		}
-	case "openrouter":
+	case providers.ProviderOpenRouter:
 		// OpenRouter has variable pricing
 		costPerToken = 0.00002
-	case "claude":
+	case providers.ProviderAnthropic:
 		switch model {
 		case "claude-3-opus-20240229":
 			costPerToken = 0.000075 // $0.075 per 1K tokens (output)
-		case "claude-3-sonnet-20240229":
+		case "claude-3-sonnet-20240229", "claude-3-5-sonnet-20241022":
 			costPerToken = 0.000015 // $0.015 per 1K tokens (output)
 		default:
 			costPerToken = 0.00003
 		}
-	case "gemini":
+	case providers.ProviderGoogle:
 		costPerToken = 0.000002 // Gemini Pro pricing
+	case providers.ProviderOllama:
+		costPerToken = 0.0 // Local models are free
 	}
 
 	return float64(tokens) * costPerToken

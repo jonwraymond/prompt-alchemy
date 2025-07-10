@@ -1,0 +1,223 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Renovate configuration for Prompt Alchemy - Automated dependency updates",
+  "extends": [
+    "config:recommended",
+    ":enableVulnerabilityAlertsWithLabel(security)",
+    ":pinAllExceptPeerDependencies"
+  ],
+  "timezone": "America/Denver",
+  "schedule": [
+    "before 9am on monday"
+  ],
+  "prConcurrentLimit": 5,
+  "prHourlyLimit": 2,
+  "branchConcurrentLimit": 10,
+  "labels": ["dependencies"],
+  "assignees": ["jraymond"],
+  "reviewers": ["jraymond"],
+  "platformAutomerge": false,
+  "automerge": false,
+  "major": {
+    "dependencyDashboard": true,
+    "stabilityDays": 7
+  },
+  "minor": {
+    "stabilityDays": 3
+  },
+  "patch": {
+    "automerge": true,
+    "automergeType": "branch",
+    "stabilityDays": 1
+  },
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "schedule": ["at any time"],
+    "stabilityDays": 0,
+    "labels": ["security", "vulnerability"]
+  },
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 9am on monday"],
+    "automerge": true,
+    "automergeType": "branch"
+  },
+  "packageRules": [
+    {
+      "description": "Go modules - Group updates and enable automerge for patches",
+      "matchManagers": ["gomod"],
+      "labels": ["go", "dependencies"],
+      "rangeStrategy": "bump",
+      "semanticCommits": "enabled",
+      "semanticCommitType": "deps",
+      "semanticCommitScope": "go",
+      "groupName": "Go dependencies",
+      "separateMinorPatch": true,
+      "patch": {
+        "automerge": true,
+        "automergeType": "branch"
+      },
+      "minor": {
+        "stabilityDays": 3,
+        "groupName": "Go minor updates"
+      },
+      "major": {
+        "stabilityDays": 7,
+        "groupName": "Go major updates"
+      }
+    },
+    {
+      "description": "GitHub Actions - Group and auto-merge patches",
+      "matchManagers": ["github-actions"],
+      "labels": ["github-actions", "ci"],
+      "semanticCommits": "enabled",
+      "semanticCommitType": "ci",
+      "semanticCommitScope": "actions",
+      "groupName": "GitHub Actions",
+      "separateMinorPatch": true,
+      "patch": {
+        "automerge": true,
+        "automergeType": "branch"
+      },
+      "minor": {
+        "stabilityDays": 2,
+        "groupName": "GitHub Actions minor updates"
+      },
+      "major": {
+        "stabilityDays": 5,
+        "groupName": "GitHub Actions major updates"
+      }
+    },
+    {
+      "description": "AI/ML SDKs - Critical dependencies, careful updates",
+      "matchPackageNames": [
+        "github.com/anthropics/anthropic-sdk-go",
+        "github.com/openai/openai-go",
+        "github.com/ollama/ollama"
+      ],
+      "labels": ["ai-sdk", "critical"],
+      "stabilityDays": 7,
+      "automerge": false,
+      "groupName": "AI/ML SDKs",
+      "prPriority": 10,
+      "reviewers": ["jraymond"],
+      "semanticCommitScope": "ai-sdk"
+    },
+    {
+      "description": "Database dependencies - Handle carefully",
+      "matchPackageNames": [
+        "github.com/jmoiron/sqlx",
+        "github.com/mattn/go-sqlite3"
+      ],
+      "labels": ["database", "critical"],
+      "stabilityDays": 5,
+      "automerge": false,
+      "groupName": "Database dependencies",
+      "prPriority": 8,
+      "semanticCommitScope": "db"
+    },
+    {
+      "description": "CLI framework dependencies",
+      "matchPackageNames": [
+        "github.com/spf13/cobra",
+        "github.com/spf13/viper"
+      ],
+      "labels": ["cli", "framework"],
+      "stabilityDays": 3,
+      "groupName": "CLI framework",
+      "semanticCommitScope": "cli"
+    },
+    {
+      "description": "Testing dependencies - Auto-merge patches",
+      "matchPackageNames": [
+        "github.com/stretchr/testify"
+      ],
+      "labels": ["testing"],
+      "groupName": "Testing dependencies",
+      "patch": {
+        "automerge": true,
+        "automergeType": "branch"
+      },
+      "semanticCommitScope": "test"
+    },
+    {
+      "description": "Logging and utility dependencies",
+      "matchPackageNames": [
+        "github.com/sirupsen/logrus",
+        "github.com/google/uuid"
+      ],
+      "labels": ["utilities"],
+      "groupName": "Utility dependencies",
+      "patch": {
+        "automerge": true,
+        "automergeType": "branch"
+      },
+      "semanticCommitScope": "util"
+    },
+    {
+      "description": "Security updates - High priority, immediate processing",
+      "matchPackagePatterns": ["*"],
+      "matchUpdateTypes": ["patch"],
+      "vulnerabilityAlerts": {
+        "enabled": true
+      },
+      "labels": ["security"],
+      "prPriority": 20,
+      "schedule": ["at any time"],
+      "stabilityDays": 0
+    }
+  ],
+  "regexManagers": [
+    {
+      "description": "Update Go version in Dockerfile",
+      "fileMatch": ["^Dockerfile$"],
+      "matchStrings": ["FROM golang:(?<currentValue>\\d+\\.\\d+(?:\\.\\d+)?)-alpine"],
+      "datasourceTemplate": "docker",
+      "depNameTemplate": "golang",
+      "versioningTemplate": "semver"
+    },
+    {
+      "description": "Update Go version in GitHub Actions",
+      "fileMatch": ["\\.github/workflows/.+\\.ya?ml$"],
+      "matchStrings": ["go-version:\\s*['\"]?(?<currentValue>\\d+\\.\\d+(?:\\.\\d+)?)['\"]?"],
+      "datasourceTemplate": "golang-version",
+      "depNameTemplate": "go"
+    },
+    {
+      "description": "Update Go version in Makefile",
+      "fileMatch": ["^Makefile$"],
+      "matchStrings": ["GO_VERSION\\s*:?=\\s*(?<currentValue>\\d+\\.\\d+(?:\\.\\d+)?)"],
+      "datasourceTemplate": "golang-version",
+      "depNameTemplate": "go"
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Update versions in documentation",
+      "fileMatch": ["^docs/.+\\.md$", "^README\\.md$"],
+      "matchStrings": ["go\\s+install.+@v(?<currentValue>\\d+\\.\\d+\\.\\d+)"],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "jonwraymond/prompt-alchemy"
+    }
+  ],
+  "ignoreDeps": [
+    "go"
+  ],
+  "ignorePaths": [
+    "**/node_modules/**",
+    "**/vendor/**",
+    "**/test-data/**",
+    "**/mock-project/**"
+  ],
+  "commitMessageTopic": "{{depName}}",
+  "commitMessageExtra": "to {{newVersion}}",
+  "commitMessageSuffix": "",
+  "prTitle": "{{#if isPinDigest}}Pin{{else}}Update{{/if}} {{depName}} {{#if isMajor}}(major){{else}}{{#if isMinor}}(minor){{else}}{{#if isPatch}}(patch){{/if}}{{/if}}{{/if}}",
+  "prBodyTemplate": "This PR {{#if isPin}}pins{{else}}updates{{/if}} {{depName}} from `{{currentVersion}}` to `{{newVersion}}`.\n\n{{#if hasReleaseNotes}}## Release Notes\n\n{{releaseNotes}}{{/if}}\n\n{{#if hasChangelog}}## Changelog\n\n{{changelog}}{{/if}}\n\n---\n\n- [ ] Check that tests pass\n- [ ] Verify functionality is not broken\n- [ ] Update documentation if needed\n\n*This PR was automatically generated by [Renovate](https://renovatebot.com)*",
+  "dependencyDashboard": true,
+  "dependencyDashboardTitle": "🤖 Dependency Dashboard",
+  "dependencyDashboardHeader": "This dashboard provides an overview of all dependencies and their update status.\n\n- ✅ All updates have been processed\n- ❌ Some updates failed - check logs\n- 🕐 Updates are pending\n\nYou can trigger updates by checking the boxes below or commenting `@renovatebot run` on this issue.",
+  "dependencyDashboardFooter": "Need help? Check the [Renovate documentation](https://docs.renovatebot.com/)",
+  "configWarningReuseIssue": false
+} 

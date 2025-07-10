@@ -12,11 +12,21 @@ prompt-alchemy-*
 # Test binary, built with `go test -c`
 *.test
 
-# Output of the go coverage tool, specifically when used with LiteIDE
+# Go test files and coverage
 *.out
+*.prof
 coverage.html
 coverage.out
 cover.html
+cover.out
+c.out
+profile.out
+
+# Test cache and artifacts
+testdata/
+.testcache/
+test-results/
+test-reports/
 
 # Dependency directories (remove the comment when uncomment vendor below)
 vendor/
@@ -100,7 +110,6 @@ out/
 *.sqlite3
 
 # Profiling and debugging
-*.prof
 *.pprof
 *.trace
 cpu.prof
@@ -108,7 +117,7 @@ mem.prof
 block.prof
 mutex.prof
 debug
-__debug_bin*
+__debug_bin* 
 dlv-dap.log
 
 # Test and benchmark files
