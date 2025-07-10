@@ -1403,9 +1403,9 @@ func (s *MCPServer) executeGetConfig(args map[string]interface{}) (MCPToolResult
 				}
 
 				if hasEmbeddings {
-					output += fmt.Sprintf("  Embeddings: ✅\n")
+					output += "  Embeddings: ✅\n"
 				} else {
-					output += fmt.Sprintf("  Embeddings: ❌\n")
+					output += "  Embeddings: ❌\n"
 				}
 
 				output += "  Status: Available\n\n"

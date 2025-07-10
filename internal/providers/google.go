@@ -143,7 +143,11 @@ func (p *GoogleProvider) sendAPIRequest(ctx context.Context, prompt string, maxT
 		logger.WithError(err).Error("HTTP request failed")
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			logger.WithError(err).Warn("Failed to close response body")
+		}
+	}()
 
 	// Read response
 	body, err := io.ReadAll(resp.Body)

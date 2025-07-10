@@ -65,7 +65,9 @@ func TestEngine_Generate_SinglePhase(t *testing.T) {
 		name:      "test-provider",
 		available: true,
 	}
-	registry.Register("test-provider", mockProvider)
+	if err := registry.Register("test-provider", mockProvider); err != nil {
+		t.Fatalf("Failed to register test provider: %v", err)
+	}
 
 	// Create generation options
 	opts := GenerateOptions{
@@ -120,8 +122,12 @@ func TestEngine_Generate_MultiplePhases(t *testing.T) {
 		},
 	}
 
-	registry.Register("idea-provider", ideaProvider)
-	registry.Register("human-provider", humanProvider)
+	if err := registry.Register("idea-provider", ideaProvider); err != nil {
+		t.Fatalf("Failed to register idea provider: %v", err)
+	}
+	if err := registry.Register("human-provider", humanProvider); err != nil {
+		t.Fatalf("Failed to register human provider: %v", err)
+	}
 
 	// Create generation options with multiple phases
 	opts := GenerateOptions{
@@ -167,7 +173,9 @@ func TestEngine_Generate_WithPersona(t *testing.T) {
 		name:      "test-provider",
 		available: true,
 	}
-	registry.Register("test-provider", mockProvider)
+	if err := registry.Register("test-provider", mockProvider); err != nil {
+		t.Fatalf("Failed to register test provider: %v", err)
+	}
 
 	// Create generation options with persona
 	opts := GenerateOptions{
@@ -201,7 +209,9 @@ func TestEngine_Generate_WithTags(t *testing.T) {
 		name:      "test-provider",
 		available: true,
 	}
-	registry.Register("test-provider", mockProvider)
+	if err := registry.Register("test-provider", mockProvider); err != nil {
+		t.Fatalf("Failed to register test provider: %v", err)
+	}
 
 	// Create generation options with tags
 	opts := GenerateOptions{
@@ -238,7 +248,9 @@ func TestEngine_Generate_ProviderError(t *testing.T) {
 			return nil, errors.New("provider generation failed")
 		},
 	}
-	registry.Register("error-provider", mockProvider)
+	if err := registry.Register("error-provider", mockProvider); err != nil {
+		t.Fatalf("Failed to register error provider: %v", err)
+	}
 
 	// Create generation options
 	opts := GenerateOptions{

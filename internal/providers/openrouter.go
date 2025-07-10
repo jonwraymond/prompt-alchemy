@@ -171,7 +171,11 @@ func (p *OpenRouterProvider) Generate(ctx context.Context, req GenerateRequest) 
 		logger.WithError(err).Error("OpenRouterProvider: HTTP request failed")
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			logger.WithError(err).Warn("Failed to close response body")
+		}
+	}()
 
 	logger.Debugf("OpenRouterProvider: Received response with status code: %d", resp.StatusCode)
 	body, err := io.ReadAll(resp.Body)

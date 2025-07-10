@@ -277,8 +277,12 @@ func TestGetEmbeddingProvider(t *testing.T) {
 
 	// Create registry and register providers
 	registry := NewRegistry()
-	registry.Register("no-embed", noEmbedProvider)
-	registry.Register("with-embed", embedProvider)
+	if err := registry.Register("no-embed", noEmbedProvider); err != nil {
+		t.Fatalf("Failed to register no-embed provider: %v", err)
+	}
+	if err := registry.Register("with-embed", embedProvider); err != nil {
+		t.Fatalf("Failed to register with-embed provider: %v", err)
+	}
 
 	// Test fallback mechanism
 	fallbackProvider := GetEmbeddingProvider(noEmbedProvider, registry)
