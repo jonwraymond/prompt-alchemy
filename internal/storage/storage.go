@@ -1772,7 +1772,9 @@ func (s *Storage) GetVectorStats() (map[string]interface{}, error) {
 				modelStats[model] = count
 			}
 		}
-		rows.Close()
+		if err := rows.Close(); err != nil {
+			s.logger.WithError(err).Warn("Failed to close rows")
+		}
 		stats["embedding_models"] = modelStats
 	}
 

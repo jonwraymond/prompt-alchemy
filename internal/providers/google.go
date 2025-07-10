@@ -338,7 +338,7 @@ func (p *GoogleProvider) handleAPIError(statusCode int, body []byte, maxTokens i
 			return fmt.Errorf("google API request failed (token limit: %d): %s\n"+
 				"💡 Suggestion: Try shorter prompts or reduce max_tokens parameter", maxTokens, message)
 		}
-		return fmt.Errorf("Google API bad request: %s", message)
+		return fmt.Errorf("google API bad request: %s", message)
 	case 401:
 		logger.Error("Google API authentication failed: Invalid API key")
 		return fmt.Errorf("google API authentication failed: invalid API key")
