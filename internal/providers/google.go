@@ -5,11 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	log "github.com/jonwraymond/prompt-alchemy/internal/log"
 	"io"
 	"net/http"
 	"strings"
 	"time"
+
+	log "github.com/jonwraymond/prompt-alchemy/internal/log"
 )
 
 const (
@@ -315,7 +316,9 @@ func (p *GoogleProvider) handleAPIError(statusCode int, body []byte, maxTokens i
 		} `json:"error"`
 	}
 
-	json.Unmarshal(body, &errorResponse)
+	if err := json.Unmarshal(body, &errorResponse); err != nil {
+		logger.Warnf("Failed to unmarshal error response: %v", err)
+	}
 
 	message := errorResponse.Error.Message
 	if message == "" {
@@ -334,13 +337,13 @@ func (p *GoogleProvider) handleAPIError(statusCode int, body []byte, maxTokens i
 		return fmt.Errorf("Google API bad request: %s", message)
 	case 401:
 		logger.Error("Google API authentication failed: Invalid API key")
-		return fmt.Errorf("Google API authentication failed: Invalid API key")
+		return fmt.Errorf("google API authentication failed: invalid API key")
 	case 403:
 		logger.Errorf("Google API access denied: %s", message)
-		return fmt.Errorf("Google API access denied: %s", message)
+		return fmt.Errorf("google API access denied: %s", message)
 	case 429:
 		logger.Warnf("Google API rate limit exceeded: %s", message)
-		return fmt.Errorf("Google API rate limit exceeded: %s\n"+
+		return fmt.Errorf("google API rate limit exceeded: %s\n"+
 			"💡 Suggestion: Wait a moment and try again", message)
 	case 500, 502, 503, 504:
 		logger.Errorf("Google API server error: %s", message)

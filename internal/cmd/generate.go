@@ -262,7 +262,9 @@ func initializeProviders(registry *providers.Registry) error {
 			BaseURL: viper.GetString("providers.openai.base_url"),
 			Timeout: viper.GetInt("providers.openai.timeout"),
 		}
-		registry.Register(providers.ProviderOpenAI, providers.NewOpenAIProvider(config))
+		if err := registry.Register(providers.ProviderOpenAI, providers.NewOpenAIProvider(config)); err != nil {
+			logger.Warn("Failed to register OpenAI provider", "error", err)
+		}
 	}
 
 	// Initialize OpenRouter
@@ -276,7 +278,9 @@ func initializeProviders(registry *providers.Registry) error {
 			FallbackModels:  viper.GetStringSlice("providers.openrouter.fallback_models"),
 			ProviderRouting: viper.GetStringMap("providers.openrouter.provider_routing"),
 		}
-		registry.Register(providers.ProviderOpenRouter, providers.NewOpenRouterProvider(config))
+		if err := registry.Register(providers.ProviderOpenRouter, providers.NewOpenRouterProvider(config)); err != nil {
+			logger.Warn("Failed to register OpenRouter provider", "error", err)
+		}
 	}
 
 	// Initialize Anthropic (Claude)
@@ -288,7 +292,9 @@ func initializeProviders(registry *providers.Registry) error {
 			BaseURL: viper.GetString("providers.anthropic.base_url"),
 			Timeout: viper.GetInt("providers.anthropic.timeout"),
 		}
-		registry.Register(providers.ProviderAnthropic, providers.NewAnthropicProvider(config))
+		if err := registry.Register(providers.ProviderAnthropic, providers.NewAnthropicProvider(config)); err != nil {
+			logger.Warn("Failed to register Anthropic provider", "error", err)
+		}
 	}
 
 	// Initialize Google (Gemini)
@@ -300,7 +306,9 @@ func initializeProviders(registry *providers.Registry) error {
 			BaseURL: viper.GetString("providers.google.base_url"),
 			Timeout: viper.GetInt("providers.google.timeout"),
 		}
-		registry.Register(providers.ProviderGoogle, providers.NewGoogleProvider(config))
+		if err := registry.Register(providers.ProviderGoogle, providers.NewGoogleProvider(config)); err != nil {
+			logger.Warn("Failed to register Google provider", "error", err)
+		}
 	}
 
 	// Initialize Ollama (Local AI)
@@ -310,7 +318,9 @@ func initializeProviders(registry *providers.Registry) error {
 		BaseURL: viper.GetString("providers.ollama.base_url"),
 		Timeout: viper.GetInt("providers.ollama.timeout"),
 	}
-	registry.Register(providers.ProviderOllama, providers.NewOllamaProvider(config))
+	if err := registry.Register(providers.ProviderOllama, providers.NewOllamaProvider(config)); err != nil {
+		logger.Warn("Failed to register Ollama provider", "error", err)
+	}
 
 	// Check if at least one provider is available
 	if len(registry.ListAvailable()) == 0 {

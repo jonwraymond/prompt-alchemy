@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -79,8 +80,12 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&logLevel, "log-level", "info", "log level (debug, info, warn, error)")
 
 	// Bind flags to viper
-	viper.BindPFlag("data_dir", rootCmd.PersistentFlags().Lookup("data-dir"))
-	viper.BindPFlag("log_level", rootCmd.PersistentFlags().Lookup("log-level"))
+	if err := viper.BindPFlag("data_dir", rootCmd.PersistentFlags().Lookup("data-dir")); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to bind data-dir flag: %v\n", err)
+	}
+	if err := viper.BindPFlag("log_level", rootCmd.PersistentFlags().Lookup("log-level")); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to bind log-level flag: %v\n", err)
+	}
 
 	// Add commands
 	rootCmd.AddCommand(generateCmd)

@@ -1,3 +1,6 @@
+# This file contains configuration options for GolangCI-Lint
+# https://golangci-lint.run/usage/configuration/
+
 linters:
   enable:
     - errcheck
@@ -11,9 +14,6 @@ linters:
     - misspell
     - gofmt
     - goimports
-    - deadcode
-    - varcheck
-    - structcheck
 
 run:
   timeout: 5m 

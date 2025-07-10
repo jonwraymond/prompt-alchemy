@@ -51,8 +51,12 @@ func init() {
 	optimizeCmd.Flags().StringVar(&optimizeJudgeProvider, "judge-provider", "", "Provider to use for evaluation (defaults to main provider)")
 	optimizeCmd.Flags().IntVar(&optimizeEmbeddingDimensions, "embedding-dimensions", 0, "Embedding dimensions for similarity search (uses config default if not specified)")
 
-	optimizeCmd.MarkFlagRequired("prompt")
-	optimizeCmd.MarkFlagRequired("task")
+	if err := optimizeCmd.MarkFlagRequired("prompt"); err != nil {
+		logger.Error("Failed to mark prompt flag as required", "error", err)
+	}
+	if err := optimizeCmd.MarkFlagRequired("task"); err != nil {
+		logger.Error("Failed to mark task flag as required", "error", err)
+	}
 }
 
 func runOptimize(cmd *cobra.Command, args []string) error {

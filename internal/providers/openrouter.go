@@ -5,10 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	log "github.com/jonwraymond/prompt-alchemy/internal/log"
 	"io"
 	"net/http"
 	"time"
+
+	log "github.com/jonwraymond/prompt-alchemy/internal/log"
 )
 
 // OpenRouterProvider implements the Provider interface for OpenRouter

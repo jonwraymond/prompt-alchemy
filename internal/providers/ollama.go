@@ -3,10 +3,11 @@ package providers
 import (
 	"context"
 	"fmt"
-	log "github.com/jonwraymond/prompt-alchemy/internal/log"
 	"net/http"
 	"net/url"
 	"time"
+
+	log "github.com/jonwraymond/prompt-alchemy/internal/log"
 
 	"github.com/ollama/ollama/api"
 )

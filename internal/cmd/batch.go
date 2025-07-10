@@ -196,7 +196,11 @@ func parseBatchInputs(filename, format string) ([]BatchInput, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			logger.Warn("Failed to close file", "error", err)
+		}
+	}()
 
 	switch format {
 	case "json":
@@ -257,15 +261,21 @@ func parseCSVInputs(file *os.File) ([]BatchInput, error) {
 				input.Phases = value
 			case "count":
 				if value != "" {
-					fmt.Sscanf(value, "%d", &input.Count)
+					if _, err := fmt.Sscanf(value, "%d", &input.Count); err != nil {
+						logger.Warn("Failed to parse count", "value", value, "error", err)
+					}
 				}
 			case "temperature":
 				if value != "" {
-					fmt.Sscanf(value, "%f", &input.Temperature)
+					if _, err := fmt.Sscanf(value, "%f", &input.Temperature); err != nil {
+						logger.Warn("Failed to parse temperature", "value", value, "error", err)
+					}
 				}
 			case "max_tokens":
 				if value != "" {
-					fmt.Sscanf(value, "%d", &input.MaxTokens)
+					if _, err := fmt.Sscanf(value, "%d", &input.MaxTokens); err != nil {
+						logger.Warn("Failed to parse max_tokens", "value", value, "error", err)
+					}
 				}
 			case "tags":
 				input.Tags = value
@@ -415,7 +425,11 @@ func processBatch(inputs []BatchInput) error {
 	if err != nil {
 		return fmt.Errorf("failed to initialize storage: %w", err)
 	}
-	defer store.Close()
+	defer func() {
+		if err := store.Close(); err != nil {
+			logger.WithError(err).Warn("Failed to close storage")
+		}
+	}()
 
 	// Initialize providers
 	registry := providers.NewRegistry()

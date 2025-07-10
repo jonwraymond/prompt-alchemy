@@ -1252,7 +1252,7 @@ func (s *MCPServer) executeDeletePrompt(args map[string]interface{}) (MCPToolRes
 	}
 
 	output := fmt.Sprintf("Successfully deleted prompt %s\n", promptID.String())
-	output += fmt.Sprintf("Deleted prompt details:\n")
+	output += "Deleted prompt details:\n"
 	output += fmt.Sprintf("  Phase: %s\n", prompt.Phase)
 	output += fmt.Sprintf("  Provider: %s\n", prompt.Provider)
 	output += fmt.Sprintf("  Model: %s\n", prompt.Model)
@@ -1281,7 +1281,7 @@ func (s *MCPServer) executeGetProviders(args map[string]interface{}) (MCPToolRes
 	} else {
 		for _, name := range available {
 			output += fmt.Sprintf("Provider: %s\n", name)
-			output += fmt.Sprintf("  Generation: ✅\n")
+			output += "  Generation: ✅\n"
 
 			hasEmbeddings := false
 			for _, embProvider := range embeddingCapable {
@@ -1292,9 +1292,9 @@ func (s *MCPServer) executeGetProviders(args map[string]interface{}) (MCPToolRes
 			}
 
 			if hasEmbeddings {
-				output += fmt.Sprintf("  Embeddings: ✅\n")
+				output += "  Embeddings: ✅\n"
 			} else {
-				output += fmt.Sprintf("  Embeddings: ❌\n")
+				output += "  Embeddings: ❌\n"
 			}
 
 			output += fmt.Sprintf("  Status: Available\n\n")
@@ -1543,7 +1543,9 @@ func (s *MCPServer) sendError(id interface{}, code int, message, data string) {
 			Data:    data,
 		},
 	}
-	s.sendResponse(response)
+	if err := s.sendResponse(response); err != nil {
+		s.logger.WithError(err).Error("Failed to send error response")
+	}
 }
 
 // Argument parsing helpers
