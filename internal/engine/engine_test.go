@@ -282,7 +282,9 @@ func TestEngine_Generate_UnavailableProvider(t *testing.T) {
 		name:      "unavailable-provider",
 		available: false,
 	}
-	registry.Register("unavailable-provider", mockProvider)
+	if err := registry.Register("unavailable-provider", mockProvider); err != nil {
+		t.Fatalf("Failed to register unavailable provider: %v", err)
+	}
 
 	// Create generation options
 	opts := GenerateOptions{
@@ -384,7 +386,9 @@ func BenchmarkEngine_Generate_SinglePhase(b *testing.B) {
 		name:      "bench-provider",
 		available: true,
 	}
-	registry.Register("bench-provider", mockProvider)
+	if err := registry.Register("bench-provider", mockProvider); err != nil {
+		b.Fatalf("Failed to register bench provider: %v", err)
+	}
 
 	opts := GenerateOptions{
 		Request: models.PromptRequest{
@@ -423,7 +427,9 @@ func BenchmarkEngine_Generate_MultiplePhases(b *testing.B) {
 			name:      name,
 			available: true,
 		}
-		registry.Register(name, mockProvider)
+		if err := registry.Register(name, mockProvider); err != nil {
+			b.Fatalf("Failed to register provider %s: %v", name, err)
+		}
 	}
 
 	opts := GenerateOptions{
