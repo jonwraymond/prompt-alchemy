@@ -56,17 +56,13 @@ func TestOllamaProvider_SupportsEmbeddings(t *testing.T) {
 }
 
 func TestOllamaProvider_Generate(t *testing.T) {
-	// Skip integration tests unless Ollama is running
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
-
+	// Test with unavailable service - this is a unit test, not integration
 	provider := NewOllamaProvider(Config{
 		Model:   "llama2",
 		BaseURL: "http://localhost:11434",
 	})
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
 	req := GenerateRequest{
@@ -75,10 +71,13 @@ func TestOllamaProvider_Generate(t *testing.T) {
 		MaxTokens:   10,
 	}
 
-	// This will fail unless Ollama is running locally - that's expected for unit tests
-	_, err := provider.Generate(ctx, req)
-	// We expect an error because Ollama is likely not running in test environment
+	// This should fail with connection refused
+	resp, err := provider.Generate(ctx, req)
+
+	// We expect an error since no service is running
 	assert.Error(t, err)
+	assert.Nil(t, resp)
+	assert.Contains(t, err.Error(), "connection refused")
 }
 
 func TestOllamaProvider_GetEmbedding(t *testing.T) {

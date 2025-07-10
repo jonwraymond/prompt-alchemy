@@ -78,18 +78,12 @@ func TestOpenAIProvider_SupportsEmbeddings(t *testing.T) {
 }
 
 func TestOpenAIProvider_Generate(t *testing.T) {
-	// Skip integration tests unless API key is provided
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
-
-	// This test requires a real API key to work
-	// In a real test environment, you would use test doubles/mocks
+	// Test with invalid API key - this is a unit test, not integration
 	provider := NewOpenAIProvider(Config{
-		APIKey: "test-key", // This would fail without a real key
+		APIKey: "test-key", // Invalid key to test error handling
 	})
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	req := GenerateRequest{
@@ -98,10 +92,13 @@ func TestOpenAIProvider_Generate(t *testing.T) {
 		MaxTokens:   10,
 	}
 
-	// This will fail without a real API key - that's expected for unit tests
-	_, err := provider.Generate(ctx, req)
+	// This will fail with authentication error
+	resp, err := provider.Generate(ctx, req)
+
 	// We expect an error because we're using a fake API key
 	assert.Error(t, err)
+	assert.Nil(t, resp)
+	assert.Contains(t, err.Error(), "401 Unauthorized")
 }
 
 func TestOpenAIProvider_GetEmbedding(t *testing.T) {
