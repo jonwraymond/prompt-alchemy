@@ -566,7 +566,10 @@ func validateDataDirectory() []ValidationIssue {
 				AutoFixable: false,
 			})
 		} else {
-			os.Remove(testFile)
+			if err := os.Remove(testFile); err != nil {
+				// Log but don't fail on cleanup error
+				logger.Warnf("Failed to remove test file %s: %v", testFile, err)
+			}
 		}
 	}
 

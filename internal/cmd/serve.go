@@ -1846,15 +1846,21 @@ func (s *MCPServer) executeGetDatabaseStats(args map[string]interface{}) (MCPToo
 		usage := make(map[string]interface{})
 
 		var totalUsageCount int
-		s.store.GetDB().Get(&totalUsageCount, "SELECT SUM(usage_count) FROM prompts")
+		if err := s.store.GetDB().Get(&totalUsageCount, "SELECT SUM(usage_count) FROM prompts"); err != nil {
+			s.logger.WithError(err).Warn("Failed to get total usage count")
+		}
 		usage["total_usage_count"] = totalUsageCount
 
 		var averageUsage float64
-		s.store.GetDB().Get(&averageUsage, "SELECT AVG(usage_count) FROM prompts")
+		if err := s.store.GetDB().Get(&averageUsage, "SELECT AVG(usage_count) FROM prompts"); err != nil {
+			s.logger.WithError(err).Warn("Failed to get average usage")
+		}
 		usage["average_usage_per_prompt"] = averageUsage
 
 		var usedPrompts int
-		s.store.GetDB().Get(&usedPrompts, "SELECT COUNT(*) FROM prompts WHERE usage_count > 0")
+		if err := s.store.GetDB().Get(&usedPrompts, "SELECT COUNT(*) FROM prompts WHERE usage_count > 0"); err != nil {
+			s.logger.WithError(err).Warn("Failed to get used prompts count")
+		}
 		usage["prompts_with_usage"] = usedPrompts
 
 		stats.Usage = &usage

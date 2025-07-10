@@ -63,7 +63,11 @@ func runMigrate(cmd *cobra.Command, args []string) {
 		logger.WithError(err).Fatal("Failed to initialize storage")
 		return
 	}
-	defer store.Close()
+	defer func() {
+		if err := store.Close(); err != nil {
+			logger.WithError(err).Warn("Failed to close storage")
+		}
+	}()
 
 	// Get embedding configuration from config
 	standardModel := viper.GetString("embeddings.standard_model")

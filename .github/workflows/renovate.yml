@@ -53,12 +53,10 @@ jobs:
       run: npm install -g renovate
 
     - name: Validate Renovate config
-      run: renovate-config-validator renovate.json
-
-    - name: Check config syntax
       run: |
+        echo "Validating Renovate configuration..."
+        npx renovate --dry-run --print-config > /dev/null
         echo "✅ Renovate configuration is valid"
-        renovate --print-config > /dev/null
 
   # Optional: Run Renovate manually (requires RENOVATE_TOKEN secret)
   renovate-manual:

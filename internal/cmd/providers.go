@@ -49,8 +49,12 @@ func runProviders(cmd *cobra.Command, args []string) error {
 
 	// Create a tabwriter for nice formatting
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, "Provider\tStatus\tGeneration\tEmbeddings\tModel")
-	fmt.Fprintln(w, "--------\t------\t----------\t----------\t-----")
+	if _, err := fmt.Fprintln(w, "Provider\tStatus\tGeneration\tEmbeddings\tModel"); err != nil {
+		return fmt.Errorf("failed to write header: %w", err)
+	}
+	if _, err := fmt.Fprintln(w, "--------\t------\t----------\t----------\t-----"); err != nil {
+		return fmt.Errorf("failed to write separator: %w", err)
+	}
 
 	allProviders := []string{"openai", "openrouter", "anthropic", "google", "ollama"}
 
@@ -90,10 +94,14 @@ func runProviders(cmd *cobra.Command, args []string) error {
 			}
 		}
 
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n", providerName, status, generation, embeddings, model)
+		if _, err := fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n", providerName, status, generation, embeddings, model); err != nil {
+			return fmt.Errorf("failed to write provider info: %w", err)
+		}
 	}
 
-	w.Flush()
+	if err := w.Flush(); err != nil {
+		return fmt.Errorf("failed to flush output: %w", err)
+	}
 	fmt.Println()
 
 	// Show embedding capabilities summary
