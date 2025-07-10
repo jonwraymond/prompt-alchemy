@@ -72,7 +72,20 @@ jobs:
     - name: Build binary with version info
       id: build
       run: |
-        make build
+        # Build for Linux AMD64 (default for E2E tests)
+        VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "dev")
+        GIT_COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+        GIT_TAG=$(git describe --tags --exact-match 2>/dev/null || echo "unknown")
+        BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+        
+        CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w \
+          -X 'github.com/jonwraymond/prompt-alchemy/internal/cmd.Version=${VERSION}' \
+          -X 'github.com/jonwraymond/prompt-alchemy/internal/cmd.GitCommit=${GIT_COMMIT}' \
+          -X 'github.com/jonwraymond/prompt-alchemy/internal/cmd.GitTag=${GIT_TAG}' \
+          -X 'github.com/jonwraymond/prompt-alchemy/internal/cmd.BuildDate=${BUILD_DATE}'" \
+          -o ${{ env.BINARY_NAME }} cmd/main.go
+        
+        chmod +x ${{ env.BINARY_NAME }}
         echo "binary-path=$PWD/${{ env.BINARY_NAME }}" >> $GITHUB_OUTPUT
         # Verify binary works
         ./${{ env.BINARY_NAME }} --version
