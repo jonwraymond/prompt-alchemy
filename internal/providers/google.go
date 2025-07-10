@@ -125,7 +125,10 @@ func (p *GoogleProvider) sendAPIRequest(ctx context.Context, prompt string, maxT
 	// Build API URL
 	url := fmt.Sprintf("%s/%s:generateContent?key=%s",
 		GeminiAPIBaseURL, model, p.config.APIKey)
-	logger.Debugf("API URL: %s", url)
+	// Log sanitized URL without exposing API key
+	sanitizedURL := fmt.Sprintf("%s/%s:generateContent?key=[REDACTED]",
+		GeminiAPIBaseURL, model)
+	logger.Debugf("API URL: %s", sanitizedURL)
 
 	// Create HTTP request
 	httpReq, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonData))
