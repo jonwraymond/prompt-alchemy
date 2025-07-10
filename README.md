@@ -187,7 +187,7 @@ prompt-alchemy search --model "o4-mini"
 
 ## Architecture
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for a detailed overview of the system architecture.
+See the [Architecture Documentation](docs/architecture.md) for a detailed overview of the system architecture.
 
 ## Contributing
 
