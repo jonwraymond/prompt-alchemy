@@ -53,7 +53,9 @@ func NewStorage(dataDir string, logger *logrus.Logger) (*Storage, error) {
 
 	// Initialize schema with vector optimizations
 	if err := storage.initOptimizedSchema(); err != nil {
-		db.Close()
+		if closeErr := db.Close(); closeErr != nil {
+			logger.WithError(closeErr).Warn("Failed to close database during cleanup")
+		}
 		return nil, fmt.Errorf("failed to initialize optimized schema: %w", err)
 	}
 
@@ -156,7 +158,11 @@ func (s *Storage) SavePrompt(prompt *models.Prompt) error {
 		s.logger.WithError(err).Error("Failed to begin transaction for saving prompt")
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() {
+		if err := tx.Rollback(); err != nil {
+			s.logger.WithError(err).Warn("Failed to rollback transaction")
+		}
+	}()
 
 	// Serialize tags
 	tagsJSON, err := json.Marshal(prompt.Tags)
@@ -599,7 +605,11 @@ func (s *Storage) SearchPrompts(criteria SearchCriteria) ([]models.Prompt, error
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			s.logger.WithError(err).Warn("Failed to close rows")
+		}
+	}()
 
 	prompts := make([]models.Prompt, 0)
 	for rows.Next() {
@@ -769,7 +779,11 @@ func (s *Storage) MigrateLegacyEmbeddings(standardModel string, standardDimensio
 	if err != nil {
 		return fmt.Errorf("failed to query legacy embeddings: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			s.logger.WithError(err).Warn("Failed to close rows")
+		}
+	}()
 
 	var migrationCandidates []struct {
 		ID             string
@@ -1013,7 +1027,11 @@ func (s *Storage) TrackPromptUsage(promptID uuid.UUID, context string) error {
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() {
+		if err := tx.Rollback(); err != nil {
+			s.logger.WithError(err).Warn("Failed to rollback transaction")
+		}
+	}()
 
 	// Update last_used_at (triggers will update usage_count and relevance_score)
 	_, err = tx.Exec(
@@ -1128,7 +1146,11 @@ func (s *Storage) GetPromptsByRelevance(limit int) ([]models.Prompt, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			s.logger.WithError(err).Warn("Failed to close rows")
+		}
+	}()
 
 	prompts := make([]models.Prompt, 0)
 	for rows.Next() {
@@ -1325,7 +1347,11 @@ func (s *Storage) UpdatePrompt(prompt *models.Prompt) error {
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() {
+		if err := tx.Rollback(); err != nil {
+			s.logger.WithError(err).Warn("Failed to rollback transaction")
+		}
+	}()
 
 	// Convert tags to JSON
 	tagsJSON, err := json.Marshal(prompt.Tags)
@@ -1446,7 +1472,11 @@ func (s *Storage) DeletePrompt(id uuid.UUID) error {
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() {
+		if err := tx.Rollback(); err != nil {
+			s.logger.WithError(err).Warn("Failed to rollback transaction")
+		}
+	}()
 
 	// Delete related data first (due to foreign key constraints)
 
@@ -1552,7 +1582,11 @@ func (s *Storage) SearchPromptsSemanticFast(criteria SemanticSearchCriteria) ([]
 		s.logger.WithError(err).Error("Failed to execute fast semantic search")
 		return nil, nil, fmt.Errorf("failed to execute fast semantic search: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			s.logger.WithError(err).Warn("Failed to close rows")
+		}
+	}()
 
 	type candidatePrompt struct {
 		prompt     models.Prompt
@@ -1857,7 +1891,11 @@ func (s *Storage) GetMetrics(criteria MetricsCriteria) ([]models.PromptMetrics, 
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			s.logger.WithError(err).Warn("Failed to close rows")
+		}
+	}()
 
 	var metrics []models.PromptMetrics
 	for rows.Next() {
