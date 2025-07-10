@@ -206,7 +206,7 @@ build_binary() {
     chmod +x "$BINARY_PATH"
     
     # Test binary works
-    if ! "$BINARY_PATH" --version >/dev/null 2>&1; then
+    if ! "$BINARY_PATH" version >/dev/null 2>&1; then
         log_error "Binary is not working"
         exit 1
     fi
