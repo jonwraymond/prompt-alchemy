@@ -4,6 +4,7 @@ import (
 	"context"
 	"math"
 
+	log "github.com/jonwraymond/prompt-alchemy/internal/log"
 	"github.com/jonwraymond/prompt-alchemy/internal/storage"
 	"github.com/jonwraymond/prompt-alchemy/pkg/models"
 	"github.com/sirupsen/logrus"
@@ -19,12 +20,13 @@ type Ranker struct {
 func NewRanker(storage *storage.Storage, logger *logrus.Logger) *Ranker {
 	return &Ranker{
 		storage: storage,
-		logger:  logger,
+		logger:  log.GetLogger(),
 	}
 }
 
 // RankPrompts ranks prompts based on multiple factors
 func (r *Ranker) RankPrompts(ctx context.Context, prompts []models.Prompt, originalInput string) ([]models.PromptRanking, error) {
+	r.logger.Infof("Ranking %d prompts", len(prompts))
 	rankings := make([]models.PromptRanking, 0, len(prompts))
 
 	for i := range prompts {
@@ -41,6 +43,7 @@ func (r *Ranker) RankPrompts(ctx context.Context, prompts []models.Prompt, origi
 		}
 	}
 
+	r.logger.Info("Finished ranking prompts")
 	return rankings, nil
 }
 
@@ -68,6 +71,10 @@ func (r *Ranker) calculateRanking(prompt *models.Prompt, originalInput string) m
 	totalScore := (tempScore * 0.2) + (tokenScore * 0.2) +
 		(contextScore * 0.4) + (historicalScore * 0.2)
 
+	r.logger.WithFields(logrus.Fields{
+		"prompt_id": prompt.ID,
+		"score":     totalScore,
+	}).Debug("Calculated prompt ranking")
 	return models.PromptRanking{
 		Prompt:           prompt,
 		Score:            totalScore,

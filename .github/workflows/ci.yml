@@ -1,0 +1,237 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Test Suite
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go-version: [1.23, 1.24]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ matrix.go-version }}
+
+    - name: Install dependencies
+      run: go mod download
+
+    - name: Run unit tests
+      run: go test -v ./...
+
+    - name: Run race condition tests
+      run: go test -race -v ./...
+
+  benchmark:
+    name: Performance Benchmarks
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: 1.24
+
+    - name: Run benchmarks
+      run: go test -bench=. -benchmem -run=^$ ./...
+
+  build:
+    name: Build Multi-Arch Binaries
+    runs-on: ubuntu-latest
+    needs: test
+    strategy:
+      matrix:
+        include:
+          - os: linux
+            arch: amd64
+            goos: linux
+            goarch: amd64
+          - os: linux
+            arch: arm64
+            goos: linux
+            goarch: arm64
+          - os: darwin
+            arch: amd64
+            goos: darwin
+            goarch: amd64
+          - os: darwin
+            arch: arm64
+            goos: darwin
+            goarch: arm64
+          - os: windows
+            arch: amd64
+            goos: windows
+            goarch: amd64
+        
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: 1.24
+
+    - name: Install dependencies
+      run: go mod download
+
+    - name: Build binary for ${{ matrix.os }}-${{ matrix.arch }}
+      env:
+        GOOS: ${{ matrix.goos }}
+        GOARCH: ${{ matrix.goarch }}
+        CGO_ENABLED: 0
+      run: |
+        # Set binary name with extension for Windows
+        BINARY_NAME="prompt-alchemy"
+        if [ "${{ matrix.goos }}" = "windows" ]; then
+          BINARY_NAME="${BINARY_NAME}.exe"
+        fi
+        
+        # Build with version information
+        VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "dev")
+        GIT_COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+        GIT_TAG=$(git describe --tags --exact-match 2>/dev/null || echo "unknown")
+        BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+        
+        go build -ldflags="-s -w \
+          -X 'github.com/jonwraymond/prompt-alchemy/internal/cmd.Version=${VERSION}' \
+          -X 'github.com/jonwraymond/prompt-alchemy/internal/cmd.GitCommit=${GIT_COMMIT}' \
+          -X 'github.com/jonwraymond/prompt-alchemy/internal/cmd.GitTag=${GIT_TAG}' \
+          -X 'github.com/jonwraymond/prompt-alchemy/internal/cmd.BuildDate=${BUILD_DATE}'" \
+          -o "${BINARY_NAME}" cmd/main.go
+        
+        # Create archive
+        ARCHIVE_NAME="prompt-alchemy-${VERSION}-${{ matrix.os }}-${{ matrix.arch }}"
+        if [ "${{ matrix.goos }}" = "windows" ]; then
+          zip "${ARCHIVE_NAME}.zip" "${BINARY_NAME}"
+        else
+          tar -czf "${ARCHIVE_NAME}.tar.gz" "${BINARY_NAME}"
+        fi
+
+    - name: Test binary (Linux/macOS only)
+      if: matrix.goos != 'windows' && matrix.goos == 'linux' && matrix.goarch == 'amd64'
+      run: |
+        chmod +x ./prompt-alchemy
+        ./prompt-alchemy version
+
+    - name: Upload binary artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: prompt-alchemy-${{ matrix.os }}-${{ matrix.arch }}
+        path: |
+          prompt-alchemy*
+          *.tar.gz
+          *.zip
+        retention-days: 30
+
+  lint:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: 1.24
+
+    - name: Run gofmt check
+      run: |
+        if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
+          echo "Files need formatting:"
+          gofmt -s -l .
+          exit 1
+        fi
+
+  integration:
+    name: Integration Tests
+    runs-on: ${{ matrix.os }}
+    needs: [test, build]
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            binary_name: prompt-alchemy
+            artifact_name: prompt-alchemy-linux-amd64
+          - os: macos-latest
+            binary_name: prompt-alchemy
+            artifact_name: prompt-alchemy-darwin-amd64
+          - os: windows-latest
+            binary_name: prompt-alchemy.exe
+            artifact_name: prompt-alchemy-windows-amd64
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download binary artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: ${{ matrix.artifact_name }}
+
+    - name: Extract and setup binary (Linux/macOS)
+      if: matrix.os != 'windows-latest'
+      run: |
+        # Extract from tar.gz if it exists
+        if ls *.tar.gz 1> /dev/null 2>&1; then
+          tar -xzf *.tar.gz
+        fi
+        chmod +x ${{ matrix.binary_name }}
+
+    - name: Extract and setup binary (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        # Extract from zip if it exists
+        if (Test-Path "*.zip") {
+          Expand-Archive -Path "*.zip" -DestinationPath "." -Force
+        }
+
+    - name: Test binary
+      run: ./${{ matrix.binary_name }} version
+
+    - name: Run integration tests (Linux/macOS)
+      if: matrix.os != 'windows-latest'
+      run: |
+        chmod +x scripts/integration-test.sh
+        scripts/integration-test.sh
+
+    - name: Run integration tests (Windows)
+      if: matrix.os == 'windows-latest'
+      shell: bash
+      run: |
+        # Windows-specific integration test
+        echo "Running Windows integration tests..."
+        ./${{ matrix.binary_name }} version
+        ./${{ matrix.binary_name }} --help
+        echo "Basic Windows integration tests passed"
+
+    - name: Run E2E smoke tests (Linux only)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        chmod +x scripts/run-e2e-tests.sh
+        scripts/run-e2e-tests.sh --test-level smoke --mock-mode true
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: integration-test-results-${{ matrix.os }}
+        path: /tmp/prompt-alchemy-*
+        retention-days: 7

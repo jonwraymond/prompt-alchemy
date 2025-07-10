@@ -5,24 +5,47 @@
 providers:
   openai:
     api_key: "sk-your-openai-api-key-here"
-    model: "gpt-4-turbo-preview"
+    model: "o4-mini"
     timeout: 30
   
   openrouter:
     api_key: "sk-or-your-openrouter-api-key-here" 
-    model: "openai/gpt-4-turbo-preview"
+    model: "openrouter/auto"  # Auto-select best available model
     base_url: "https://openrouter.ai/api/v1"
     timeout: 30
+    # Fallback models (optional) - includes latest Claude 4
+    fallback_models:
+      - "anthropic/claude-sonnet-4"
+      - "anthropic/claude-3.5-sonnet"
+      - "openai/o4-mini"
+    # Provider routing for enhanced privacy/features (optional)
+    provider_routing:
+      require_parameters: false
+      data_collection: "deny"
+      allow_fallbacks: true
   
   claude:
     api_key: "sk-ant-your-anthropic-api-key-here"
-    model: "claude-3-opus-20240229"
+    model: "claude-sonnet-4-20250514"  # Latest Claude 4 Sonnet
     timeout: 30
   
   gemini:
     api_key: "your-google-api-key-here"
-    model: "gemini-pro"
-    timeout: 30
+    model: "gemini-2.5-flash"
+    timeout: 60  # HTTP timeout in seconds
+    safety_threshold: "BLOCK_MEDIUM_AND_ABOVE"  # Safety filter threshold
+    max_pro_tokens: 1024   # Max tokens for Pro models
+    max_flash_tokens: 512  # Max tokens for Flash models
+    default_tokens: 256    # Default token limit
+    max_temperature: 2.0   # Maximum temperature allowed
+
+  ollama:
+    base_url: "http://localhost:11434"
+    model: "gemma3:4b"
+    timeout: 60  # HTTP timeout in seconds
+    default_embedding_model: "nomic-embed-text"  # Default embedding model
+    embedding_timeout: 5     # Embedding timeout in seconds
+    generation_timeout: 120  # Generation timeout in seconds
 
 # Phase configurations - mix and match providers
 phases:
@@ -32,6 +55,26 @@ phases:
     provider: "claude"        # Use Claude for humanization
   precision:
     provider: "gemini"        # Use Gemini for optimization
+
+# Embedding configuration - STANDARDIZED for optimal search coverage
+embeddings:
+  # Standard embedding model for all prompts (ensures dimension compatibility)
+  standard_model: "text-embedding-3-small"  # 1536 dimensions - optimal for semantic search
+  standard_dimensions: 1536
+  
+  # Provider preference order for embeddings
+  provider_priority:
+    - "openai"      # Primary: text-embedding-3-small
+    - "anthropic"   # Fallback: will use text-embedding-3-small
+    - "google"      # Fallback: will use text-embedding-3-small equivalent
+  
+  # Migration settings
+  auto_migrate_legacy: true    # Automatically re-embed prompts with non-standard dimensions
+  migration_batch_size: 10     # Process embeddings in batches during migration
+  
+  # Performance settings
+  cache_embeddings: true       # Cache embeddings to avoid re-computation
+  similarity_threshold: 0.3    # Default minimum similarity for semantic search
 
 # Generation settings
 generation:

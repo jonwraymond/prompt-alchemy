@@ -8,16 +8,32 @@ import (
 
 // Prompt represents a generated prompt with all metadata
 type Prompt struct {
-	ID                uuid.UUID       `json:"id" db:"id"`
-	Content           string          `json:"content" db:"content"`
-	Phase             Phase           `json:"phase" db:"phase"`
-	Provider          string          `json:"provider" db:"provider"`
-	Model             string          `json:"model" db:"model"` // Model used for generation
-	Temperature       float64         `json:"temperature" db:"temperature"`
-	MaxTokens         int             `json:"max_tokens" db:"max_tokens"`
-	ActualTokens      int             `json:"actual_tokens" db:"actual_tokens"` // Actual tokens used
-	Tags              []string        `json:"tags" db:"tags"`
-	ParentID          *uuid.UUID      `json:"parent_id,omitempty" db:"parent_id"`
+	ID           uuid.UUID  `json:"id" db:"id"`
+	Content      string     `json:"content" db:"content"`
+	Phase        Phase      `json:"phase" db:"phase"`
+	Provider     string     `json:"provider" db:"provider"`
+	Model        string     `json:"model" db:"model"` // Model used for generation
+	Temperature  float64    `json:"temperature" db:"temperature"`
+	MaxTokens    int        `json:"max_tokens" db:"max_tokens"`
+	ActualTokens int        `json:"actual_tokens" db:"actual_tokens"` // Actual tokens used
+	Tags         []string   `json:"tags" db:"tags"`
+	ParentID     *uuid.UUID `json:"parent_id,omitempty" db:"parent_id"`
+
+	// Lifecycle management fields
+	SourceType        string     `json:"source_type" db:"source_type"`                         // How prompt was created (manual, generated, optimized, derived)
+	EnhancementMethod string     `json:"enhancement_method,omitempty" db:"enhancement_method"` // How it was improved
+	RelevanceScore    float64    `json:"relevance_score" db:"relevance_score"`                 // Dynamic relevance score (0.0-1.0)
+	UsageCount        int        `json:"usage_count" db:"usage_count"`                         // How many times accessed/used
+	GenerationCount   int        `json:"generation_count" db:"generation_count"`               // How many prompts this generated
+	LastUsedAt        *time.Time `json:"last_used_at,omitempty" db:"last_used_at"`             // Last access timestamp
+
+	// Original input tracking
+	OriginalInput     string         `json:"original_input,omitempty" db:"original_input"`           // Original user input that generated this
+	GenerationRequest *PromptRequest `json:"generation_request,omitempty" db:"-"`                    // Original request parameters
+	GenerationContext []string       `json:"generation_context,omitempty" db:"-"`                    // Additional context (files, etc.)
+	PersonaUsed       string         `json:"persona_used,omitempty" db:"persona_used"`               // Persona used for generation
+	TargetModelFamily string         `json:"target_model_family,omitempty" db:"target_model_family"` // Target model family specified
+
 	CreatedAt         time.Time       `json:"created_at" db:"created_at"`
 	UpdatedAt         time.Time       `json:"updated_at" db:"updated_at"`
 	Embedding         []float32       `json:"-" db:"embedding"`

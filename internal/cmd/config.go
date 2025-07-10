@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
+	log "github.com/jonwraymond/prompt-alchemy/internal/log"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -16,19 +18,19 @@ var configCmd = &cobra.Command{
 	Long: `Manage Prompt Alchemy configuration settings including providers, phases,
 and generation parameters.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// Show current configuration
-		fmt.Println("Current Prompt Alchemy Configuration:")
-		fmt.Println("====================================")
+		logger := log.GetLogger()
+		logger.Info("Displaying current Prompt Alchemy configuration")
 
 		configFile := viper.ConfigFileUsed()
 		if configFile == "" {
-			fmt.Println("No configuration file found.")
-			fmt.Printf("Create one at: %s/.prompt-alchemy/config.yaml\n", os.Getenv("HOME"))
-			fmt.Println("Use example-config.yaml as a template.")
+			logger.Warn("No configuration file found.")
+			home, _ := os.UserHomeDir()
+			logger.Infof("Create one at: %s/.prompt-alchemy/config.yaml", home)
+			logger.Info("Use example-config.yaml as a template.")
 			return
 		}
 
-		fmt.Printf("Config file: %s\n", configFile)
+		logger.Infof("Config file: %s", configFile)
 
 		// Show data directory
 		dataDir := viper.GetString("data_dir")
@@ -36,33 +38,36 @@ and generation parameters.`,
 			home, _ := os.UserHomeDir()
 			dataDir = filepath.Join(home, ".prompt-alchemy")
 		}
-		fmt.Printf("Data directory: %s\n", dataDir)
+		logger.Infof("Data directory: %s", dataDir)
 
 		// Show provider configurations
 		providers := viper.GetStringMap("providers")
 		if len(providers) > 0 {
-			fmt.Println("\nConfigured Providers:")
+			logger.Info("Configured Providers:")
 			for name := range providers {
 				model := viper.GetString(fmt.Sprintf("providers.%s.model", name))
-				fmt.Printf("  - %s: %s\n", name, model)
+				logger.Infof("  - %s: %s", name, model)
 			}
 		}
 
 		// Show phase configurations
 		phases := viper.GetStringMap("phases")
 		if len(phases) > 0 {
-			fmt.Println("\nPhase Configurations:")
+			logger.Info("\nPhase Configurations:")
 			for phase, provider := range phases {
-				fmt.Printf("  - %s: %s\n", phase, provider)
+				logger.Infof("  - %s: %s", phase, provider)
 			}
 		}
 
 		// Show generation settings
-		fmt.Println("\nGeneration Settings:")
-		fmt.Printf("  - Temperature: %.1f\n", viper.GetFloat64("generation.default_temperature"))
-		fmt.Printf("  - Max Tokens: %d\n", viper.GetInt("generation.default_max_tokens"))
-		fmt.Printf("  - Default Count: %d\n", viper.GetInt("generation.default_count"))
-		fmt.Printf("  - Use Parallel: %t\n", viper.GetBool("generation.use_parallel"))
+		logger.Info("\nGeneration Settings:")
+		logger.Infof("  - Temperature: %.1f", viper.GetFloat64("generation.default_temperature"))
+		logger.Infof("  - Max Tokens: %d", viper.GetInt("generation.default_max_tokens"))
+		logger.Infof("  - Default Count: %d", viper.GetInt("generation.default_count"))
+		logger.Infof("  - Use Parallel: %t", viper.GetBool("generation.use_parallel"))
+		logger.Infof("  - Default Target Model: %s", viper.GetString("generation.default_target_model"))
+		logger.Infof("  - Default Embedding Model: %s", viper.GetString("generation.default_embedding_model"))
+		logger.Infof("  - Default Embedding Dimensions: %d", viper.GetInt("generation.default_embedding_dimensions"))
 	},
 }
 
@@ -78,9 +83,10 @@ func init() {
 		Use:   "init",
 		Short: "Initialize configuration file",
 		Run: func(cmd *cobra.Command, args []string) {
+			logger := log.GetLogger()
 			home, err := os.UserHomeDir()
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error finding home directory: %v\n", err)
+				logger.Errorf("Error finding home directory: %v", err)
 				return
 			}
 
@@ -88,39 +94,41 @@ func init() {
 			configPath := filepath.Join(configDir, "config.yaml")
 
 			// Create directory
+			logger.Debugf("Creating config directory at: %s", configDir)
 			if err := os.MkdirAll(configDir, 0755); err != nil {
-				fmt.Fprintf(os.Stderr, "Error creating config directory: %v\n", err)
+				logger.Errorf("Error creating config directory: %v", err)
 				return
 			}
 
 			// Check if config already exists
 			if _, err := os.Stat(configPath); err == nil {
-				fmt.Printf("Configuration file already exists: %s\n", configPath)
+				logger.Warnf("Configuration file already exists: %s", configPath)
 				return
 			}
 
 			// Copy example config
 			examplePath := "example-config.yaml"
+			logger.Debugf("Copying example config from: %s", examplePath)
 			if _, err := os.Stat(examplePath); err != nil {
-				fmt.Printf("Error: example-config.yaml not found\n")
-				fmt.Printf("Please create %s manually\n", configPath)
+				logger.Errorf("Error: example-config.yaml not found")
+				logger.Infof("Please create %s manually", configPath)
 				return
 			}
 
 			// Read example and write to config
 			content, err := os.ReadFile(examplePath)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error reading example config: %v\n", err)
+				logger.Errorf("Error reading example config: %v", err)
 				return
 			}
 
-			if err := os.WriteFile(configPath, content, 0644); err != nil {
-				fmt.Fprintf(os.Stderr, "Error writing config file: %v\n", err)
+			if err := os.WriteFile(configPath, content, 0600); err != nil {
+				logger.Errorf("Error writing config file: %v", err)
 				return
 			}
 
-			fmt.Printf("Configuration initialized: %s\n", configPath)
-			fmt.Println("Please edit the file and add your API keys")
+			logger.Infof("Configuration initialized: %s", configPath)
+			logger.Info("Please edit the file and add your API keys")
 		},
 	})
 }

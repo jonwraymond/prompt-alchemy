@@ -1,6 +1,19 @@
-# Prompt Alchemy
+<p align="center">
+  <img src="assets/prompt-alchemy-logo.png" alt="Prompt Alchemy" width="300"/>
+</p>
 
-A sophisticated AI prompt generation system that uses a phased approach to create, refine, and optimize prompts for maximum effectiveness.
+<h1 align="center">Prompt Alchemy</h1>
+
+<p align="center">
+  <strong>A sophisticated AI prompt generation system that uses a phased approach to create, refine, and optimize prompts for maximum effectiveness.</strong>
+</p>
+
+<p align="center">
+    <a href="https://github.com/jonwraymond/prompt-alchemy/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License"></a>
+    <a href="https://github.com/jonwraymond/prompt-alchemy/issues"><img src="https://img.shields.io/github/issues/jonwraymond/prompt-alchemy" alt="Issues"></a>
+</p>
+
+---
 
 ## Features
 
@@ -36,28 +49,46 @@ Create a configuration file at `~/.prompt-alchemy/config.yaml`:
 providers:
   openai:
     api_key: "your-openai-api-key"
-    model: "gpt-4-turbo-preview"
+    model: "o4-mini"
   
   openrouter:
     api_key: "your-openrouter-api-key"
-    model: "openai/gpt-4-turbo-preview"
+    model: "openrouter/auto"  # Auto-select best available model
+    fallback_models:
+      - "anthropic/claude-sonnet-4"
+      - "anthropic/claude-3.5-sonnet"
+      - "openai/o4-mini"
   
   claude:
     api_key: "your-anthropic-api-key"
-    model: "claude-3-opus-20240229"
+    model: "claude-sonnet-4-20250514"  # Latest Claude 4 Sonnet
   
   gemini:
     api_key: "your-google-api-key"
-    model: "gemini-pro"
+    model: "gemini-2.5-flash"
+    timeout: 60  # HTTP timeout in seconds
+    safety_threshold: "BLOCK_MEDIUM_AND_ABOVE"  # Safety filter threshold
+    max_pro_tokens: 1024   # Max tokens for Pro models
+    max_flash_tokens: 512  # Max tokens for Flash models
+    default_tokens: 256    # Default token limit
+    max_temperature: 2.0   # Maximum temperature allowed
+
+  ollama:
+    base_url: "http://localhost:11434"
+    model: "gemma3:4b"
+    timeout: 60  # HTTP timeout in seconds
+    default_embedding_model: "nomic-embed-text"  # Default embedding model
+    embedding_timeout: 5     # Embedding timeout in seconds
+    generation_timeout: 120  # Generation timeout in seconds
 
 # Phase configurations
 phases:
   idea:
     provider: "openai"
   human:
-    provider: "claude"
+    provider: "anthropic"
   precision:
-    provider: "gemini"
+    provider: "google"
 
 # Generation settings
 generation:
@@ -65,13 +96,48 @@ generation:
   default_max_tokens: 2000
   default_count: 3
   use_parallel: true
+  default_target_model: "claude-sonnet-4-20250514"
+  default_embedding_model: "text-embedding-3-small"
+  default_embedding_dimensions: 1536
 ```
 
-Alternatively, use environment variables:
+### Environment Variables
+
+Alternatively, use environment variables (create a `.env` file or export directly):
+
 ```bash
-export PROMPT_ALCHEMY_PROVIDERS_OPENAI_API_KEY="your-key"
-export PROMPT_ALCHEMY_PROVIDERS_OPENROUTER_API_KEY="your-key"
+# OpenAI Configuration
+export PROMPT_ALCHEMY_PROVIDERS_OPENAI_API_KEY="sk-your-openai-api-key"
+export PROMPT_ALCHEMY_PROVIDERS_OPENAI_MODEL="o4-mini"
+
+# OpenRouter Configuration  
+export PROMPT_ALCHEMY_PROVIDERS_OPENROUTER_API_KEY="sk-or-your-openrouter-api-key"
+export PROMPT_ALCHEMY_PROVIDERS_OPENROUTER_MODEL="openrouter/auto"
+
+# Anthropic (Claude) Configuration
+export PROMPT_ALCHEMY_PROVIDERS_ANTHROPIC_API_KEY="sk-ant-your-anthropic-api-key"
+export PROMPT_ALCHEMY_PROVIDERS_ANTHROPIC_MODEL="claude-sonnet-4-20250514"
+
+# Google (Gemini) Configuration
+export PROMPT_ALCHEMY_PROVIDERS_GOOGLE_API_KEY="your-google-api-key"
+export PROMPT_ALCHEMY_PROVIDERS_GOOGLE_MODEL="gemini-2.5-flash"
+export PROMPT_ALCHEMY_PROVIDERS_GOOGLE_TIMEOUT="60"
+export PROMPT_ALCHEMY_PROVIDERS_GOOGLE_SAFETY_THRESHOLD="BLOCK_MEDIUM_AND_ABOVE"
+export PROMPT_ALCHEMY_PROVIDERS_GOOGLE_MAX_PRO_TOKENS="1024"
+export PROMPT_ALCHEMY_PROVIDERS_GOOGLE_MAX_FLASH_TOKENS="512"
+export PROMPT_ALCHEMY_PROVIDERS_GOOGLE_DEFAULT_TOKENS="256"
+export PROMPT_ALCHEMY_PROVIDERS_GOOGLE_MAX_TEMPERATURE="2.0"
+
+# Ollama Configuration (Local AI)
+export PROMPT_ALCHEMY_PROVIDERS_OLLAMA_MODEL="gemma3:4b"
+export PROMPT_ALCHEMY_PROVIDERS_OLLAMA_BASE_URL="http://localhost:11434"
+export PROMPT_ALCHEMY_PROVIDERS_OLLAMA_TIMEOUT="60"
+export PROMPT_ALCHEMY_PROVIDERS_OLLAMA_DEFAULT_EMBEDDING_MODEL="nomic-embed-text"
+export PROMPT_ALCHEMY_PROVIDERS_OLLAMA_EMBEDDING_TIMEOUT="5"
+export PROMPT_ALCHEMY_PROVIDERS_OLLAMA_GENERATION_TIMEOUT="120"
 ```
+
+**`.env` File Example:** Copy the above exports to a `.env` file (without `export`) for automatic loading.
 
 ## Usage
 
@@ -80,50 +146,6 @@ export PROMPT_ALCHEMY_PROVIDERS_OPENROUTER_API_KEY="your-key"
 Basic usage:
 ```bash
 prompt-alchemy generate "Create a prompt for writing technical documentation"
-```
-
-Example output:
-```
-Generated Prompts:
-================================================================================
-
-[1] Phase: idea | Provider: openai | Model: gpt-4-turbo-preview
-----------------------------------------
-You are an expert prompt engineer. Create a comprehensive prompt that generates content for general audience, using professional tone, focusing on Create a prompt for writing...
-
-Model Details:
-  Generation Model: gpt-4-turbo-preview (openai)
-  Embedding Model: text-embedding-ada-002 (openai)
-  Processing Time: 1247 ms
-  Tokens: 89 input, 156 output, 156 total
-  Estimated Cost: $0.004680
-
-Ranking Score: 0.85
-- Temperature Score: 1.00
-- Token Score: 0.92
-- Context Score: 0.78
-
-[2] Phase: human | Provider: claude | Model: claude-3-opus-20240229
-----------------------------------------
-I want you to help me write technical documentation that really connects with readers...
-
-Model Details:
-  Generation Model: claude-3-opus-20240229 (claude)
-  Processing Time: 1523 ms
-  Tokens: 156 input, 203 output, 203 total
-  Estimated Cost: $0.015225
-
-Ranking Score: 0.91
-================================================================================
-Total Estimated Cost: $0.024561
-----------------------------------------
-
-Best Prompt (Score: 0.91):
-Model: claude-3-opus-20240229 | Phase: human
-----------------------------------------
-I want you to help me write technical documentation that really connects with readers...
-
-Cost: $0.015225 | Tokens: 203 | Time: 1523 ms
 ```
 
 Advanced options:
@@ -160,139 +182,17 @@ prompt-alchemy search --tags "technical" "documentation"
 prompt-alchemy search --phase human "natural language"
 
 # Filter by model
-prompt-alchemy search --model "gpt-4-turbo-preview"
-```
-
-### View Metrics
-
-```bash
-# View performance metrics (coming soon)
-prompt-alchemy metrics --report weekly
-
-# View metrics for specific prompt
-prompt-alchemy metrics --prompt-id <uuid>
-```
-
-### MCP Server Mode
-
-For AI agents:
-```bash
-# Start MCP server (coming soon)
-prompt-alchemy serve --mcp
+prompt-alchemy search --model "o4-mini"
 ```
 
 ## Architecture
 
-### Phased Approach
-
-1. **Idea Phase**: Creates comprehensive base prompts with clear structure
-2. **Human Phase**: Adds natural language and emotional resonance  
-3. **Precision Phase**: Optimizes for clarity, token efficiency, and effectiveness
-
-### Model Metadata Tracking
-
-Every prompt generation captures detailed metadata:
-
-- **Generation Details**: Model used, provider, processing time
-- **Token Usage**: Input tokens, output tokens, total consumption
-- **Cost Tracking**: Estimated costs based on current provider pricing
-- **Embedding Information**: Models and providers used for embeddings
-- **Performance Metrics**: Response times and efficiency scores
-
-### Data Storage
-
-Prompts are stored in `~/.prompt-alchemy/prompts.db` with:
-- Full prompt content and metadata
-- Detailed model usage information
-- Embeddings for semantic search
-- Performance metrics and cost tracking
-- Context relationships
-
-Database schema includes:
-- `prompts` table with basic prompt info and model references
-- `model_metadata` table with detailed generation information
-- `metrics` table for performance tracking
-- `context` table for relationship mapping
-
-### Ranking System
-
-Prompts are ranked based on:
-- **Temperature Score** (20%): Optimal around 0.7
-- **Token Efficiency** (20%): Balanced length preference  
-- **Context Relevance** (40%): Similarity to input
-- **Historical Performance** (20%): Past success metrics
-
-## Development
-
-### Project Structure
-
-```
-prompt-alchemy/
-├── cmd/                    # CLI entry point
-├── internal/
-│   ├── cmd/               # Command implementations
-│   ├── engine/            # Core generation engine
-│   ├── providers/         # LLM provider implementations
-│   ├── storage/           # Database layer with metadata support
-│   ├── ranking/           # Prompt ranking system
-│   ├── embedding/         # Embedding operations
-│   ├── metrics/           # Performance tracking
-│   └── mcp/              # MCP server implementation
-└── pkg/
-    ├── models/           # Data models with metadata support
-    └── config/           # Configuration structures
-```
-
-### Adding a Provider
-
-1. Implement the `Provider` interface in `internal/providers/`
-2. Ensure `GenerateResponse` includes model information
-3. Register in `initializeProviders()` in `internal/cmd/generate.go`
-4. Add cost calculation in `calculateCost()` function
-5. Add configuration to `config.yaml`
-
-### Building
-
-```bash
-# Run tests
-go test ./...
-
-# Build binary
-go build -o prompt-alchemy cmd/main.go
-
-# Run with race detector
-go run -race cmd/main.go generate "test prompt"
-```
-
-## Cost Tracking
-
-Prompt Alchemy automatically tracks estimated costs for:
-
-| Provider | Model | Input Cost | Output Cost |
-|----------|-------|------------|-------------|
-| OpenAI | GPT-4 Turbo | $0.01/1K | $0.03/1K |
-| OpenAI | GPT-3.5 Turbo | $0.001/1K | $0.002/1K |
-| Claude | Opus | $0.015/1K | $0.075/1K |
-| Claude | Sonnet | $0.003/1K | $0.015/1K |
-| Gemini | Pro | $0.0005/1K | $0.0015/1K |
-
-*Costs are estimates and may vary. Check provider websites for current pricing.*
-
-## Roadmap
-
-- [ ] Semantic search with embeddings
-- [ ] Full MCP server implementation
-- [ ] A/B testing framework
-- [ ] Web UI dashboard with cost analytics
-- [ ] Plugin system for custom phases
-- [ ] Export/import prompt libraries
-- [ ] Team collaboration features
-- [ ] Advanced cost optimization recommendations
+See [ARCHITECTURE.md](ARCHITECTURE.md) for a detailed overview of the system architecture.
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details on how to get started.
 
 ## License
 
-MIT License - see LICENSE file for details 
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
