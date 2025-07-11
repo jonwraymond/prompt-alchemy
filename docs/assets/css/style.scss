@@ -5,17 +5,17 @@
 
 /* Alchemical Theme Styling */
 :root {
-  --primary-gold: #C9A96E;
-  --secondary-brown: #8B4513;
-  --accent-gold: #DAA520;
-  --text-dark: #2C1810;
-  --background-light: #FFF8DC;
-  --shadow-gold: rgba(218, 165, 32, 0.3);
+  --primary-gold: #F6A53C;
+  --secondary-brown: #0A1629; /* dark navy from logo background */
+  --accent-gold: #FFBE6E;
+  --text-dark: #E0E0DC; /* light text */
+  --background-light: #091529; /* rename semantics but keep variable name */
+  --shadow-gold: rgba(246, 165, 60, 0.3);
 }
 
 body {
   font-family: 'Cormorant Garamond', 'Georgia', 'Times New Roman', serif;
-  background: linear-gradient(135deg, var(--background-light) 0%, #F5F5DC 100%);
+  background: var(--background-light);
   color: var(--text-dark);
 }
 
@@ -48,8 +48,8 @@ header img:hover {
 /* Typography */
 h1, h2, h3, h4, h5, h6 {
   font-family: 'Cinzel', 'Georgia', serif;
-  color: var(--secondary-brown);
-  text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+  color: var(--primary-gold);
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.4);
 }
 
 h1 {
@@ -78,7 +78,7 @@ code {
 
 /* Links */
 a {
-  color: var(--secondary-brown);
+  color: var(--accent-gold);
   text-decoration: none;
   border-bottom: 1px solid transparent;
   transition: border-bottom-color 0.3s ease;
