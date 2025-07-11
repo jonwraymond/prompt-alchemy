@@ -66,14 +66,15 @@ type ModelMetadata struct {
 type Phase string
 
 const (
-	PhasePrimaMaterial Phase = "prima-materia" // Raw, unrefined starting material
-	PhaseSolutio       Phase = "solutio"       // Dissolution into natural form
-	PhaseCoagulatio    Phase = "coagulatio"    // Crystallization into final form
+	// Legacy phase names (primary string representations)
+	PhaseIdea      Phase = "idea"      // Initial brainstorming / prima materia
+	PhaseHuman     Phase = "human"     // Natural language refinement / solutio
+	PhasePrecision Phase = "precision" // Final polishing / coagulatio
 
-	// Legacy phase names for backward compatibility
-	PhaseIdea      Phase = PhasePrimaMaterial // Deprecated: use PhasePrimaMaterial
-	PhaseHuman     Phase = PhaseSolutio       // Deprecated: use PhaseSolutio
-	PhasePrecision Phase = PhaseCoagulatio    // Deprecated: use PhaseCoagulatio
+	// Alchemical phase aliases maintained for backwards-compatibility with newer terminology
+	PhasePrimaMaterial Phase = PhaseIdea      // Raw, unrefined starting material (prima-materia)
+	PhaseSolutio       Phase = PhaseHuman     // Dissolution into natural form (solutio)
+	PhaseCoagulatio    Phase = PhasePrecision // Crystallization into final form (coagulatio)
 )
 
 // PromptRequest represents a request to generate prompts
