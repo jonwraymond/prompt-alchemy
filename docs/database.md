@@ -51,7 +51,7 @@ The main table storing all prompt data with vector embeddings:
 CREATE TABLE IF NOT EXISTS prompts (
     id TEXT PRIMARY KEY,                    -- UUID for unique identification
     content TEXT NOT NULL,                  -- The actual prompt content
-    content_hash TEXT NOT NULL,             -- SHA256 hash for deduplication
+    content_hash TEXT UNIQUE,               -- SHA256 hash for deduplication
     phase TEXT NOT NULL,                    -- Generation phase (idea, human, precision)
     provider TEXT NOT NULL,                 -- LLM provider (openai, anthropic, etc.)
     model TEXT NOT NULL,                    -- Specific model used

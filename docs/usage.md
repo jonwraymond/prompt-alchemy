@@ -14,15 +14,20 @@ prompt-alchemy [command] [flags]
 ```
 
 Available commands:
-- `generate` - Generate new prompts
+- `generate` - Generate new prompts using phased approach
+- `batch` - Generate multiple prompts efficiently
 - `search` - Search existing prompts
-- `metrics` - View analytics and metrics
-- `optimize` - Optimize existing prompts
-- `providers` - List provider status
-- `config` - Show configuration
+- `optimize` - Optimize existing prompts using AI
 - `update` - Update prompt metadata
 - `delete` - Delete prompts
-- `serve` - Start MCP server (experimental)
+- `metrics` - View analytics and metrics
+- `validate` - Validate configuration
+- `config` - Show/manage configuration
+- `providers` - List provider status
+- `migrate` - Migrate database and embeddings
+- `serve` - Start MCP server for AI agents
+- `test` - Test prompt variants (not yet implemented)
+- `version` - Show version information
 
 ## Generate Command
 
@@ -40,7 +45,7 @@ prompt-alchemy generate "Your prompt idea"
 - `--count, -c` - Number of prompts to generate
 - `--temperature, -t` - Generation temperature (0.0-1.0)
 - `--max-tokens, -m` - Maximum tokens per prompt
-- `--target-model` - Target model family (gpt, claude, gemini)
+- `--target-model` - Target model family for optimization
 - `--tags` - Comma-separated tags
 - `--output, -o` - Output format (text, json, yaml)
 
@@ -72,13 +77,15 @@ prompt-alchemy search "search query"
 ```
 
 ### Flags
-- `--semantic, -s` - Use semantic search (requires embeddings)
-- `--phase` - Filter by phase
+- `--semantic` - Use semantic search (requires embeddings)
+- `--similarity` - Minimum similarity threshold (0.0-1.0)
+- `--phase` - Filter by phase (idea, human, precision)
 - `--provider` - Filter by provider
-- `--tags` - Filter by tags
+- `--model` - Filter by model
+- `--tags` - Filter by tags (comma-separated)
 - `--since` - Filter by date (YYYY-MM-DD)
-- `--limit, -l` - Maximum results
-- `--output, -o` - Output format
+- `--limit` - Maximum results (default: 10)
+- `--output` - Output format (text, json)
 
 ### Examples
 ```bash
@@ -105,9 +112,12 @@ prompt-alchemy metrics
 ```
 
 ### Flags
-- `--report, -r` - Report type (summary, daily, provider, phase)
-- `--since` - Start date for metrics
-- `--output, -o` - Output format
+- `--phase` - Filter by phase
+- `--provider` - Filter by provider
+- `--since` - Filter by creation date (YYYY-MM-DD)
+- `--limit` - Maximum number of prompts to analyze (default: 100)
+- `--report` - Generate report (daily, weekly, monthly)
+- `--output` - Output format (text, json)
 
 ### Examples
 ```bash
@@ -134,27 +144,143 @@ Use AI to improve existing prompts.
 
 ### Basic Usage
 ```bash
-prompt-alchemy optimize "Your prompt to optimize"
+prompt-alchemy optimize --prompt "Your prompt" --task "Task description"
 ```
 
 ### Flags
-- `--task` - Task description for context
-- `--persona, -p` - Optimization persona
-- `--provider` - LLM provider for optimization
-- `--judge-provider` - Provider for evaluation
-- `--max-iterations` - Maximum optimization cycles
-- `--target-score` - Target quality score (1-10)
+- `--prompt, -p` - Prompt to optimize (required)
+- `--task, -t` - Task description for testing (required)
+- `--persona` - AI persona (code, writing, analysis, generic)
+- `--target-model` - Target model for optimization
+- `--provider` - Provider to use for optimization
+- `--judge-provider` - Provider to use for evaluation
+- `--max-iterations` - Maximum optimization iterations (default: 5)
+- `--target-score` - Target quality score 1-10 (default: 8.5)
+- `--embedding-dimensions` - Embedding dimensions (default: 1536)
 
 ### Examples
 ```bash
 # Basic optimization
-prompt-alchemy optimize "Write unit tests" --task "Testing React components"
+prompt-alchemy optimize -p "Write unit tests" -t "Testing React components"
 
 # With specific target
-prompt-alchemy optimize "API prompt" --target-score 9.0 --max-iterations 5
+prompt-alchemy optimize -p "API prompt" -t "Generate REST API" --target-score 9.0 --max-iterations 5
 
 # Use different providers
-prompt-alchemy optimize "Prompt" --provider anthropic --judge-provider openai
+prompt-alchemy optimize -p "Create docs" -t "API documentation" --provider anthropic --judge-provider openai
+```
+
+## Batch Command
+
+Generate multiple prompts efficiently using batch processing.
+
+### Basic Usage
+```bash
+prompt-alchemy batch --file inputs.json
+```
+
+### Flags
+- `--file, -f` - Input file path (JSON, CSV, or text)
+- `--format` - Input format (json, csv, text, auto)
+- `--output, -o` - Output file path
+- `--workers, -w` - Number of concurrent workers (default: 3)
+- `--timeout` - Timeout per job in seconds (default: 300)
+- `--dry-run` - Validate inputs without generating
+- `--progress` - Show progress bar (default: true)
+- `--resume` - Resume from previous batch results file
+- `--skip-errors` - Continue processing on errors
+- `--interactive, -i` - Interactive batch input mode
+
+### Examples
+```bash
+# Process JSON file with multiple workers
+prompt-alchemy batch -f inputs.json -w 5
+
+# CSV input with custom output
+prompt-alchemy batch -f prompts.csv -o results.json
+
+# Dry run to validate
+prompt-alchemy batch -f inputs.json --dry-run
+
+# Interactive mode
+prompt-alchemy batch -i
+```
+
+## Validate Command
+
+Validate and optimize configuration settings.
+
+### Basic Usage
+```bash
+prompt-alchemy validate
+```
+
+### Flags
+- `--fix` - Automatically fix issues where possible
+- `--output` - Output format (text, json)
+- `--verbose` - Show detailed validation information
+
+### Examples
+```bash
+# Basic validation
+prompt-alchemy validate
+
+# Auto-fix issues
+prompt-alchemy validate --fix
+
+# Detailed validation with JSON output
+prompt-alchemy validate --verbose --output json
+```
+
+## Migrate Command
+
+Migrate prompts to use standardized embedding dimensions.
+
+### Basic Usage
+```bash
+prompt-alchemy migrate
+```
+
+### Flags
+- `--dry-run` - Preview migration without making changes
+- `--batch-size` - Number of prompts to process in each batch (default: 10)
+- `--force` - Force migration even if already completed
+
+### Examples
+```bash
+# Preview migration
+prompt-alchemy migrate --dry-run
+
+# Run migration with custom batch size
+prompt-alchemy migrate --batch-size 25
+
+# Force migration
+prompt-alchemy migrate --force
+```
+
+## Version Command
+
+Show version and build information.
+
+### Basic Usage
+```bash
+prompt-alchemy version
+```
+
+### Flags
+- `--short, -s` - Show only version number
+- `--json, -j` - Output version information as JSON
+
+### Examples
+```bash
+# Full version information
+prompt-alchemy version
+
+# Just version number
+prompt-alchemy version --short
+
+# JSON output
+prompt-alchemy version --json
 ```
 
 ## Update Command
@@ -202,6 +328,44 @@ prompt-alchemy delete 123e4567-e89b-12d3
 # Delete all (with confirmation)
 prompt-alchemy delete --all
 ```
+
+## Serve Command
+
+Start MCP (Model Context Protocol) server for AI agent integration.
+
+### Basic Usage
+```bash
+prompt-alchemy serve
+```
+
+The MCP server provides 17 tools for AI agents to interact with Prompt Alchemy.
+
+### Examples
+```bash
+# Start MCP server
+prompt-alchemy serve
+
+# Start with debug logging
+prompt-alchemy --log-level debug serve
+```
+
+### Available MCP Tools
+- `generate_prompts` - Generate AI prompts
+- `batch_generate_prompts` - Batch prompt generation
+- `search_prompts` - Search existing prompts
+- `get_prompt_by_id` - Get prompt details
+- `optimize_prompt` - Optimize prompts
+- `update_prompt` - Update prompt metadata
+- `delete_prompt` - Delete prompts
+- `track_prompt_relationship` - Track relationships
+- `get_metrics` - Get performance metrics
+- `get_database_stats` - Get database statistics
+- `run_lifecycle_maintenance` - Run maintenance
+- `get_providers` - List providers
+- `test_providers` - Test connectivity
+- `get_config` - View configuration
+- `validate_config` - Validate configuration
+- `get_version` - Get version info
 
 ## Advanced Features
 
@@ -254,14 +418,17 @@ embeddings:
 
 ### Batch Processing
 
-Process multiple prompts:
+Use the batch command for efficient processing:
 
 ```bash
-# From file
-cat prompts.txt | xargs -I {} prompt-alchemy generate "{}"
+# Process from JSON file
+prompt-alchemy batch -f inputs.json
 
-# With parallel processing
-prompt-alchemy generate "Base prompt" --count 10 --parallel
+# Process from CSV with multiple workers
+prompt-alchemy batch -f prompts.csv -w 5
+
+# Interactive batch mode
+prompt-alchemy batch -i
 ```
 
 ## Configuration Management
@@ -277,11 +444,14 @@ prompt-alchemy config init
 ```
 
 ### Environment Variables
-- `PROMPT_ALCHEMY_CONFIG` - Config file path
-- `OPENAI_API_KEY` - OpenAI API key
-- `ANTHROPIC_API_KEY` - Anthropic API key
-- `GOOGLE_API_KEY` - Google API key
-- `LOG_LEVEL` - Logging level (debug, info, warn, error)
+All configuration options can be set via environment variables with the `PROMPT_ALCHEMY_` prefix:
+- `PROMPT_ALCHEMY_DATA_DIR` - Data directory path
+- `PROMPT_ALCHEMY_LOG_LEVEL` - Logging level
+- `PROMPT_ALCHEMY_PROVIDERS_OPENAI_API_KEY` - OpenAI API key
+- `PROMPT_ALCHEMY_PROVIDERS_ANTHROPIC_API_KEY` - Anthropic API key
+- `PROMPT_ALCHEMY_PROVIDERS_GOOGLE_API_KEY` - Google API key
+- `PROMPT_ALCHEMY_GENERATION_DEFAULT_TEMPERATURE` - Default temperature
+- `PROMPT_ALCHEMY_GENERATION_DEFAULT_MAX_TOKENS` - Default max tokens
 
 ## Tips and Best Practices
 
@@ -306,15 +476,18 @@ prompt-alchemy config init
 
 3. **Slow generation**
    - Reduce max tokens
-   - Use faster models (o4-mini, gemini-2.5-flash)
+   - Use faster models (gpt-4o-mini, gemini-2.5-flash)
    - Disable parallel processing if needed
 
 ### Debug Mode
 
 ```bash
 # Enable debug logging
-export LOG_LEVEL=debug
-prompt-alchemy generate "Test" 2> debug.log
+export PROMPT_ALCHEMY_LOG_LEVEL=debug
+prompt-alchemy generate "Test"
+
+# Or use command-line flag
+prompt-alchemy --log-level debug generate "Test"
 ```
 
 ## Next Steps

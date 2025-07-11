@@ -10,7 +10,7 @@ This guide covers all installation methods for Prompt Alchemy.
 ## System Requirements
 
 - **Operating System**: Linux, macOS, or Windows
-- **Go**: Version 1.23 or higher
+- **Go**: Version 1.24 or higher
 - **Database**: SQLite3 (usually pre-installed)
 - **Memory**: At least 512MB RAM
 - **Storage**: 100MB for application + space for prompt database
@@ -58,7 +58,7 @@ chmod +x prompt-alchemy
 ### 3. Using Go Install
 
 ```bash
-go install github.com/jonwraymond/prompt-alchemy/cmd@latest
+go install github.com/jonwraymond/prompt-alchemy@latest
 ```
 
 ## Configuration Setup
@@ -70,46 +70,51 @@ go install github.com/jonwraymond/prompt-alchemy/cmd@latest
 make setup
 
 # Or manually:
-mkdir -p ~/.prompt-alchemy
-cp example-config.yaml ~/.prompt-alchemy/config.yaml
+mkdir -p ~/.github.com/jonwraymond/prompt-alchemy
+cp example-config.yaml ~/.github.com/jonwraymond/prompt-alchemy/config.yaml
 ```
 
 ### 2. Add API Keys
 
-Edit `~/.prompt-alchemy/config.yaml`:
+Edit `~/.github.com/jonwraymond/prompt-alchemy/config.yaml`:
 
 ```yaml
 providers:
   openai:
     api_key: "your-openai-api-key"
-    model: "o4-mini"
+    model: "gpt-4o-mini"
     
-  anthropic:
+  claude:
     api_key: "your-anthropic-api-key"
-    model: "claude-sonnet-4-20250514"
+    model: "claude-3-5-sonnet-20241022"
     
-  google:
+  gemini:
     api_key: "your-google-api-key"
     model: "gemini-2.5-flash"
     
   openrouter:
     api_key: "your-openrouter-api-key"
     model: "openrouter/auto"
+    
+  ollama:
+    base_url: "http://localhost:11434"
+    model: "gemma3:4b"
+    timeout: 60
 
 phases:
   idea:
-    provider: openai
+    provider: "openai"
   human:
-    provider: anthropic
+    provider: "claude"
   precision:
-    provider: google
+    provider: "gemini"
 
 generation:
   default_temperature: 0.7
   default_max_tokens: 2000
   default_count: 3
   use_parallel: true
-  default_target_model: "claude-sonnet-4-20250514"
+  default_target_model: "claude-3-5-sonnet-20241022"
   default_embedding_model: "text-embedding-3-small"
   default_embedding_dimensions: 1536
 ```
@@ -189,7 +194,7 @@ After installation, verify everything works:
 
 4. **"module not found"**
    - Run `make deps` or `go mod download`
-   - Ensure Go version is 1.23+
+   - Ensure Go version is 1.24+
 
 ### Debug Mode
 
@@ -202,7 +207,7 @@ export LOG_LEVEL=debug
 # Or in config.yaml
 logging:
   level: debug
-  file: ~/.prompt-alchemy/debug.log
+  file: ~/.github.com/jonwraymond/prompt-alchemy/debug.log
 ```
 
 ## Updating
@@ -216,7 +221,7 @@ make clean
 make build
 
 # Using go install
-go install github.com/jonwraymond/prompt-alchemy/cmd@latest
+go install github.com/jonwraymond/prompt-alchemy@latest
 ```
 
 ## Uninstalling
@@ -226,7 +231,7 @@ go install github.com/jonwraymond/prompt-alchemy/cmd@latest
 rm $(which prompt-alchemy)
 
 # Remove configuration (optional)
-rm -rf ~/.prompt-alchemy
+rm -rf ~/.github.com/jonwraymond/prompt-alchemy
 
 # Remove from GOPATH (if installed via go)
 rm -rf $(go env GOPATH)/bin/prompt-alchemy
