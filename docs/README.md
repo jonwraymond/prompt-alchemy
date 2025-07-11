@@ -55,3 +55,16 @@ When adding new documentation:
 ## Theme
 
 Using Jekyll's minimal theme for clean, readable documentation.
+
+## Diagrams
+
+The documentation includes architecture diagrams. Since GitHub Pages doesn't support Mermaid diagrams directly, we use static SVG images:
+
+1. Original Mermaid diagrams are stored in `diagrams-mermaid.md`
+2. Static versions are in `diagrams.md` with SVG references
+3. To regenerate diagrams:
+   - Install mermaid-cli: `npm install -g @mermaid-js/mermaid-cli`
+   - Run: `scripts/render-diagrams.sh`
+   - Or manually extract and render with `scripts/extract-mermaid-diagrams.py`
+
+The SVG diagrams are stored in `assets/diagrams/` for GitHub Pages compatibility.
