@@ -2106,9 +2106,6 @@ type MCPMetricsSummary struct {
 	ByModel           map[string]int `json:"by_model"`
 }
 
-
-
-
 // executeTrackPromptRelationship records a relationship between prompts
 func (s *MCPServer) executeTrackPromptRelationship(args map[string]interface{}) (MCPToolResult, error) {
 	sourceIDStr, ok := args["source_prompt_id"].(string)
@@ -2193,7 +2190,6 @@ func (s *MCPServer) executeTrackPromptRelationship(args map[string]interface{}) 
 		IsError: false,
 	}, nil
 }
-
 
 // New MCP tool implementations
 

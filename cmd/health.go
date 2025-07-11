@@ -29,7 +29,7 @@ func init() {
 
 func runHealth(cmd *cobra.Command, args []string) error {
 	logger := log.GetLogger()
-	
+
 	// Create client (check for --server flag override)
 	var c *client.Client
 	if serverFlag, _ := cmd.Flags().GetString("server"); serverFlag != "" {
@@ -52,7 +52,7 @@ func runHealth(cmd *cobra.Command, args []string) error {
 	fmt.Printf("Server Status: %s\n", health.Status)
 	fmt.Printf("Version: %s\n", health.Version)
 	fmt.Printf("Uptime: %s\n", health.Uptime)
-	
+
 	logger.Info("Server health check completed successfully")
 	return nil
 }

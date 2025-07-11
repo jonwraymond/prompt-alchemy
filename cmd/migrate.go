@@ -33,12 +33,12 @@ Examples:
 }
 
 var (
-	migrateDryRun    bool
-	migrateBatchSize int
-	migrateForce     bool
-	exportFormat     string
-	exportFile       string
-	importFile       string
+	migrateDryRun     bool
+	migrateBatchSize  int
+	migrateForce      bool
+	exportFormat      string
+	exportFile        string
+	importFile        string
 	includeEmbeddings bool
 	includeMetrics    bool
 )
@@ -126,7 +126,7 @@ func init() {
 	migrateImportCmd.Flags().StringVar(&importFile, "file", "", "Import file path (required)")
 	migrateImportCmd.Flags().BoolVar(&migrateDryRun, "dry-run", false, "Preview import without making changes")
 	migrateImportCmd.Flags().BoolVar(&migrateForce, "force", false, "Force import and overwrite existing prompts")
-	
+
 	// Mark required flags
 	migrateImportCmd.MarkFlagRequired("file")
 }
@@ -453,7 +453,7 @@ func exportToJSON(store *storage.Storage, outputFile string) error {
 	// Get all prompts from storage
 	// Note: This is a placeholder - you'll need to implement GetAllPrompts in storage
 	// For now, we'll create a basic structure
-	
+
 	exportData := ExportData{
 		ExportInfo: ExportInfo{
 			Timestamp:         time.Now(),
@@ -517,7 +517,7 @@ func exportToCSV(store *storage.Storage, outputFile string) error {
 		"embedding_model", "embedding_provider", "original_input",
 		"persona_used",
 	}
-	
+
 	if includeEmbeddings {
 		header = append(header, "embedding_base64")
 	}

@@ -62,8 +62,8 @@ type GenerateRequest struct {
 
 // GenerateResponse represents the response from the generate API
 type GenerateResponse struct {
-	Success bool                    `json:"success"`
-	Error   string                  `json:"error,omitempty"`
+	Success bool                     `json:"success"`
+	Error   string                   `json:"error,omitempty"`
 	Result  *models.GenerationResult `json:"result,omitempty"`
 }
 
@@ -78,9 +78,9 @@ type SearchRequest struct {
 
 // SearchResponse represents the response from the search API
 type SearchResponse struct {
-	Success bool             `json:"success"`
-	Error   string           `json:"error,omitempty"`
-	Prompts []models.Prompt  `json:"prompts,omitempty"`
+	Success bool            `json:"success"`
+	Error   string          `json:"error,omitempty"`
+	Prompts []models.Prompt `json:"prompts,omitempty"`
 }
 
 // HealthResponse represents the response from the health check API
@@ -95,7 +95,7 @@ func (c *Client) Generate(ctx context.Context, req GenerateRequest) (*models.Gen
 	c.logger.Debugf("Sending generate request to server: %s", c.baseURL)
 
 	endpoint := fmt.Sprintf("%s/api/v1/generate", c.baseURL)
-	
+
 	// Marshal request
 	reqBody, err := json.Marshal(req)
 	if err != nil {
@@ -107,26 +107,26 @@ func (c *Client) Generate(ctx context.Context, req GenerateRequest) (*models.Gen
 	if err != nil {
 		return nil, fmt.Errorf("failed to create HTTP request: %w", err)
 	}
-	
+
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("Accept", "application/json")
 
 	// Make request with retry logic
 	var resp *http.Response
 	retryAttempts := viper.GetInt("client.retry_attempts")
-	
+
 	for attempt := 0; attempt <= retryAttempts; attempt++ {
 		resp, err = c.httpClient.Do(httpReq)
 		if err == nil {
 			break
 		}
-		
+
 		if attempt < retryAttempts {
 			c.logger.Warnf("Request attempt %d failed, retrying: %v", attempt+1, err)
 			time.Sleep(time.Duration(attempt+1) * time.Second)
 		}
 	}
-	
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to make HTTP request after %d attempts: %w", retryAttempts+1, err)
 	}
@@ -161,7 +161,7 @@ func (c *Client) Search(ctx context.Context, req SearchRequest) ([]models.Prompt
 	c.logger.Debugf("Sending search request to server: %s", c.baseURL)
 
 	endpoint := fmt.Sprintf("%s/api/v1/search", c.baseURL)
-	
+
 	// Marshal request
 	reqBody, err := json.Marshal(req)
 	if err != nil {
@@ -173,7 +173,7 @@ func (c *Client) Search(ctx context.Context, req SearchRequest) ([]models.Prompt
 	if err != nil {
 		return nil, fmt.Errorf("failed to create HTTP request: %w", err)
 	}
-	
+
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("Accept", "application/json")
 
@@ -213,13 +213,13 @@ func (c *Client) Health(ctx context.Context) (*HealthResponse, error) {
 	c.logger.Debugf("Checking server health: %s", c.baseURL)
 
 	endpoint := fmt.Sprintf("%s/api/v1/health", c.baseURL)
-	
+
 	// Create HTTP request
 	httpReq, err := http.NewRequestWithContext(ctx, "GET", endpoint, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create HTTP request: %w", err)
 	}
-	
+
 	httpReq.Header.Set("Accept", "application/json")
 
 	// Make request
