@@ -3,173 +3,175 @@
 
 @import "{{ site.theme }}";
 
-/* Alchemical Theme Styling */
-:root {
-  --primary-gold: #F6A53C;
-  --secondary-brown: #0A1629; /* dark navy from logo background */
-  --accent-gold: #FFBE6E;
-  --text-dark: #E0E0DC; /* light text */
-  --background-light: #091529; /* rename semantics but keep variable name */
-  --shadow-gold: rgba(246, 165, 60, 0.3);
-}
-
-body {
-  font-family: 'Cormorant Garamond', 'Georgia', 'Times New Roman', serif;
-  background: var(--background-light);
-  color: var(--text-dark);
-}
-
-/* Header Styling */
-.wrapper {
-  position: relative;
-}
-
-.wrapper::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, var(--primary-gold), var(--accent-gold), var(--primary-gold));
-}
-
-/* Logo Enhancement */
-header img {
-  border-radius: 15px;
-  box-shadow: 0 4px 15px var(--shadow-gold);
-  transition: transform 0.3s ease;
-}
-
-header img:hover {
-  transform: scale(1.05);
-}
-
-/* Typography */
-h1, h2, h3, h4, h5, h6 {
-  font-family: 'Cinzel', 'Georgia', serif;
-  color: var(--primary-gold);
-  text-shadow: 1px 1px 2px rgba(0,0,0,0.4);
-}
-
-h1 {
-  border-bottom: 3px solid var(--primary-gold);
-  padding-bottom: 10px;
-}
-
-h2 {
-  border-bottom: 2px solid var(--accent-gold);
-  padding-bottom: 8px;
-}
-
-/* Code Blocks */
-pre {
-  background: #F8F8FF;
-  border-left: 4px solid var(--primary-gold);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-code {
-  background: rgba(246, 165, 60, 0.15);
-  color: var(--accent-gold);
-  padding: 2px 4px;
-  border-radius: 3px;
-}
-
-/* Links */
-a {
-  color: var(--accent-gold);
-  text-decoration: none;
-  border-bottom: 1px solid transparent;
-  transition: border-bottom-color 0.3s ease;
-}
-
-a:hover {
-  border-bottom-color: var(--primary-gold);
-}
-
-/* Tables */
-table {
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-th {
-  background: var(--primary-gold);
-  color: white;
-  text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
-}
-
-tr:nth-child(even) {
-  background: rgba(201, 169, 110, 0.05);
-}
-
-/* Navigation Enhancement */
-.navigation {
-  background: linear-gradient(135deg, var(--primary-gold), var(--accent-gold));
-  padding: 10px;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  box-shadow: 0 2px 8px var(--shadow-gold);
-}
-
-.navigation a {
-  color: white;
-  padding: 8px 15px;
-  margin: 0 5px;
-  border-radius: 5px;
-  transition: background-color 0.3s ease;
-}
-
-.navigation a:hover {
-  background: rgba(255,255,255,0.2);
-}
-
-/* Blockquotes */
-blockquote {
-  border-left: 4px solid var(--primary-gold);
-  background: rgba(246, 165, 60, 0.05);
-  padding: 15px;
-  margin: 20px 0;
-  border-radius: 0 8px 8px 0;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-}
-
-/* Special Alchemical Elements */
-.alchemical-process {
-  background: linear-gradient(135deg, var(--background-light), #F0E68C);
-  border: 2px solid var(--primary-gold);
-  border-radius: 12px;
-  padding: 20px;
-  margin: 20px 0;
-  box-shadow: 0 4px 12px var(--shadow-gold);
-}
-
-.phase-badge {
-  display: inline-block;
-  background: var(--primary-gold);
-  color: white;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 0.8em;
-  font-weight: bold;
-  margin: 2px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .navigation {
-    text-align: center;
+html {
+  /* Alchemical Theme Styling */
+  :root {
+    --primary-gold: #F6A53C;
+    --secondary-brown: #0A1629; /* dark navy from logo background */
+    --accent-gold: #FFBE6E;
+    --text-dark: #E0E0DC; /* light text */
+    --background-light: #091529; /* rename semantics but keep variable name */
+    --shadow-gold: rgba(246, 165, 60, 0.3);
   }
-  
-  .navigation a {
-    display: block;
-    margin: 5px 0;
+
+  body {
+    font-family: 'Cormorant Garamond', 'Georgia', 'Times New Roman', serif;
+    background: var(--background-light);
+    color: var(--text-dark);
   }
-  
+
+  /* Header Styling */
+  .wrapper {
+    position: relative;
+  }
+
+  .wrapper::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--primary-gold), var(--accent-gold), var(--primary-gold));
+  }
+
+  /* Logo Enhancement */
   header img {
-    max-width: 120px;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px var(--shadow-gold);
+    transition: transform 0.3s ease;
+  }
+
+  header img:hover {
+    transform: scale(1.05);
+  }
+
+  /* Typography */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Cinzel', 'Georgia', serif;
+    color: var(--primary-gold);
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.4);
+  }
+
+  h1 {
+    border-bottom: 3px solid var(--primary-gold);
+    padding-bottom: 10px;
+  }
+
+  h2 {
+    border-bottom: 2px solid var(--accent-gold);
+    padding-bottom: 8px;
+  }
+
+  /* Code Blocks */
+  pre {
+    background: #F8F8FF;
+    border-left: 4px solid var(--primary-gold);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+
+  code {
+    background: rgba(246, 165, 60, 0.15);
+    color: var(--accent-gold);
+    padding: 2px 4px;
+    border-radius: 3px;
+  }
+
+  /* Links */
+  a {
+    color: var(--accent-gold);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: border-bottom-color 0.3s ease;
+  }
+
+  a:hover {
+    border-bottom-color: var(--primary-gold);
+  }
+
+  /* Tables */
+  table {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  th {
+    background: var(--primary-gold);
+    color: white;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+  }
+
+  tr:nth-child(even) {
+    background: rgba(201, 169, 110, 0.05);
+  }
+
+  /* Navigation Enhancement */
+  .navigation {
+    background: linear-gradient(135deg, var(--primary-gold), var(--accent-gold));
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px var(--shadow-gold);
+  }
+
+  .navigation a {
+    color: white;
+    padding: 8px 15px;
+    margin: 0 5px;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+  }
+
+  .navigation a:hover {
+    background: rgba(255,255,255,0.2);
+  }
+
+  /* Blockquotes */
+  blockquote {
+    border-left: 4px solid var(--primary-gold);
+    background: rgba(246, 165, 60, 0.05);
+    padding: 15px;
+    margin: 20px 0;
+    border-radius: 0 8px 8px 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  }
+
+  /* Special Alchemical Elements */
+  .alchemical-process {
+    background: linear-gradient(135deg, var(--background-light), #F0E68C);
+    border: 2px solid var(--primary-gold);
+    border-radius: 12px;
+    padding: 20px;
+    margin: 20px 0;
+    box-shadow: 0 4px 12px var(--shadow-gold);
+  }
+
+  .phase-badge {
+    display: inline-block;
+    background: var(--primary-gold);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8em;
+    font-weight: bold;
+    margin: 2px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  }
+
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .navigation {
+      text-align: center;
+    }
+    
+    .navigation a {
+      display: block;
+      margin: 5px 0;
+    }
+    
+    header img {
+      max-width: 120px;
+    }
   }
 }
