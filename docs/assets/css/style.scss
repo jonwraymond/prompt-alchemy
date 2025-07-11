@@ -33,6 +33,8 @@ body {
   font-family: 'Crimson Text', 'Georgia', serif;
   line-height: 1.7;
   position: relative;
+  min-width: 320px;
+  overflow-x: hidden;
 }
 
 body::before {
@@ -57,8 +59,17 @@ body::before {
 /* Wrapper Enhancement */
 .wrapper {
   position: relative;
-  max-width: 1200px;
+  max-width: 90%;
+  width: 1200px;
   margin: 0 auto;
+  padding: 20px;
+}
+
+@media (max-width: 1400px) {
+  .wrapper {
+    width: 95%;
+    max-width: none;
+  }
 }
 
 .wrapper::before {
@@ -83,6 +94,13 @@ header {
     inset 0 2px 4px rgba(201, 169, 110, 0.1);
   position: relative;
   overflow: hidden;
+  margin-bottom: 30px;
+}
+
+@media (max-width: 768px) {
+  header {
+    padding: 30px 20px;
+  }
 }
 
 header::after {
@@ -170,6 +188,7 @@ h2 {
   border-bottom: none;
   padding-left: 30px;
   position: relative;
+  margin-top: 2em;
 }
 
 h2::before {
@@ -182,8 +201,9 @@ h2::before {
 
 /* Alchemical Paragraph Styling */
 p {
-  text-align: justify;
+  text-align: left;
   margin: 1.2em 0;
+  color: var(--text-light);
 }
 
 /* First Letter Enhancement */
@@ -212,8 +232,11 @@ pre {
   padding: 20px;
   margin: 2em 0;
   position: relative;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
   color: #e6edf3;
+  white-space: pre-wrap;
+  word-wrap: break-word;
 }
 
 pre::before {
@@ -229,11 +252,12 @@ pre::before {
 
 code {
   background: linear-gradient(135deg, rgba(201, 169, 110, 0.2) 0%, rgba(218, 165, 32, 0.15) 100%);
-  color: var(--primary-gold);
+  color: var(--accent-gold);
   padding: 3px 6px;
   border-radius: 4px;
   font-size: 0.9em;
   border: 1px solid rgba(201, 169, 110, 0.3);
+  font-weight: 500;
 }
 
 /* Links */
@@ -399,7 +423,7 @@ blockquote::before {
 .alchemical-process {
   background: 
     radial-gradient(ellipse at center, rgba(255, 215, 0, 0.1) 0%, transparent 70%),
-    linear-gradient(135deg, rgba(26, 35, 50, 0.8) 0%, rgba(36, 49, 66, 0.6) 100%);
+    linear-gradient(135deg, rgba(26, 35, 50, 0.9) 0%, rgba(36, 49, 66, 0.8) 100%);
   border: 3px double var(--primary-gold);
   border-radius: 15px;
   padding: 30px;
@@ -409,6 +433,8 @@ blockquote::before {
     inset 0 2px 5px rgba(201, 169, 110, 0.2);
   position: relative;
   color: var(--text-light);
+  font-size: 1.05em;
+  line-height: 1.8;
 }
 
 .alchemical-process::before {
@@ -443,15 +469,41 @@ blockquote::before {
 /* Lists */
 ul, ol {
   margin: 1.5em 0;
+  padding-left: 2em;
 }
 
 li {
   margin: 0.5em 0;
   line-height: 1.8;
+  color: var(--text-light);
 }
 
 ul li::marker {
   color: var(--primary-gold);
+}
+
+ol {
+  counter-reset: list-counter;
+  list-style: none;
+}
+
+ol li {
+  counter-increment: list-counter;
+  position: relative;
+}
+
+ol li::before {
+  content: counter(list-counter) ".";
+  position: absolute;
+  left: -1.5em;
+  color: var(--primary-gold);
+  font-weight: bold;
+  font-family: 'Cinzel', serif;
+}
+
+li strong {
+  color: var(--primary-gold);
+  font-weight: 600;
 }
 
 /* Footer Enhancement */
@@ -502,13 +554,16 @@ footer::before {
   }
   
   nav li {
-    width: 80%;
+    width: 90%;
     text-align: center;
+    margin: 3px 0;
   }
   
   nav a {
     display: block;
     width: 100%;
+    padding: 10px;
+    font-size: 0.85em;
   }
   
   header img {
@@ -518,11 +573,29 @@ footer::before {
   }
   
   h1 {
-    font-size: 2em;
+    font-size: 1.8em;
+  }
+  
+  h2 {
+    font-size: 1.4em;
   }
   
   .alchemical-process {
-    padding: 20px;
+    padding: 20px 15px;
+    margin: 20px -10px;
+  }
+  
+  pre {
+    padding: 15px;
+    font-size: 0.85em;
+  }
+  
+  code {
+    font-size: 0.85em;
+  }
+  
+  body {
+    font-size: 16px;
   }
 }
 
@@ -556,8 +629,9 @@ footer::before {
   font-style: italic;
   color: var(--text-light);
   font-size: 1.1em;
-  margin: 1em 0;
+  margin: 1.5em 0;
   text-align: center;
+  opacity: 0.9;
 }
 
 /* Alchemical Link Styling */
@@ -667,8 +741,14 @@ nav a.active {
   position: relative;
   background: 
     radial-gradient(ellipse at center top, rgba(201, 169, 110, 0.1) 0%, transparent 60%);
-  padding: 20px;
+  padding: 40px 20px;
   min-height: 400px;
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    padding: 20px 10px;
+  }
 }
 
 /* Downloads List Enhancement */
