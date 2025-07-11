@@ -30,6 +30,97 @@
 - **📈 Detailed Metadata**: Complete transmutation records including costs
 - **🕒 Automated Scheduling**: Easy setup of nightly training jobs via cron/launchd
 
+## System Requirements
+
+### Minimum Requirements
+- **Go**: Version 1.23 or higher
+- **Operating System**: Linux, macOS, or Windows
+- **Memory**: 256 MB RAM minimum, 512 MB recommended
+- **Storage**: 100 MB free disk space for application and database
+- **Network**: Internet connection required for AI provider access
+
+### Supported Platforms
+- **Linux**: x86_64, ARM64 (Ubuntu 20.04+, RHEL 8+, or equivalent)
+- **macOS**: Intel and Apple Silicon (macOS 11.0+)
+- **Windows**: x86_64 (Windows 10+)
+
+### Dependencies
+- **SQLite**: Embedded database (included, no separate installation required)
+- **Git**: Required for cloning the repository
+- **Make**: Required for using build commands (optional, can build with `go build` directly)
+- **No additional system libraries**: Self-contained binary with minimal dependencies
+
+### AI Provider Requirements
+
+To use Prompt Alchemy, you need API access to at least one AI provider:
+
+#### Required API Keys (Choose one or more)
+- **OpenAI**: API key from [platform.openai.com](https://platform.openai.com)
+  - Supports: GPT models, text embeddings
+  - Billing: Pay-per-use, requires credit card
+  - Rate limits: Varies by tier
+  
+- **Anthropic (Claude)**: API key from [console.anthropic.com](https://console.anthropic.com)
+  - Supports: Claude models (Sonnet, Haiku, Opus)
+  - Billing: Pay-per-use
+  - Rate limits: Generous for most use cases
+  
+- **Google (Gemini)**: API key from [Google AI Studio](https://aistudio.google.com)
+  - Supports: Gemini models (Pro, Flash)
+  - Billing: Free tier available, then pay-per-use
+  - Rate limits: Generous free tier
+  
+- **OpenRouter**: API key from [openrouter.ai](https://openrouter.ai)
+  - Supports: Access to multiple model providers through one API
+  - Billing: Pay-per-use with competitive pricing
+  - Rate limits: Varies by underlying provider
+  
+- **Ollama**: Local installation (no API key needed)
+  - Supports: Local model execution
+  - Requirements: Additional 4-8 GB RAM for models
+  - Setup: Install from [ollama.ai](https://ollama.ai)
+
+#### Regional Availability
+- OpenAI: Available in most countries (check OpenAI's usage policies)
+- Anthropic: Available in US, UK, and select regions
+- Google: Available globally with some regional restrictions
+- OpenRouter: Global availability (depends on underlying providers)
+- Ollama: No restrictions (runs locally)
+
+### Development Requirements (For Contributors)
+- **Go**: Version 1.23+ with modules enabled
+- **Git**: For version control and contributions
+- **Make**: For build automation and testing
+- **golangci-lint**: For code quality checks (optional)
+- **gosec**: For security scanning (optional)
+
+### Docker Requirements (Optional)
+If using Docker deployment:
+- **Docker**: Version 20.10+ 
+- **Docker Compose**: Version 2.0+ (for multi-container setups)
+- **Memory**: 512 MB RAM minimum for container
+- **Storage**: 200 MB for Docker image
+
+### Performance Recommendations
+
+#### For Light Usage (< 100 prompts/day)
+- 1 CPU core, 512 MB RAM
+- Any supported AI provider
+- Standard internet connection
+
+#### For Heavy Usage (1000+ prompts/day)
+- 2+ CPU cores, 1 GB+ RAM
+- Multiple AI provider accounts for redundancy
+- Stable, fast internet connection
+- Consider local Ollama for reduced API costs
+
+#### For Production Deployment
+- 4+ CPU cores, 2 GB+ RAM
+- Load balancer for high availability
+- Database backup strategy
+- Monitoring and alerting setup
+- Multiple API keys for rate limit distribution
+
 ## Installation
 
 ```bash
