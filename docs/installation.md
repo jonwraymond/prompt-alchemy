@@ -44,7 +44,7 @@ This guide covers all installation methods for Prompt Alchemy.
    docker-compose logs prompt-alchemy  # Check for successful startup
    ```
 
-See the [Docker Deployment Guide](./docker-hybrid-deployment.md) for details.
+For detailed deployment instructions, see the main [Deployment Guide](./deployment-guide.md).
 
 ### 2. Build from Source (Recommended)
 
@@ -87,7 +87,7 @@ chmod +x prompt-alchemy
 ### 4. Using Go Install
 
 ```bash
-go install github.com/jonwraymond/prompt-alchemy/cmd@latest
+go install github.com/jonwraymond/prompt-alchemy/cmd/prompt-alchemy@latest
 ```
 
 ## Configuration Setup
@@ -138,7 +138,7 @@ generation:
   default_max_tokens: 2000
   default_count: 3
   use_parallel: true
-  default_target_model: "claude-3-5-sonnet-20241022"
+  default_target_model: "claude-4-sonnet-20250522"
   default_embedding_model: "text-embedding-3-small"
   default_embedding_dimensions: 1536
 ```
@@ -183,19 +183,19 @@ export GOOGLE_API_KEY="your-key"
 
 ## Verification
 
-After installation, verify everything works:
+After installation, verify everything works from the project's root directory:
 
 ```bash
 # Check version
-./prompt-alchemy --version
+./prompt-alchemy version
 
-# Show configuration
-./prompt-alchemy config
+# Validate your configuration file
+./prompt-alchemy validate
 
-# Test providers
-./prompt-alchemy providers
+# Test provider connectivity
+./prompt-alchemy test-providers
 
-# Generate test prompt
+# Generate a test prompt
 ./prompt-alchemy generate "Hello, world!"
 ```
 
@@ -222,16 +222,15 @@ After installation, verify everything works:
 
 ### Debug Mode
 
-Enable debug logging:
-
+Enable debug logging using the global flag:
 ```bash
-# Set log level
-export LOG_LEVEL=debug
+./prompt-alchemy --log-level debug generate "a test"
+```
 
-# Or in config.yaml
-logging:
-  level: debug
-  file: ~/.prompt-alchemy/debug.log
+Or by setting the environment variable:
+```bash
+export PROMPT_ALCHEMY_LOG_LEVEL=debug
+./prompt-alchemy generate "a test"
 ```
 
 ## Updating

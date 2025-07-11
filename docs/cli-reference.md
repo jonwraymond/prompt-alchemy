@@ -21,14 +21,15 @@ Complete documentation for all Prompt Alchemy command-line interface options, fl
 10. [config](#config)
 11. [providers](#providers)
 12. [serve](#serve)
-13. [nightly](#nightly)
-14. [schedule](#schedule)
-15. [batch](#batch)
-16. [test](#test)
-17. [validate](#validate)
-18. [version](#version)
-19. [Environment Variables](#environment-variables)
-20. [Configuration Files](#configuration-files)
+13. [http-server](#http-server)
+14. [health](#health)
+15. [nightly](#nightly)
+16. [schedule](#schedule)
+17. [batch](#batch)
+18. [validate](#validate)
+19. [version](#version)
+20. [Environment Variables](#environment-variables)
+21. [Configuration Files](#configuration-files)
 
 ## Global Options
 
@@ -66,11 +67,12 @@ prompt-alchemy --log-level debug generate "test prompt"
 | migrate | Run database migrations |
 | config | Manage configuration |
 | providers | List AI providers |
-| serve | Start HTTP/MCP server |
+| serve | Start MCP server for AI agent integration |
+| http-server | Start HTTP REST API server |
+| health | Check the health of a running HTTP server |
 | nightly | Run learning training job |
 | schedule | Schedule nightly jobs |
 | batch | Batch process inputs |
-| test | Test provider connections |
 | validate | Validate config/settings |
 | version | Display version info |
 
@@ -168,7 +170,7 @@ prompt-alchemy optimize [flags]
 prompt-alchemy optimize -p "Write code" -t "Generate Python function"
 
 # With specific persona and target model
-prompt-alchemy optimize -p "Create API docs" -t "Document REST endpoints" --persona writing --target-model claude-3-opus
+prompt-alchemy optimize -p "Create API docs" -t "Document REST endpoints" --persona writing --target-model claude-3-5-sonnet-20241022
 
 # Multiple iterations with custom provider
 prompt-alchemy optimize -p "Code review" -t "Review JavaScript code" --max-iterations 10 --provider anthropic
@@ -348,22 +350,46 @@ prompt-alchemy providers --status
 
 ## serve
 
-Start MCP (Model Context Protocol) server for IDE integration.
+Starts the Model Context Protocol (MCP) server. This is a long-running process that communicates over **stdin/stdout** and is intended for integration with a single AI agent or parent application. It does **not** open any network ports.
 
 ### Usage
 ```bash
 prompt-alchemy serve [flags]
 ```
 
-### Examples
+### Flags
+| Flag | Short | Type | Default | Description |
+|---|---|---|---|---|
+| `--learning-enabled` | | bool | `false` | Enable the learning tools and features. |
 
+## http-server
+
+Starts a RESTful HTTP API server. This is a long-running process that listens on a network port and is intended for providing prompt generation as a service to multiple clients.
+
+### Usage
 ```bash
-# Start MCP server
-prompt-alchemy serve
-
-# Start with custom port
-prompt-alchemy --config custom-config.yaml serve
+prompt-alchemy http-server [flags]
 ```
+
+### Flags
+| Flag | Short | Type | Default | Description |
+|---|---|---|---|---|
+| `--host` | | string | `localhost` | The host address to bind the server to. |
+| `--port` | | int | `3456` | The port to listen on. |
+
+## health
+
+Checks the health status of a running `http-server` instance.
+
+### Usage
+```bash
+prompt-alchemy health [flags]
+```
+
+### Flags
+| Flag | Short | Type | Default | Description |
+|---|---|---|---|---|
+| `--server` | | string | | The base URL of the server to check (e.g., `http://localhost:3456`). Overrides the URL in the config file. |
 
 ## nightly
 
@@ -486,14 +512,14 @@ providers:
     model: "o4-mini"
   anthropic:
     api_key: "sk-ant-..."
-    model: "claude-3-5-sonnet-20241022"
+    model: "claude-4-sonnet-20250522"
 
 generation:
   default_temperature: 0.7
   default_max_tokens: 2000
   default_count: 3
   use_parallel: true
-  default_target_model: "claude-3-5-sonnet-20241022"
+  default_target_model: "claude-4-sonnet-20250522"
   default_embedding_model: "text-embedding-3-small"
   default_embedding_dimensions: 1536
 
@@ -575,35 +601,6 @@ prompt-alchemy batch --phases prima-materia,coagulatio --format csv prompts.csv
 
 # Process text file with parallel execution
 prompt-alchemy batch --parallel 5 prompts.txt
-```
-
-## test
-
-Test provider connectivity and configuration to ensure all providers are working correctly.
-
-### Usage
-```bash
-prompt-alchemy test [flags]
-```
-
-### Flags
-
-| Flag | Short | Type | Default | Description |
-|------|-------|------|---------|-------------|
-| `--provider` | `-p` | string | | Test specific provider only |
-| `--timeout` | `-t` | int | `30` | Timeout in seconds for each test |
-| `--verbose` | `-v` | bool | `false` | Show detailed test results |
-
-### Examples
-```bash
-# Test all providers
-prompt-alchemy test
-
-# Test specific provider
-prompt-alchemy test --provider openai
-
-# Test with verbose output
-prompt-alchemy test --verbose --timeout 60
 ```
 
 ## validate

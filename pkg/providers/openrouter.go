@@ -259,7 +259,7 @@ func getFallbackModels(config *Config) []string {
 	// These are high-quality models with valid OpenRouter model IDs
 	defaultFallbacks := []string{
 		"anthropic/claude-3.5-sonnet",
-		"openai/gpt-4o-mini",
+		"openai/o4-mini",
 		"google/gemini-pro-1.5",
 	}
 

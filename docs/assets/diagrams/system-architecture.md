@@ -2,105 +2,95 @@
 
 ```mermaid
 graph TB
+    subgraph "User & Agent Interfaces"
+        User["`👤 **User**`"]
+        Agent["`🤖 **AI Agent**`"]
+    end
+
     subgraph "Prompt Alchemy System"
-        CLI["`🖥️ **CLI Interface**
-        Commands & User Interaction`"]
-        
+        subgraph "Interface Layer"
+            CLI["`🖥️ **CLI Interface**`"]
+            MCPServer["`🌐 **MCP Server**`"]
+        end
+
         subgraph "Core Engine"
-            PE["`⚗️ **Prompt Engine**
-            Alchemical Orchestration`"]
-            RE["`🎯 **Ranking Engine** 
-            Quality Assessment`"]
-            SE["`🔍 **Search Engine**
-            Semantic Discovery`"]
+            PE["`⚗️ **Prompt Engine**`"]
+            SE["`🔍 **Search Engine**`"]
+            LE["`🧠 **Learning Engine**`"]
+            RE["`🎯 **Ranking Engine**`"]
         end
-        
+
         subgraph "Provider Layer"
-            OpenAI["`🤖 **OpenAI**
-            GPT Models + Embeddings`"]
-            Anthropic["`🧠 **Anthropic**
-            Claude Models`"]
-            Google["`🌟 **Google**
-            Gemini Models`"]
-            OpenRouter["`🔗 **OpenRouter**
-            Multi-Model Gateway`"]
-            Ollama["`🏠 **Ollama**
-            Local Models`"]
+            Providers["`🔌 **Provider Registry**<br/>(OpenAI, Anthropic, Google, etc.)`"]
         end
-        
+
         subgraph "Storage Layer"
-            SQLite["`💾 **SQLite Database**
-            Prompts & Metadata`"]
-            Embeddings["`🧮 **Vector Store**
-            Semantic Embeddings`"]
-            Metrics["`📊 **Metrics Store**
-            Performance Data`"]
+            SQLite["`💾 **SQLite Database**<br/>(Prompts, Metrics, Feedback)`"]
+            Embeddings["`🧮 **Vector Store**<br/>(Inside SQLite)`"]
         end
-        
+
         subgraph "Alchemical Phases"
-            PM["`🌱 **Prima Materia**
-            Raw Idea Extraction`"]
-            SO["`💧 **Solutio**
-            Natural Language Flow`"]
-            CO["`💎 **Coagulatio**
-            Precision Crystallization`"]
+            Phases["`🔄 **Phased Generation**<br/>(Prima Materia, Solutio, Coagulatio)`"]
         end
     end
-    
-    User["`👤 **User**
-    Command Input`"] --> CLI
+
+    %% Connections
+    User --> CLI
+    Agent --> MCPServer
     CLI --> PE
-    PE --> PM
-    PM --> SO
-    SO --> CO
-    
-    PE --> OpenAI
-    PE --> Anthropic
-    PE --> Google
-    PE --> OpenRouter
-    PE --> Ollama
-    
-    PE --> SQLite
-    SE --> Embeddings
-    RE --> Metrics
-    
-    PE --> RE
     CLI --> SE
+    MCPServer --> PE
+    MCPServer --> SE
+    MCPServer --> LE
+
+    PE --> Phases
+    Phases --> Providers
+    PE --> RE
+    PE --> SQLite
+
+    SE --> Embeddings
     
-    style CLI fill:#4CAF50,stroke:#333,stroke-width:2px,color:#fff
-    style PE fill:#FF6B35,stroke:#333,stroke-width:3px,color:#fff
-    style PM fill:#8BC34A,stroke:#333,stroke-width:2px,color:#fff
-    style SO fill:#03A9F4,stroke:#333,stroke-width:2px,color:#fff
-    style CO fill:#9C27B0,stroke:#333,stroke-width:2px,color:#fff
+    LE --> SQLite
+    LE --> RE
+
+    RE --> SQLite
+    
+    SQLite -- "stores" --> Embeddings
+
+    %% Styling
+    classDef interface fill:#e1f5fe,stroke:#01579b
+    classDef core fill:#f3e5f5,stroke:#4a148c
+    classDef provider fill:#e8f5e8,stroke:#1b5e20
+    classDef storage fill:#fff3e0,stroke:#e65100
+    classDef phases fill:#fce4ec,stroke:#880e4f
+
+    class CLI,MCPServer interface
+    class PE,SE,LE,RE core
+    class Providers provider
+    class SQLite,Embeddings storage
+    class Phases phases
 ```
 
 ## Component Responsibilities
 
-### CLI Interface
-- Command parsing and validation
-- User interaction and feedback
-- Output formatting and display
-- Configuration management
+### Interface Layer
+- **CLI Interface**: Handles command-line parsing, user interaction, and output formatting.
+- **MCP Server**: Exposes core functionality to AI agents via the Model Context Protocol.
 
-### Prompt Engine
-- Orchestrates the three alchemical phases
-- Manages provider selection and coordination
-- Handles parallel processing and optimization
-- Aggregates and ranks results
+### Core Engine
+- **Prompt Engine**: Orchestrates the three alchemical phases, manages provider selection, and ranks results.
+- **Search Engine**: Performs text and semantic vector searches over the prompt database.
+- **Learning Engine**: Processes user feedback, detects patterns, and updates ranking models.
+- **Ranking Engine**: Scores and ranks prompts based on quality, relevance, and learned weights.
 
 ### Alchemical Phases
-- **Prima Materia**: Extracts core concepts and explores possibilities
-- **Solutio**: Transforms rigid ideas into natural, flowing language
-- **Coagulatio**: Crystallizes prompts into precise, refined forms
+- **Prima Materia**: Extracts core concepts and explores possibilities.
+- **Solutio**: Transforms rigid ideas into natural, flowing language.
+- **Coagulatio**: Crystallizes prompts into precise, refined forms.
 
 ### Provider Layer
-- Abstracts different LLM APIs
-- Handles authentication and rate limiting
-- Provides embeddings and generation capabilities
-- Manages fallback and error handling
+- **Provider Registry**: A unified abstraction layer for all external LLM APIs (OpenAI, Anthropic, etc.), handling authentication, rate limiting, and failover.
 
 ### Storage Layer
-- Persistent storage of prompts and metadata
-- Vector embeddings for semantic search
-- Performance metrics and analytics
-- Configuration and user preferences
+- **SQLite Database**: The primary data store for prompts, user feedback, performance metrics, and configuration.
+- **Vector Store**: Manages vector embeddings (stored as BLOBs in SQLite) for semantic search.

@@ -16,34 +16,43 @@ Prompt Alchemy is a sophisticated AI system that transmutes concepts through thr
 </div>
 
 ## Features
-- ⚗️ **Alchemical Phases**: Prima Materia (raw essence extraction), Solutio (natural language flow), Coagulatio (precision crystallization)
-- 🤖 **Multi-Provider**: OpenAI (GPT), Anthropic (Claude), Google (Gemini), OpenRouter, Ollama with fallback
-- 🏆 **AI Selection**: LLM-as-Judge in internal/selection/ with criteria/weights
-- 🔄 **Modes**: On-Demand (CLI), Server (HTTP/MCP with serve command)
-- 📈 **Learning-to-Rank**: Feedback via judge/evaluator, ranking in ranker.go, nightly training
-- 💾 **Storage**: SQLite with prompts, metrics, embeddings for semantic search
+- ⚗️ **Alchemical Phases**: `prima-materia` (raw essence), `solutio` (natural flow), and `coagulatio` (precision).
+- 🤖 **Multi-Provider**: OpenAI, Anthropic, Google, OpenRouter, and local Ollama models.
+- 🏆 **AI Selection**: An LLM-as-Judge system to intelligently select the best prompt variants.
+- 🔄 **Modes**: A powerful CLI for on-demand use and an MCP server for AI agent integration.
+- 📈 **Learning-to-Rank**: An adaptive system that learns from user feedback to improve results over time.
+- 💾 **Local-First Storage**: All data is stored in a local SQLite database, including prompts, metrics, and vector embeddings.
 
 ## Quick Start
-# On-Demand
-prompt-alchemy generate "Blog post idea" --phases=prima-materia,solutio,coagulatio --persona=writing --count=3 --auto-select --provider=openai
-# Server
+
+### On-Demand Generation
+```bash
+# Generate a prompt using the three alchemical phases
+prompt-alchemy generate "A blog post about the future of AI" --phases="prima-materia,solutio,coagulatio" --persona=writing
+```
+
+### Server for AI Agents
+```bash
+# Start the MCP server to allow AI agents to connect
 prompt-alchemy serve
-curl -X POST http://localhost:8080/api/v1/prompts/generate -d '{"input":"Code optimization","phases":"coagulatio"}'
+```
+An AI agent can then connect to the server's `stdin`/`stdout` to make JSON-RPC calls.
 
 ## The Alchemical Process
-Transform ideas through:
-1. **Prima Materia**: Extract essence
-2. **Solutio**: Create natural flow
-3. **Coagulatio**: Achieve precision
 
-## The Alchemical Advantage
+Prompt Alchemy transforms ideas through three sacred phases:
+1.  **Prima Materia**: Extracts the raw essence and core concepts from an idea.
+2.  **Solutio**: Dissolves rigid structures into natural, flowing, human-readable language.
+3.  **Coagulatio**: Crystallizes the prompt into a precise, production-ready form.
 
-Traditional prompt engineering is like working with raw metals - unpredictable and inconsistent. Prompt Alchemy brings the ancient wisdom of transformation to modern AI:
+## Why Prompt Alchemy?
 
-1. **Sacred Phases**: Each alchemical phase refines specific qualities - from raw potential to crystallized perfection
-2. **Multi-Provider Mastery**: Harness different AI providers' unique strengths for each transformation phase
-3. **Empirical Wisdom**: Track successful transmutations with comprehensive analytics and metrics
-4. **Self-Improving System**: Let the system learn and optimize its own alchemical processes
+Prompt Alchemy brings a structured, repeatable process to prompt engineering:
+
+1. **Systematic Refinement**: Each alchemical phase improves a specific quality of the prompt.
+2. **Provider Optimization**: Use the best AI provider for each specific phase of refinement.
+3. **Data-Driven Improvement**: Track successes and failures with comprehensive local analytics.
+4. **Adaptive Learning**: The system learns from your feedback to improve its own processes over time.
 
 ## Documentation
 
@@ -55,8 +64,8 @@ Traditional prompt engineering is like working with raw metals - unpredictable a
 ### 🔄 Operational Modes
 - **[On-Demand vs Server Mode](./on-demand-vs-server-mode)** - Comprehensive comparison of operational modes
 - **[Mode Quick Reference](./mode-quick-reference)** - Quick decision guide and command reference
-- **[Mode Selection FAQ](./mode-faq)** - Frequently asked questions about choosing modes
-- **[Deployment Guide](./deployment-guide)** - Complete deployment strategies for both modes
+- **[Mode Selection FAQ](./mode-faq)** - Frequently asked questions about choosing a mode.
+- **[Deployment Guide](./deployment-guide)** - Complete deployment strategies for both modes.
 
 ### Technical Documentation
 - [Architecture](./architecture) - Technical design and internals
@@ -66,7 +75,7 @@ Traditional prompt engineering is like working with raw metals - unpredictable a
 
 ### Server Mode & Integration
 - [MCP Integration](./mcp-integration) - Model Context Protocol server setup
-- [MCP Tools](./mcp-tools) - Detailed MCP tools and resources reference
+- [MCP API Reference](./mcp-api-reference) - Detailed reference for all 15 MCP tools.
 - [Learning Mode](./learning-mode) - Adaptive learning configuration
 - [API Reference](./api-reference) - Provider interfaces and models
 

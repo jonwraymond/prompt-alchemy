@@ -5,213 +5,125 @@ title: Learning Mode
 
 # Learning Mode
 
-Prompt Alchemy's learning mode implements a feedback-driven system to improve prompt quality over time.
-
-### Process
-1. Collect feedback (internal/judge/evaluator.go) via LLM scores
-2. Rank prompts (internal/ranking/ranker.go) using weights/features
-3. Train model nightly (cmd/nightly.go) with XGBoost stub
-
-### Usage
-prompt-alchemy nightly --train
-
-// Update any inaccurate descriptions
+Prompt Alchemy's learning mode implements a feedback-driven system to improve prompt ranking and recommendations over time. This document explains how it works and how to use it.
 
 ## Overview
 
 When learning mode is enabled, Prompt Alchemy:
-- Tracks prompt effectiveness through user feedback
-- Identifies successful patterns in prompt generation
-- Adjusts relevance scores based on usage
-- Provides AI-powered recommendations
-- Maintains usage analytics for continuous improvement
+- Allows users to record feedback on prompt effectiveness using the `record_feedback` tool.
+- Uses this feedback to adjust the ranking weights for prompt searches.
+- Provides AI-powered recommendations for new prompts based on successful patterns.
+- Relies on a `nightly` command, scheduled by the user, to process feedback and update its learning model.
 
-## Config Example
+## Enabling Learning Mode
+
+To enable learning mode, set the following in your `config.yaml`:
+
+```yaml
 learning:
   enabled: true
-  learning_rate: 0.1
-  min_samples: 100
-
-## MCP Server Mode
-
-The learning features are exposed through the MCP server when enabled:
-
-```bash
-# Start MCP server with learning enabled
-prompt-alchemy serve
-
-# Or with explicit config
-PROMPT_ALCHEMY_LEARNING_ENABLED=true prompt-alchemy serve
 ```
 
-## Available Tools
+You can also enable it for a single server session with a flag:
+```bash
+prompt-alchemy serve --learning-enabled
+```
+
+## How It Works: The Feedback Loop
+
+The learning system operates on a simple, powerful feedback loop:
+
+1.  **Generate & Use**: You generate and use prompts as usual.
+2.  **Record Feedback**: You use the `record_feedback` MCP tool to provide a score for a specific prompt's effectiveness.
+3.  **Nightly Training**: You run the `nightly` command (ideally as a scheduled job) to process all the feedback collected since the last run.
+4.  **Weight Adjustment**: The `nightly` job analyzes the feedback and adjusts the ranking weights in your `config.yaml` file to favor the characteristics of effective prompts.
+5.  **Improved Ranking**: The next time you search for prompts, the ranking will be influenced by the newly learned weights, improving the relevance of the results over time.
+
+This entire process is local and does not rely on any external services.
+
+## Available Learning Tools
+
+When learning is enabled, the following MCP tools become available.
+
+*These examples show the JSON object that should be sent to the server's `stdin`.*
 
 ### 1. record_feedback
 
-Records user feedback about prompt effectiveness:
+Records user feedback about a prompt's effectiveness.
 
+**JSON-RPC Request:**
 ```json
 {
-  "tool": "record_feedback",
-  "arguments": {
-    "prompt_id": "b17deed2-f9f7-443f-a879-ca87941c9308",
-    "effectiveness": 0.85,
-    "rating": 4,
-    "session_id": "session-123",
-    "context": "Used for API documentation generation"
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "record_feedback",
+    "arguments": {
+      "prompt_id": "b17deed2-f9f7-443f-a879-ca87941c9308",
+      "effectiveness": 0.9,
+      "rating": 5,
+      "context": "Worked perfectly for generating API documentation."
+    }
   }
 }
 ```
 
 ### 2. get_recommendations
 
-Get AI-powered prompt recommendations based on learned patterns:
+Gets AI-powered prompt recommendations based on learned patterns.
 
+**JSON-RPC Request:**
 ```json
 {
-  "tool": "get_recommendations",
-  "arguments": {
-    "input": "Create a chatbot for customer service",
-    "limit": 5
+  "jsonrpc": "2.0",
+  "id": 2,
+  "method": "tools/call",
+  "params": {
+    "name": "get_recommendations",
+    "arguments": {
+      "input": "Create a chatbot for customer service",
+      "limit": 3
+    }
   }
 }
 ```
 
 ### 3. get_learning_stats
 
-View current learning statistics:
+Views the current statistics from the learning engine.
 
+**JSON-RPC Request:**
 ```json
 {
-  "tool": "get_learning_stats",
-  "arguments": {
-    "include_patterns": true
+  "jsonrpc": "2.0",
+  "id": 3,
+  "method": "tools/call",
+  "params": {
+    "name": "get_learning_stats",
+    "arguments": {
+      "include_patterns": true
+    }
   }
 }
 ```
 
-## How It Works
+## Automated Training
 
-### Pattern Recognition
+The learning system does not run any background processes on its own. It relies on the user to schedule the `nightly` command.
 
-The learning engine identifies patterns in:
-- **Success patterns**: Prompts with effectiveness > 0.8
-- **Failure patterns**: Prompts with effectiveness < 0.3
-- **Optimization patterns**: Improvements between prompt versions
+Use the `schedule` command to set up a recurring job:
+```bash
+# Schedule the nightly job to run daily at 2 AM
+prompt-alchemy schedule --time "0 2 * * *"
 
-### Relevance Scoring
-
-Relevance scores are updated based on:
-- Usage frequency
-- User feedback ratings
-- Effectiveness scores
-- Time decay (older unused prompts decay)
-
-### Adaptive Ranking
-
-The system uses exponential moving averages to track:
-- Success rates
-- Average latency
-- User satisfaction
-- Context matches
-
-## Background Processes
-
-When learning mode is enabled, three background processes run:
-
-1. **Relevance Decay**: Hourly process that reduces relevance of unused prompts
-2. **Pattern Consolidation**: 6-hour process that merges similar patterns
-3. **Metrics Cleanup**: Daily process that removes old metrics data
-
-## Database Schema
-
-Learning mode uses additional tables:
-
-### usage_analytics
-- Tracks how prompts are used
-- Records effectiveness scores
-- Links generated prompts to source prompts
-
-### Automatic Triggers
-- Updates usage count on prompt access
-- Increases relevance score with usage
-- Timestamps all interactions
+# Run the job manually at any time
+prompt-alchemy nightly
+```
 
 ## Best Practices
 
-1. **Consistent Feedback**: Encourage users to provide feedback regularly
-2. **Meaningful Ratings**: Use the full 1-5 scale for ratings
-3. **Context Matters**: Always provide context with feedback
-4. **Monitor Patterns**: Review learning stats periodically
-5. **Adjust Parameters**: Fine-tune learning rate and decay rate based on usage
-
-## Example Workflow
-
-```bash
-# 1. Generate prompt
-./prompt-alchemy generate "Create API documentation"
-
-# 2. Use the prompt and evaluate effectiveness
-# (Prompt ID: abc-123)
-
-# 3. Record feedback
-curl -X POST http://localhost:8080/mcp \
-  -d '{
-    "jsonrpc": "2.0",
-    "method": "tools/call",
-    "params": {
-      "name": "record_feedback",
-      "arguments": {
-        "prompt_id": "abc-123",
-        "effectiveness": 0.9,
-        "rating": 5,
-        "context": "Worked perfectly for REST API docs"
-      }
-    }
-  }'
-
-# 4. Get recommendations for similar tasks
-curl -X POST http://localhost:8080/mcp \
-  -d '{
-    "jsonrpc": "2.0",
-    "method": "tools/call",
-    "params": {
-      "name": "get_recommendations",
-      "arguments": {
-        "input": "Create GraphQL documentation",
-        "limit": 3
-      }
-    }
-  }'
-```
-
-## Performance Considerations
-
-- Learning mode adds ~10-15% overhead to prompt generation
-- Background processes use minimal resources
-- Pattern storage is capped at 10,000 patterns
-- Metrics are automatically cleaned after feedback window
-
-## Privacy & Security
-
-- All learning data stays local to your instance
-- No external services are used for learning
-- Feedback data can be exported/deleted anytime
-- Learning can be disabled without data loss
-
-## Usage Examples
-prompt-alchemy nightly
-
-curl -X POST localhost:8080/mcp -d '{"method":"record_feedback","params":{"prompt_id":"uuid","score":0.8}}'
-
-## Troubleshooting
-- No improvements: Check feedback collection
-- High CPU: Reduce training frequency
-
-## Future Enhancements
-
-- Machine learning model integration
-- Cross-session pattern sharing
-- A/B testing framework
-- Automated prompt optimization
-- Multi-user collaboration features
+1.  **Consistent Feedback**: The more feedback you provide, the better the system learns.
+2.  **Meaningful Scores**: Use the full `effectiveness` score range (0.0 to 1.0) to provide clear signals.
+3.  **Schedule Training**: Set up the `nightly` job to run regularly to keep your ranking model up-to-date.
+4.  **Monitor Stats**: Use `get_learning_stats` to understand how the system is learning.

@@ -78,6 +78,11 @@ const (
 	PhasePrecision Phase = PhaseCoagulatio    // Deprecated: use PhaseCoagulatio
 )
 
+// String returns the string representation of the Phase
+func (p Phase) String() string {
+	return string(p)
+}
+
 // PromptRequest represents a request to generate prompts
 type PromptRequest struct {
 	Input       string           `json:"input"`

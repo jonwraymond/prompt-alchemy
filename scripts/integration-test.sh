@@ -55,7 +55,7 @@ providers:
     model: "gpt-4o-mini"
   anthropic:
     api_key: "mock-key"
-    model: "claude-3-5-sonnet-20241022"
+    model: "claude-4-sonnet-20250522"
 
 phases:
   idea:

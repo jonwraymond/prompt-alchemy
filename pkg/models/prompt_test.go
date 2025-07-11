@@ -14,7 +14,7 @@ func TestPrompt_NewPrompt(t *testing.T) {
 		Content:      "Test prompt content",
 		Phase:        PhaseIdea,
 		Provider:     "openai",
-		Model:        "gpt-4",
+		Model:        "o4-mini",
 		Temperature:  0.7,
 		MaxTokens:    1000,
 		ActualTokens: 150,
@@ -27,7 +27,7 @@ func TestPrompt_NewPrompt(t *testing.T) {
 	assert.Equal(t, "Test prompt content", prompt.Content)
 	assert.Equal(t, PhaseIdea, prompt.Phase)
 	assert.Equal(t, "openai", prompt.Provider)
-	assert.Equal(t, "gpt-4", prompt.Model)
+	assert.Equal(t, "o4-mini", prompt.Model)
 	assert.Equal(t, 0.7, prompt.Temperature)
 	assert.Equal(t, 1000, prompt.MaxTokens)
 	assert.Equal(t, 150, prompt.ActualTokens)
@@ -115,7 +115,7 @@ func TestModelMetadata(t *testing.T) {
 	metadata := &ModelMetadata{
 		ID:                 uuid.New(),
 		PromptID:           uuid.New(),
-		GenerationModel:    "gpt-4",
+		GenerationModel:    "o4-mini",
 		GenerationProvider: "openai",
 		EmbeddingModel:     "text-embedding-3-small",
 		EmbeddingProvider:  "openai",
@@ -131,7 +131,7 @@ func TestModelMetadata(t *testing.T) {
 
 	assert.NotEqual(t, uuid.Nil, metadata.ID)
 	assert.NotEqual(t, uuid.Nil, metadata.PromptID)
-	assert.Equal(t, "gpt-4", metadata.GenerationModel)
+	assert.Equal(t, "o4-mini", metadata.GenerationModel)
 	assert.Equal(t, "openai", metadata.GenerationProvider)
 	assert.Equal(t, "text-embedding-3-small", metadata.EmbeddingModel)
 	assert.Equal(t, "openai", metadata.EmbeddingProvider)
@@ -232,7 +232,7 @@ func TestPrompt_WithEmbedding(t *testing.T) {
 		Content:           "Test prompt with embedding",
 		Phase:             PhaseIdea,
 		Provider:          "openai",
-		Model:             "gpt-4",
+		Model:             "o4-mini",
 		Embedding:         []float32{0.1, 0.2, 0.3, 0.4, 0.5},
 		EmbeddingModel:    "text-embedding-3-small",
 		EmbeddingProvider: "openai",
@@ -297,7 +297,7 @@ func BenchmarkPrompt_Creation(b *testing.B) {
 			Content:      "Benchmark prompt content",
 			Phase:        PhaseIdea,
 			Provider:     "openai",
-			Model:        "gpt-4",
+			Model:        "o4-mini",
 			Temperature:  0.7,
 			MaxTokens:    1000,
 			ActualTokens: 150,

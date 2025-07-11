@@ -1,0 +1,29 @@
+graph TD
+    subgraph "Provider Interface Layer"
+        Registry["`🏛️ **Provider Registry**<br/>Central Management`"]
+        Interface["`📋 **Provider Interface**<br/>Standard Contract`"]
+    end
+    
+    subgraph "Provider Implementations"
+        OAI_Core["`🤖 **OpenAI**`"]
+        ANT_Core["`🧠 **Anthropic**`"]
+        GOO_Core["`🌟 **Google**`"]
+        OR_Core["`🔗 **OpenRouter**`"]
+        OLL_Core["`🏠 **Ollama**`"]
+    end
+    
+    subgraph "Common Services"
+        Logger["`📝 **Request Logger**`"]
+    end
+    
+    Registry --> Interface
+    Interface --> OAI_Core
+    Interface --> ANT_Core
+    Interface --> GOO_Core
+    Interface --> OR_Core
+    Interface --> OLL_Core
+    
+    Interface --> Logger
+    
+    style Registry fill:#FF6B35,stroke:#333,stroke-width:3px,color:#fff
+    style Interface fill:#4CAF50,stroke:#333,stroke-width:2px,color:#fff

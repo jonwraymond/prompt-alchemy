@@ -61,9 +61,12 @@ jobs:
         with:
           version: latest
           
-      - name: Configure
+      - name: Configure API Key
         run: |
-          prompt-alchemy config set providers.openai.api_key "${{ secrets.OPENAI_API_KEY }}"
+          mkdir -p ~/.prompt-alchemy
+          echo "providers:" > ~/.prompt-alchemy/config.yaml
+          echo "  openai:" >> ~/.prompt-alchemy/config.yaml
+          echo "    api_key: ${{ secrets.OPENAI_API_KEY }}" >> ~/.prompt-alchemy/config.yaml
           
       - name: Generate Prompts
         run: |
@@ -116,47 +119,42 @@ pipeline {
 ### Container Deployment
 
 #### Docker (On-Demand)
+To run on-demand commands within a Docker container:
 ```dockerfile
+FROM golang:1.23-alpine AS builder
+WORKDIR /app
+COPY . .
+RUN go build -o /prompt-alchemy cmd/prompt-alchemy/main.go
+
 FROM alpine:3.18
-
 RUN apk add --no-cache ca-certificates
-
-COPY --from=builder /app/prompt-alchemy /usr/local/bin/
-COPY config.yaml /etc/prompt-alchemy/
-
-ENV PROMPT_ALCHEMY_CONFIG=/etc/prompt-alchemy/config.yaml
-
+COPY --from=builder /prompt-alchemy /usr/local/bin/
 ENTRYPOINT ["prompt-alchemy"]
 ```
 
 #### Usage in Docker
 ```bash
-# Build image
+# Build the CLI image
 docker build -t prompt-alchemy:cli .
 
-# Run command
+# Run a generate command, mounting a config file and output directory
 docker run --rm \
-  -e OPENAI_API_KEY=$OPENAI_API_KEY \
-  -v $(pwd)/output:/output \
-  prompt-alchemy:cli generate "Create README"
+  -v ~/.prompt-alchemy/config.yaml:/root/.prompt-alchemy/config.yaml:ro \
+  -v $(pwd)/output:/app/output \
+  prompt-alchemy:cli generate "Create a README" --output-file /app/output/README.md
 ```
 
 ## Server Mode Deployment
 
+**Important Note**: Server mode runs a **Model Context Protocol (MCP) server**, not a standard HTTP web server. It communicates over `stdin` and `stdout` and is designed for programmatic use by AI agents or other MCP-compliant clients. The following examples demonstrate how to run the server as a persistent service.
+
 ### Development Deployment
-
-#### Local Development
 ```bash
-# Start with hot reload
-prompt-alchemy serve --dev --port 8080
-
-# With specific config
-prompt-alchemy serve --config dev.yaml --learning-enabled
-
-# With environment variables
-PROMPT_ALCHEMY_PORT=8080 \
-PROMPT_ALCHEMY_LEARNING_ENABLED=true \
+# Start the MCP server
 prompt-alchemy serve
+
+# Start with learning mode enabled via config or flag
+prompt-alchemy serve --learning-enabled
 ```
 
 ### Production Deployment
@@ -165,8 +163,7 @@ prompt-alchemy serve
 ```ini
 # /etc/systemd/system/prompt-alchemy.service
 [Unit]
-Description=Prompt Alchemy Server
-Documentation=https://github.com/jonwraymond/prompt-alchemy
+Description=Prompt Alchemy MCP Server
 After=network.target
 
 [Service]
@@ -174,31 +171,9 @@ Type=simple
 User=promptalchemy
 Group=promptalchemy
 WorkingDirectory=/var/lib/prompt-alchemy
-
-# Security hardening
-NoNewPrivileges=true
-PrivateTmp=true
-ProtectSystem=strict
-ProtectHome=true
-ReadWritePaths=/var/lib/prompt-alchemy
-
-# Resource limits
-LimitNOFILE=65536
-LimitNPROC=4096
-MemoryLimit=1G
-CPUQuota=200%
-
-# Environment
-Environment="PROMPT_ALCHEMY_CONFIG=/etc/prompt-alchemy/config.yaml"
-EnvironmentFile=-/etc/prompt-alchemy/env
-
-# Start command
-ExecStart=/usr/local/bin/prompt-alchemy serve
-ExecReload=/bin/kill -HUP $MAINPID
+ExecStart=/usr/local/bin/prompt-alchemy serve --config /etc/prompt-alchemy/config.yaml
 Restart=always
 RestartSec=10
-
-# Logging
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=prompt-alchemy
@@ -212,47 +187,21 @@ WantedBy=multi-user.target
 version: '3.8'
 
 services:
-  prompt-alchemy:
+  prompt-alchemy-mcp:
     image: ghcr.io/jonwraymond/prompt-alchemy:latest
-    container_name: prompt-alchemy-server
+    container_name: prompt-alchemy-mcp-server
     restart: unless-stopped
-    ports:
-      - "8080:8080"
+    # The server reads from stdin and writes to stdout.
+    # It does not expose HTTP ports.
+    # Attach to this container to interact with the MCP server.
+    stdin_open: true
+    tty: true
     environment:
-      - PROMPT_ALCHEMY_MODE=server
       - PROMPT_ALCHEMY_LEARNING_ENABLED=true
-      - PROMPT_ALCHEMY_LOG_LEVEL=info
     env_file:
-      - .env  # Contains API keys
+      - .env  # Contains API keys like OPENAI_API_KEY
     volumes:
-      - ./data:/data
-      - ./config:/config
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    deploy:
-      resources:
-        limits:
-          cpus: '2'
-          memory: 1G
-        reservations:
-          cpus: '0.5'
-          memory: 256M
-
-  # Optional: Reverse proxy
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "443:443"
-      - "80:80"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
-      - ./certs:/etc/nginx/certs
-    depends_on:
-      - prompt-alchemy
+      - ./data:/root/.prompt-alchemy # Mount data directory
 ```
 
 #### Kubernetes Deployment
@@ -275,9 +224,7 @@ spec:
       containers:
       - name: prompt-alchemy
         image: ghcr.io/jonwraymond/prompt-alchemy:latest
-        ports:
-        - containerPort: 8080
-          name: http
+        ports: [] # No container ports are exposed for the MCP server
         env:
         - name: PROMPT_ALCHEMY_MODE
           value: "server"
@@ -300,18 +247,8 @@ spec:
           limits:
             memory: "1Gi"
             cpu: "2000m"
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: http
-          initialDelaySeconds: 30
-          periodSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /ready
-            port: http
-          initialDelaySeconds: 5
-          periodSeconds: 5
+        # Note: Liveness/Readiness probes via HTTP are not applicable.
+        # Custom probes using shell commands to check process status would be needed.
       volumes:
       - name: data
         persistentVolumeClaim:

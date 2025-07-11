@@ -55,7 +55,7 @@ docker-compose ps
 docker-compose logs prompt-alchemy
 ```
 
-See [Docker Deployment Guide](./docker-hybrid-deployment.md) for details.
+For details on deploying with Docker, see the [Deployment Guide](./deployment-guide.md).
 
 ## Your First Prompt
 
@@ -104,18 +104,6 @@ For complete command documentation, see the [CLI Reference](./cli-reference).
 ./prompt-alchemy search "API" --since 2024-01-01
 ```
 
-### View Analytics
-```bash
-# View daily metrics
-./prompt-alchemy metrics --report daily
-
-# View provider usage
-./prompt-alchemy metrics --report provider
-
-# Export as JSON
-./prompt-alchemy metrics --output json > metrics.json
-```
-
 ## Configuration Basics
 
 Your configuration file (`~/.prompt-alchemy/config.yaml`) controls:
@@ -148,54 +136,40 @@ generation:
   default_max_tokens: 2000
   default_count: 3
   use_parallel: true
-  default_target_model: "claude-3-5-sonnet-20241022"
+  default_target_model: "claude-4-sonnet-20250522"
   default_embedding_model: "text-embedding-3-small"
   default_embedding_dimensions: 1536
 ```
 
 ## Automated Learning (Optional)
 
-Prompt Alchemy includes a learning-to-rank system that improves prompt recommendations over time by analyzing user interactions:
+Prompt Alchemy includes a learning-to-rank system that improves prompt recommendations over time by analyzing user interactions.
 
 ```bash
 # Run the nightly training job manually
 ./prompt-alchemy nightly
 
-# Set up automated scheduling (runs daily at 2 AM)
+# Set up a daily scheduled job (e.g., at 2 AM)
 ./prompt-alchemy schedule --time "0 2 * * *"
-
-# List current scheduled jobs
-./prompt-alchemy schedule --list
-
-# Uninstall scheduled job
-./prompt-alchemy schedule --uninstall
 ```
 
-The schedule command automatically:
-- Detects your system (macOS uses launchd, Linux uses cron)
-- Finds the correct binary and config paths  
-- Handles installation and uninstallation
-- Provides logging for troubleshooting
-
-This keeps the server lightweight while running training jobs separately as scheduled tasks.
+The `schedule` command automatically detects your OS (macOS or Linux) and uses the appropriate system scheduler (launchd or cron).
 
 ## Next Steps
 
-- Read the [Installation Guide](./installation) for detailed setup
-- Explore the [Usage Guide](./usage) for advanced features
-- Learn about [Architecture](./architecture) to understand how it works
-- View [Diagrams](./diagrams) for visual architecture overview
-- Understand the [Database](./database) schema and implementation
-- Set up [MCP Integration](./mcp-integration) for AI assistant connectivity
-- Review [MCP Tools](./mcp-tools) for detailed tool reference
-- Check [API Reference](./api-reference) for extending functionality
+- Read the [Installation Guide](./installation) for detailed setup.
+- Explore the [Usage Guide](./usage) for advanced features.
+- Learn about the [Architecture](./architecture) to understand how it works.
+- Understand the [Database Schema](./database-schema) and implementation.
+- Set up [MCP Integration](./mcp-integration) for AI assistant connectivity.
+- Review the [MCP API Reference](./mcp-api-reference) for detailed tool reference.
 
 ## Getting Help
 
 If you run into issues:
 
-1. Check the configuration: `./prompt-alchemy config`
-2. Verify providers: `./prompt-alchemy providers`
+1. Validate your configuration: `./prompt-alchemy validate`
+2. Test your providers: `./prompt-alchemy test-providers`
 3. See logs in `~/.prompt-alchemy/logs/`
 4. Open an issue on GitHub
 

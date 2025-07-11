@@ -79,7 +79,7 @@ providers:
     timeout: 30
   anthropic:
     api_key: "mock-anthropic-key"
-    model: "claude-3-5-sonnet-20241022"
+    model: "claude-4-sonnet-20250522"
     timeout: 30
 
 phases:
@@ -348,7 +348,7 @@ providers:
     timeout: 30
   anthropic:
     api_key: "mock-anthropic-key"
-    model: "claude-3-5-sonnet-20241022"
+    model: "claude-4-sonnet-20250522"
     timeout: 30
 
 phases:

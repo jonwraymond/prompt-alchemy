@@ -142,7 +142,7 @@ providers:
     timeout: 30
   anthropic:
     api_key: "mock-anthropic-key"
-    model: "claude-3-5-sonnet-20241022"
+    model: "claude-4-sonnet-20250522"
     timeout: 30
   google:
     api_key: "mock-google-key"
@@ -170,7 +170,7 @@ generation:
   default_max_tokens: 2000
   default_count: 3
   use_parallel: true
-  default_target_model: "claude-3-5-sonnet-20241022"
+  default_target_model: "claude-4-sonnet-20250522"
   default_embedding_model: "text-embedding-3-small"
   default_embedding_dimensions: 1536
 

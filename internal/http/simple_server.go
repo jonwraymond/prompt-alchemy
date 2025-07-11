@@ -201,12 +201,15 @@ func NewSimpleServer(
 		config:   config,
 	}
 
+	logger.Info("=== CALLING SETUP ROUTER ===")
 	s.setupRouter()
+	logger.Info("=== SETUP ROUTER COMPLETE ===")
 	return s
 }
 
 // setupRouter configures basic routes
 func (s *SimpleServer) setupRouter() {
+	fmt.Println("=== SETUP ROUTER CALLED ===")
 	r := chi.NewRouter()
 
 	// Basic middleware
@@ -239,9 +242,11 @@ func (s *SimpleServer) setupRouter() {
 
 		// Prompt CRUD endpoints
 		r.Route("/prompts", func(r chi.Router) {
+			s.logger.Info("=== REGISTERING PROMPTS ROUTES ===")
 			r.Get("/", s.handleListPrompts)
 			r.Post("/", s.handleCreatePrompt)
 			r.Post("/generate", s.handleGeneratePrompts)
+			s.logger.Info("=== REGISTERED /generate ROUTE ===")
 			r.Post("/select", s.handleAISelectPrompt)
 			r.Get("/search", s.handleSearchPrompts)
 			r.Get("/{id}", s.handleGetPrompt)
@@ -507,11 +512,21 @@ func (s *SimpleServer) handleDeletePrompt(w http.ResponseWriter, r *http.Request
 }
 
 func (s *SimpleServer) handleGeneratePrompts(w http.ResponseWriter, r *http.Request) {
+	s.logger.Info("=== GENERATE ENDPOINT CALLED ===")
+
 	var req GenerateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		s.writeError(w, http.StatusBadRequest, "Invalid JSON payload")
 		return
 	}
+
+	// DEBUG: Log request details
+	s.logger.WithFields(logrus.Fields{
+		"providers_nil":   req.Providers == nil,
+		"providers_len":   len(req.Providers),
+		"providers_value": req.Providers,
+		"input":           req.Input,
+	}).Info("DEBUG: Received generate request")
 
 	// Validate required fields
 	if req.Input == "" {
@@ -552,7 +567,7 @@ func (s *SimpleServer) handleGeneratePrompts(w http.ResponseWriter, r *http.Requ
 		phases[i] = models.Phase(phaseStr)
 	}
 
-	// Build phase configs
+	// Build phase configs using helper to read from viper config
 	phaseConfigs := make([]models.PhaseConfig, len(phases))
 	for i, phase := range phases {
 		provider := ""
@@ -571,6 +586,60 @@ func (s *SimpleServer) handleGeneratePrompts(w http.ResponseWriter, r *http.Requ
 		phaseConfigs[i] = models.PhaseConfig{
 			Phase:    phase,
 			Provider: provider,
+		}
+	}
+
+	// Log provider request details for debugging
+	s.logger.WithFields(logrus.Fields{
+		"req_providers": req.Providers,
+		"providers_nil": req.Providers == nil,
+		"providers_len": len(req.Providers),
+	}).Info("Processing provider request details")
+
+	// If no providers were specified in request, read from viper configuration
+	if req.Providers == nil || len(req.Providers) == 0 {
+		s.logger.Info("No providers specified in request, reading from viper configuration")
+		// Read directly from viper with logging
+		for i, phase := range phases {
+			viperKey := "phases." + string(phase) + ".provider"
+			provider := viper.GetString(viperKey)
+			s.logger.WithFields(logrus.Fields{
+				"phase":     phase,
+				"viper_key": viperKey,
+				"provider":  provider,
+			}).Info("Reading phase provider from viper")
+
+			// Temporary fallback to ollama if viper returns empty
+			if provider == "" {
+				provider = "ollama"
+				s.logger.WithField("phase", phase).Info("Using fallback provider: ollama")
+			}
+
+			phaseConfigs[i] = models.PhaseConfig{
+				Phase:    phase,
+				Provider: provider,
+			}
+		}
+	} else {
+		// For each phase, if no provider specified, read from viper
+		for i, config := range phaseConfigs {
+			if config.Provider == "" {
+				viperKey := "phases." + string(config.Phase) + ".provider"
+				provider := viper.GetString(viperKey)
+				s.logger.WithFields(logrus.Fields{
+					"phase":     config.Phase,
+					"viper_key": viperKey,
+					"provider":  provider,
+				}).Info("Reading missing phase provider from viper")
+
+				// Fallback to ollama if viper returns empty
+				if provider == "" {
+					provider = "ollama"
+					s.logger.WithField("phase", config.Phase).Info("Using fallback provider: ollama")
+				}
+
+				phaseConfigs[i].Provider = provider
+			}
 		}
 	}
 
@@ -1058,15 +1127,15 @@ func (s *SimpleServer) handleListProviders(w http.ResponseWriter, r *http.Reques
 func (s *SimpleServer) getProviderModels(providerName string) []string {
 	switch providerName {
 	case providers.ProviderOpenAI:
-		return []string{"gpt-4o", "gpt-4o-mini", "gpt-4", "gpt-3.5-turbo"}
+		return []string{"o4-mini", "gpt-4o", "gpt-4", "gpt-3.5-turbo"}
 	case providers.ProviderAnthropic:
-		return []string{"claude-3-5-sonnet-20241022", "claude-3-5-haiku-20241022", "claude-3-opus-20240229"}
+		return []string{"claude-4-sonnet-20250522", "claude-3-5-sonnet-20241022", "claude-3-5-haiku-20241022", "claude-3-opus-20240229"}
 	case providers.ProviderGoogle:
-		return []string{"gemini-2.0-flash-exp", "gemini-1.5-pro", "gemini-1.5-flash"}
+		return []string{"gemini-2.5-flash", "gemini-1.5-pro", "gemini-1.5-flash"}
 	case providers.ProviderOllama:
 		return []string{"llama3.2", "qwen2.5", "mistral", "phi3", "gemma2"}
 	case providers.ProviderOpenRouter:
-		return []string{"anthropic/claude-3.5-sonnet", "openai/gpt-4o", "google/gemini-pro-1.5"}
+		return []string{"auto", "anthropic/claude-3.5-sonnet", "openai/o4-mini", "google/gemini-pro-1.5"}
 	default:
 		return []string{}
 	}

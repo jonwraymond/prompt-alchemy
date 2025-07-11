@@ -31,7 +31,7 @@ func TestNewAnthropicProvider(t *testing.T) {
 			name: "config with model",
 			config: Config{
 				APIKey: "test-key",
-				Model:  "claude-3-5-sonnet-20241022",
+				Model:  "claude-4-sonnet-20250522",
 			},
 		},
 	}
@@ -122,7 +122,7 @@ func TestAnthropicProvider_Generate_Parameters(t *testing.T) {
 	// Test parameter validation without making actual API calls
 	provider := NewAnthropicProvider(Config{
 		APIKey: "fake-key-for-testing",
-		Model:  "claude-3-5-sonnet-20241022",
+		Model:  "claude-4-sonnet-20250522",
 	})
 
 	tests := []struct {

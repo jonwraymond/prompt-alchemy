@@ -65,11 +65,17 @@ func (p *OpenAIProvider) Generate(ctx context.Context, req GenerateRequest) (*Ge
 	}
 
 	// Add optional parameters
-	if req.Temperature > 0 {
+	// Note: o4-mini only supports default temperature of 1.0
+	if req.Temperature > 0 && model != "o4-mini" {
 		params.Temperature = openai.Float(req.Temperature)
 	}
 	if req.MaxTokens > 0 {
-		params.MaxTokens = openai.Int(int64(req.MaxTokens))
+		// Use MaxCompletionTokens for o4-mini model
+		if model == "o4-mini" {
+			params.MaxCompletionTokens = openai.Int(int64(req.MaxTokens))
+		} else {
+			params.MaxTokens = openai.Int(int64(req.MaxTokens))
+		}
 	}
 
 	// Make the API call

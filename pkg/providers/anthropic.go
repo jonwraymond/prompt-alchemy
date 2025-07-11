@@ -49,7 +49,7 @@ func (p *AnthropicProvider) Generate(ctx context.Context, req GenerateRequest) (
 
 	model := p.config.Model
 	if model == "" {
-		model = "claude-3-5-sonnet-20241022" // Latest stable Claude 3.5 Sonnet
+		model = "claude-3-5-sonnet-20241022" // Latest Claude 3.5 Sonnet
 	}
 
 	maxTokens := req.MaxTokens

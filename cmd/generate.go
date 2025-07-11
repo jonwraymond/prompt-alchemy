@@ -19,6 +19,7 @@ import (
 	log "github.com/jonwraymond/prompt-alchemy/internal/log"
 	"github.com/jonwraymond/prompt-alchemy/internal/ranking"
 	"github.com/jonwraymond/prompt-alchemy/internal/storage"
+	"github.com/jonwraymond/prompt-alchemy/pkg/client"
 	"github.com/jonwraymond/prompt-alchemy/pkg/models"
 	"github.com/jonwraymond/prompt-alchemy/pkg/providers"
 )
@@ -61,8 +62,11 @@ func init() {
 	generateCmd.Flags().StringVarP(&outputFormat, "output", "o", "text", "Output format (text, json, yaml)")
 	generateCmd.Flags().BoolVar(&savePrompt, "save", true, "Save generated prompts to database")
 	generateCmd.Flags().StringVar(&persona, "persona", "code", "AI persona to use (code, writing, analysis, generic)")
-	generateCmd.Flags().StringVar(&targetModel, "target-model", "", "Target model family for optimization (claude-3-5-sonnet-20241022, gpt-4o-mini, gemini-2.5-flash, etc.)")
+	generateCmd.Flags().StringVar(&targetModel, "target-model", "", "Target model family for optimization (claude-4-sonnet-20250522, o4-mini, gemini-2.5-flash, etc.)")
 	generateCmd.Flags().IntVar(&embeddingDimensions, "embedding-dimensions", 0, "Embedding dimensions for similarity search (uses config default if not specified)")
+
+	// Client mode flag (overrides config)
+	generateCmd.Flags().String("server", "", "Server URL for client mode (overrides config and enables client mode)")
 
 	// Bind flags to viper for configuration file support
 	viper.BindPFlag("generation.default_phases", generateCmd.Flags().Lookup("phases"))
@@ -82,6 +86,65 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 	// Join args as input
 	input := strings.Join(args, " ")
 	logger.Debugf("Input prompt: %s", input)
+
+	// Check execution mode
+	mode := viper.GetString("client.mode")
+	serverFlag, _ := cmd.Flags().GetString("server")
+
+	// Use client mode if explicitly set or if --server flag is provided
+	if mode == "client" || client.IsServerMode() || serverFlag != "" {
+		return runGenerateClient(cmd, args, input)
+	}
+
+	return runGenerateLocal(cmd, args, input)
+}
+
+func runGenerateClient(cmd *cobra.Command, args []string, input string) error {
+	logger := log.GetLogger()
+	logger.Info("Running in client mode")
+
+	// Create client (check for --server flag override)
+	var c *client.Client
+	if serverFlag, _ := cmd.Flags().GetString("server"); serverFlag != "" {
+		c = client.NewClientWithURL(serverFlag, logger)
+		logger.Infof("Using server from flag: %s", serverFlag)
+	} else {
+		c = client.NewClient(logger)
+	}
+
+	// Check server health first
+	ctx := context.Background()
+	health, err := c.Health(ctx)
+	if err != nil {
+		return fmt.Errorf("server health check failed: %w", err)
+	}
+	logger.Infof("Connected to server: %s (version: %s)", health.Status, health.Version)
+
+	// Create client request
+	req := client.GenerateRequest{
+		Input:       input,
+		Phases:      phases,
+		Count:       count,
+		Temperature: temperature,
+		MaxTokens:   maxTokens,
+		Tags:        tags,
+		Persona:     persona,
+		TargetModel: targetModel,
+	}
+
+	// Generate via server
+	result, err := c.Generate(ctx, req)
+	if err != nil {
+		return fmt.Errorf("client generation failed: %w", err)
+	}
+
+	// For client mode, we'll use a simplified output since we don't have local storage
+	return outputClientResults(result, outputFormat)
+}
+
+func runGenerateLocal(cmd *cobra.Command, args []string, input string) error {
+	logger := log.GetLogger()
+	logger.Info("Running in local mode")
 
 	// Parse phases
 	phaseList := helpers.ParsePhases(phases)
@@ -458,6 +521,70 @@ func outputResults(store *storage.Storage, result *models.GenerationResult, form
 					best.Prompt.ModelMetadata.ProcessingTime)
 			}
 		}
+	}
+
+	return nil
+}
+
+func outputClientResults(result *models.GenerationResult, format string) error {
+	logger := log.GetLogger()
+
+	switch format {
+	case "json":
+		data, err := json.MarshalIndent(result, "", "  ")
+		if err != nil {
+			logger.WithError(err).Error("Failed to marshal result to JSON")
+			return err
+		}
+		fmt.Println(string(data))
+
+	case "yaml":
+		// For simplicity, using JSON for now
+		logger.Warn("YAML output is not yet supported, falling back to JSON")
+		return outputClientResults(result, "json")
+
+	default: // text
+		logger.Info("Generated Prompts:")
+		totalCost := 0.0
+
+		for i, prompt := range result.Prompts {
+			logger.Infof("[%d] Phase: %s | Provider: %s | Model: %s", i+1, prompt.Phase, prompt.Provider, prompt.Model)
+			logger.Info(prompt.Content)
+
+			// Show model metadata if available
+			if prompt.ModelMetadata != nil {
+				logger.Infof("  Generation Model: %s (%s)", prompt.ModelMetadata.GenerationModel, prompt.ModelMetadata.GenerationProvider)
+				if prompt.ModelMetadata.EmbeddingModel != "" {
+					logger.Infof("  Embedding Model: %s (%s)", prompt.ModelMetadata.EmbeddingModel, prompt.ModelMetadata.EmbeddingProvider)
+				}
+				logger.Infof("  Processing Time: %d ms", prompt.ModelMetadata.ProcessingTime)
+				logger.Infof("  Tokens: %d input, %d output, %d total",
+					prompt.ModelMetadata.InputTokens, prompt.ModelMetadata.OutputTokens, prompt.ModelMetadata.TotalTokens)
+				if prompt.ModelMetadata.Cost > 0 {
+					logger.Infof("  Estimated Cost: $%.6f", prompt.ModelMetadata.Cost)
+					totalCost += prompt.ModelMetadata.Cost
+				}
+			} else {
+				// Fallback for basic info
+				logger.Infof("Token Usage: %d", prompt.ActualTokens)
+			}
+
+			// Show ranking if available
+			for _, ranking := range result.Rankings {
+				if ranking.Prompt.ID == prompt.ID {
+					logger.Infof("Ranking Score: %.2f", ranking.Score)
+					break
+				}
+			}
+		}
+
+		// Show cost summary
+		if totalCost > 0 {
+			logger.Infof("Total Estimated Cost: $%.6f", totalCost)
+		}
+
+		// Note: Interactive selection disabled in client mode for simplicity
+		logger.Info("(Interactive selection not available in client mode)")
 	}
 
 	return nil

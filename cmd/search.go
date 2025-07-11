@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/jonwraymond/prompt-alchemy/internal/storage"
+	"github.com/jonwraymond/prompt-alchemy/pkg/client"
 	"github.com/jonwraymond/prompt-alchemy/pkg/models"
 	"github.com/jonwraymond/prompt-alchemy/pkg/providers"
 
@@ -80,6 +81,9 @@ func init() {
 	searchCmd.Flags().BoolVar(&searchSemantic, "semantic", false, "Use semantic search with embeddings")
 	searchCmd.Flags().Float64Var(&searchSimilarity, "similarity", 0.5, "Minimum similarity threshold for semantic search (0.0-1.0)")
 	searchCmd.Flags().StringVar(&searchOutput, "output", "text", "Output format (text, json)")
+	
+	// Client mode flag (overrides config)
+	searchCmd.Flags().String("server", "", "Server URL for client mode (overrides config and enables client mode)")
 }
 
 func runSearch(cmd *cobra.Command, args []string) error {
@@ -88,6 +92,67 @@ func runSearch(cmd *cobra.Command, args []string) error {
 		query = args[0]
 	}
 
+	// Check execution mode
+	mode := viper.GetString("client.mode")
+	serverFlag, _ := cmd.Flags().GetString("server")
+	
+	// Use client mode if explicitly set or if --server flag is provided
+	if mode == "client" || client.IsServerMode() || serverFlag != "" {
+		return runSearchClient(cmd, query)
+	}
+
+	return runSearchLocal(cmd, query)
+}
+
+func runSearchClient(cmd *cobra.Command, query string) error {
+	// Create client (check for --server flag override)
+	var c *client.Client
+	if serverFlag, _ := cmd.Flags().GetString("server"); serverFlag != "" {
+		c = client.NewClientWithURL(serverFlag, logger)
+	} else {
+		c = client.NewClient(logger)
+	}
+
+	// Parse tags
+	var tagList []string
+	if searchTags != "" {
+		tagList = strings.Split(searchTags, ",")
+		for i, tag := range tagList {
+			tagList[i] = strings.TrimSpace(tag)
+		}
+	}
+
+	// Parse phases and providers
+	var phaseList []string
+	if searchPhase != "" {
+		phaseList = []string{searchPhase}
+	}
+	
+	var providerList []string
+	if searchProvider != "" {
+		providerList = []string{searchProvider}
+	}
+
+	// Create client request
+	req := client.SearchRequest{
+		Query:     query,
+		Limit:     searchLimit,
+		Tags:      tagList,
+		Phases:    phaseList,
+		Providers: providerList,
+	}
+
+	// Search via server
+	ctx := context.Background()
+	prompts, err := c.Search(ctx, req)
+	if err != nil {
+		return fmt.Errorf("client search failed: %w", err)
+	}
+
+	return outputSearchResults(prompts, nil, query)
+}
+
+func runSearchLocal(cmd *cobra.Command, query string) error {
 	// Initialize storage
 	store, err := storage.NewStorage(viper.GetString("data_dir"), logger)
 	if err != nil {

@@ -1246,6 +1246,12 @@ func (s *Storage) ListPrompts(limit, offset int) ([]models.Prompt, error) {
 	return prompts, nil
 }
 
+// GetAllPrompts returns all prompts in the database (for export/migration)
+func (s *Storage) GetAllPrompts() ([]models.Prompt, error) {
+	// Use a very high limit to get all prompts
+	return s.ListPrompts(100000, 0)
+}
+
 // GetPromptsByRelevance returns prompts ordered by relevance score
 func (s *Storage) GetPromptsByRelevance(limit int) ([]models.Prompt, error) {
 	// Override the query to order by relevance

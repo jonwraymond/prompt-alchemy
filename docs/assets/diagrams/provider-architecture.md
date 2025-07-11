@@ -162,7 +162,7 @@ graph TB
 phases:
   prima-materia:
     provider: openai
-    model: gpt-4-turbo
+    model: o4-mini
   solutio:
     provider: anthropic  
     model: claude-3-sonnet

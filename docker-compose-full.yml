@@ -1,0 +1,52 @@
+# Docker Compose for Full Prompt Alchemy Testing with All Providers
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: prompt-alchemy-ollama-full
+    ports:
+      - "11435:11434"
+    volumes:
+      - ollama_data_full:/root/.ollama
+    environment:
+      - OLLAMA_ORIGINS=*
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  prompt-alchemy:
+    build: .
+    container_name: prompt-alchemy-full
+    ports:
+      - "9091:8080"  # Different port to avoid conflicts
+    depends_on:
+      ollama:
+        condition: service_healthy
+    volumes:
+      - ./data:/app/data
+      - ./docker-config-full.yaml:/app/config.yaml
+    environment:
+      - PROMPT_ALCHEMY_CONFIG=/app/config.yaml
+      # API Keys from .env file
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      # Optional model overrides
+      - OPENAI_MODEL=${OPENAI_MODEL:-o4-mini}
+      - ANTHROPIC_MODEL=${ANTHROPIC_MODEL:-claude-4-sonnet-20250522}
+      - GOOGLE_MODEL=${GOOGLE_MODEL:-gemini-2.5-flash}
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+
+volumes:
+  ollama_data_full:

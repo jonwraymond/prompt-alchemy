@@ -17,7 +17,7 @@ COPY . .
 COPY internal/storage/schema.sql /app/schema.sql
 
 # Build the binary with CGO enabled for SQLite support
-RUN CGO_ENABLED=1 GOOS=linux go build -o prompt-alchemy ./cmd
+RUN CGO_ENABLED=1 GOOS=linux go build -o prompt-alchemy ./cmd/prompt-alchemy
 
 # Stage 2: Create the final image
 FROM debian:12-slim
@@ -38,8 +38,8 @@ RUN mkdir -p /app/data /app/internal/storage
 # Set working directory
 WORKDIR /app
 
-# Set the entrypoint to run in hybrid mode (both MCP and HTTP)
-ENTRYPOINT ["prompt-alchemy", "serve", "--mode", "hybrid", "--config", "/app/config.yaml"]
+# Set the entrypoint to run HTTP server mode with config
+ENTRYPOINT ["prompt-alchemy", "http-server", "--config", "/app/config.yaml", "--host", "0.0.0.0", "--port", "8080"]
 
 # Expose HTTP port for REST API
 EXPOSE 8080 

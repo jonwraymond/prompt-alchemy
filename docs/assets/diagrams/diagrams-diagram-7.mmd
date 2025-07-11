@@ -1,0 +1,53 @@
+graph TD
+    subgraph "User & Agent Interfaces"
+        User["`👤 **User**`"]
+        Agent["`🤖 **AI Agent**`"]
+        WebClient["`🌐 **Web Client**`"]
+    end
+
+    subgraph "Application Layer"
+        CLI["`🖥️ **CLI Interface**`"]
+        MCPServer["`🔌 **MCP Server (stdio)**`"]
+        HTTPServer["`🌍 **HTTP Server (REST)**`"]
+    end
+
+    subgraph "Core Logic"
+        Engine[Generation Engine]
+        Learner[Learning Engine]
+        Ranker[Ranking System]
+    end
+
+    subgraph "Provider Layer"
+        Providers[Provider Registry]
+    end
+
+    subgraph "Data Layer"
+        SQLite[(SQLite Database)]
+        Embeddings[Vector Store (in DB)]
+    end
+
+    User --> CLI
+    Agent --> MCPServer
+    WebClient --> HTTPServer
+
+    CLI --> Engine
+    MCPServer --> Engine
+    HTTPServer --> Engine
+
+    Engine --> Learner
+    Engine --> Ranker
+    Engine --> Providers
+    Engine --> SQLite
+
+    Learner --> SQLite
+    Ranker --> Embeddings
+
+    classDef interface fill:#e1f5fe,stroke:#01579b
+    classDef core fill:#f3e5f5,stroke:#4a148c
+    classDef provider fill:#e8f5e8,stroke:#1b5e20
+    classDef data fill:#fff3e0,stroke:#e65100
+
+    class CLI,MCPServer,HTTPServer,User,Agent,WebClient interface
+    class Engine,Learner,Ranker core
+    class Providers provider
+    class SQLite,Embeddings data

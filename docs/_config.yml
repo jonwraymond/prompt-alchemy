@@ -25,26 +25,36 @@ navigation:
     url: /installation
   - title: Usage Guide
     url: /usage
+  - title: Deployment
+    url: /deployment-guide
+  - title: "On-Demand vs. Server Mode"
+    url: /on-demand-vs-server-mode
+  - title: Learning Mode
+    url: /learning-mode
+  - title: Scheduling
+    url: /scheduling
+  - title: Testing
+    url: /testing
+  - title: CLI Reference
+    url: /cli-reference
+  - title: MCP API Reference
+    url: /mcp-api-reference
+  - title: HTTP API Reference
+    url: /http-api-reference
+  - title: Client Interaction Modes
+    url: /client-interaction-modes
   - title: Architecture
     url: /architecture
+  - title: Vector Embeddings
+    url: /vector-embeddings
+  - title: Database
+    url: /database
+  - title: Diagrams
+    url: /diagrams
   - title: Renovate Setup
     url: /renovate-setup
   - title: Release Automation
     url: /release-automation
-  - title: Diagrams
-    url: /diagrams
-  - title: Database
-    url: /database
-  - title: MCP Integration
-    url: /mcp-integration
-  - title: MCP Tools
-    url: /mcp-tools
-  - title: CLI Reference
-    url: /cli-reference
-  - title: API Reference
-    url: /api-reference
-  - title: Vector Embeddings
-    url: /vector-embeddings
   - title: Multi-Arch Builds
     url: /multi-arch-builds
 

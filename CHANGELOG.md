@@ -173,10 +173,10 @@ prompt-alchemy serve
 providers:
   openai:
     api_key: "${OPENAI_API_KEY}"
-    model: "gpt-4o-mini"
+    model: "o4-mini"
   anthropic:
     api_key: "${ANTHROPIC_API_KEY}"
-    model: "claude-3-5-sonnet-20241022"
+    model: "claude-4-sonnet-20250522"
 
 phases:
   idea:

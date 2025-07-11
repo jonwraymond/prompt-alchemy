@@ -1,0 +1,43 @@
+# Docker Compose for Prompt Alchemy with Ollama (no API keys required)
+version: '3.8'
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: prompt-alchemy-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_ORIGINS=*
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  prompt-alchemy:
+    build: .
+    container_name: prompt-alchemy-server
+    ports:
+      - "9090:8080"
+    depends_on:
+      ollama:
+        condition: service_healthy
+    volumes:
+      - ./data:/app/data
+      - ./docker-config-ollama.yaml:/app/config.yaml
+    environment:
+      - PROMPT_ALCHEMY_CONFIG=/app/config.yaml
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+
+volumes:
+  ollama_data:

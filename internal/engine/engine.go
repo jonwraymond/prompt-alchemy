@@ -9,7 +9,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/jonwraymond/prompt-alchemy/internal/helpers"
-	log "github.com/jonwraymond/prompt-alchemy/internal/log"
 	"github.com/jonwraymond/prompt-alchemy/internal/phases"
 	"github.com/jonwraymond/prompt-alchemy/internal/selection"
 	"github.com/jonwraymond/prompt-alchemy/pkg/models"
@@ -43,7 +42,7 @@ func NewEngine(registry *providers.Registry, logger *logrus.Logger) *Engine {
 			models.PhaseSolutio:       &phases.Solutio{},
 			models.PhaseCoagulatio:    &phases.Coagulatio{},
 		},
-		logger: log.GetLogger(),
+		logger: logger,
 	}
 }
 
@@ -360,6 +359,8 @@ func calculateCost(provider, model string, tokens int) float64 {
 		switch model {
 		case "gpt-4-turbo-preview", "gpt-4-1106-preview":
 			costPerToken = 0.00003 // $0.03 per 1K tokens (output)
+		case "o4-mini":
+			costPerToken = 0.00000015 // $0.00015 per 1K tokens
 		case "gpt-3.5-turbo":
 			costPerToken = 0.000002 // $0.002 per 1K tokens
 		default:

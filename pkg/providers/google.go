@@ -397,9 +397,9 @@ func (p *GoogleProvider) getModelName(model string) string {
 	case "gemini-pro":
 		return "gemini-1.5-pro"
 	case "gemini-flash":
-		return "gemini-1.5-flash"
+		return "gemini-2.5-flash"
 	case "gemini-2-flash":
-		return "gemini-2.0-flash-exp"
+		return "gemini-2.5-flash"
 	case "gemini-2.5-flash":
 		return DefaultGeminiModel
 	default:

@@ -1,0 +1,67 @@
+# Prompt Alchemy Configuration with API Keys
+
+# Provider configurations - API keys will come from environment
+providers:
+  openai:
+    # API key from PROMPT_ALCHEMY_PROVIDERS_OPENAI_API_KEY env var
+    model: "o4-mini"
+    base_url: "https://api.openai.com/v1"
+    timeout: 60
+    
+  anthropic:
+    # API key from PROMPT_ALCHEMY_PROVIDERS_ANTHROPIC_API_KEY env var
+    model: "claude-3-5-sonnet-20241022"
+    timeout: 60
+    
+  google:
+    # API key from PROMPT_ALCHEMY_PROVIDERS_GOOGLE_API_KEY env var
+    model: "gemini-2.5-flash"
+    timeout: 60
+    
+  openrouter:
+    # API key from PROMPT_ALCHEMY_PROVIDERS_OPENROUTER_API_KEY env var
+    model: "openrouter/auto"
+    base_url: "https://openrouter.ai/api/v1"
+    timeout: 60
+    
+  ollama:
+    base_url: "http://ollama:11434"
+    model: "llama3.2:3b"
+    timeout: 120
+
+# Phase configurations
+phases:
+  prima-materia:
+    provider: "openai"
+  solutio:
+    provider: "anthropic"
+  coagulatio:
+    provider: "google"
+
+# Generation settings
+generation:
+  default_temperature: 0.7
+  default_max_tokens: 2000
+  default_count: 3
+  use_parallel: true
+  default_embedding_model: "text-embedding-3-small"
+  default_embedding_dimensions: 1536
+
+# Data storage
+data_dir: "/app/data"
+
+# Logging
+log_level: "info"
+
+# Learning settings
+learning:
+  enabled: false
+
+# Ranking configuration
+ranking:
+  weights:
+    temperature: 0.2
+    token: 0.2
+    semantic: 0.3
+    length: 0.1
+    historical: 0.2

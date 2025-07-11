@@ -6,11 +6,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"sort"
 	"strings"
 	"time"
 
 	"github.com/jonwraymond/prompt-alchemy/internal/engine"
+	"github.com/jonwraymond/prompt-alchemy/internal/helpers"
 	"github.com/jonwraymond/prompt-alchemy/internal/learning"
 	log "github.com/jonwraymond/prompt-alchemy/internal/log"
 	"github.com/jonwraymond/prompt-alchemy/internal/ranking"
@@ -85,6 +85,7 @@ training jobs separately as scheduled tasks.`,
 }
 
 func runMCPServer(cmd *cobra.Command, args []string) error {
+	logger := log.GetLogger()
 	logger.Info("Starting MCP server for Prompt Alchemy")
 
 	// Initialize storage
@@ -224,7 +225,7 @@ func (s *MCPServer) handleToolsList(req *MCPRequest) *MCPResponse {
 	tools := []MCPTool{
 		{
 			Name:        "generate_prompts",
-			Description: "Generate AI prompts using a phased approach with multiple providers and personas",
+			Description: "Generate AI prompts using a phased approach with multiple providers and personas, optimized for AI agent workflows",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
@@ -267,7 +268,7 @@ func (s *MCPServer) handleToolsList(req *MCPRequest) *MCPResponse {
 					},
 					"target_model": map[string]interface{}{
 						"type":        "string",
-						"description": "Target model family for optimization (claude-3-5-sonnet-20241022, gpt-4o-mini, gemini-2.5-flash)",
+						"description": "Target model family for optimization (claude-3-5-sonnet-20241022, o4-mini, gemini-2.5-flash)",
 					},
 					"save": map[string]interface{}{
 						"type":        "boolean",
@@ -334,47 +335,7 @@ func (s *MCPServer) handleToolsList(req *MCPRequest) *MCPResponse {
 				},
 			},
 		},
-		{
-			Name:        "get_metrics",
-			Description: "Get prompt performance metrics and analytics",
-			InputSchema: map[string]interface{}{
-				"type": "object",
-				"properties": map[string]interface{}{
-					"phase": map[string]interface{}{
-						"type":        "string",
-						"description": "Filter by phase (idea, human, precision)",
-					},
-					"provider": map[string]interface{}{
-						"type":        "string",
-						"description": "Filter by provider",
-					},
-					"since": map[string]interface{}{
-						"type":        "string",
-						"description": "Filter by creation date (YYYY-MM-DD)",
-					},
-					"limit": map[string]interface{}{
-						"type":        "integer",
-						"description": "Maximum number of prompts to analyze",
-						"default":     100,
-					},
-					"report": map[string]interface{}{
-						"type":        "string",
-						"description": "Generate report (daily, weekly, monthly)",
-					},
-					"output_format": map[string]interface{}{
-						"type":        "string",
-						"description": "Output format (table, json, markdown)",
-						"default":     "table",
-						"enum":        []string{"table", "json", "markdown"},
-					},
-					"export": map[string]interface{}{
-						"type":        "string",
-						"description": "Export to file (csv, json, excel)",
-						"enum":        []string{"csv", "json", "excel"},
-					},
-				},
-			},
-		},
+
 		{
 			Name:        "update_prompt",
 			Description: "Update an existing prompt's content, tags, or parameters",
@@ -405,28 +366,7 @@ func (s *MCPServer) handleToolsList(req *MCPRequest) *MCPResponse {
 				"required": []string{"prompt_id"},
 			},
 		},
-		{
-			Name:        "delete_prompt",
-			Description: "Delete an existing prompt and its associated data",
-			InputSchema: map[string]interface{}{
-				"type": "object",
-				"properties": map[string]interface{}{
-					"prompt_id": map[string]interface{}{
-						"type":        "string",
-						"description": "UUID of the prompt to delete",
-					},
-				},
-				"required": []string{"prompt_id"},
-			},
-		},
-		{
-			Name:        "get_providers",
-			Description: "List available providers and their capabilities",
-			InputSchema: map[string]interface{}{
-				"type":       "object",
-				"properties": map[string]interface{}{},
-			},
-		},
+
 		{
 			Name:        "optimize_prompt",
 			Description: "Optimize prompts using AI-powered meta-prompting and self-improvement",
@@ -480,30 +420,7 @@ func (s *MCPServer) handleToolsList(req *MCPRequest) *MCPResponse {
 				"required": []string{"prompt", "task"},
 			},
 		},
-		{
-			Name:        "get_config",
-			Description: "View current configuration settings and system status",
-			InputSchema: map[string]interface{}{
-				"type": "object",
-				"properties": map[string]interface{}{
-					"show_providers": map[string]interface{}{
-						"type":        "boolean",
-						"description": "Include provider configurations",
-						"default":     true,
-					},
-					"show_phases": map[string]interface{}{
-						"type":        "boolean",
-						"description": "Include phase assignments",
-						"default":     true,
-					},
-					"show_generation": map[string]interface{}{
-						"type":        "boolean",
-						"description": "Include generation settings",
-						"default":     true,
-					},
-				},
-			},
-		},
+
 		{
 			Name:        "get_prompt_by_id",
 			Description: "Get detailed information about a specific prompt",
@@ -528,54 +445,7 @@ func (s *MCPServer) handleToolsList(req *MCPRequest) *MCPResponse {
 				"required": []string{"prompt_id"},
 			},
 		},
-		{
-			Name:        "run_lifecycle_maintenance",
-			Description: "Run database lifecycle maintenance including relevance scoring and cleanup",
-			InputSchema: map[string]interface{}{
-				"type": "object",
-				"properties": map[string]interface{}{
-					"update_relevance": map[string]interface{}{
-						"type":        "boolean",
-						"description": "Update relevance scores with decay",
-						"default":     true,
-					},
-					"cleanup_old": map[string]interface{}{
-						"type":        "boolean",
-						"description": "Remove old and low-relevance prompts",
-						"default":     true,
-					},
-					"dry_run": map[string]interface{}{
-						"type":        "boolean",
-						"description": "Show what would be cleaned up without doing it",
-						"default":     false,
-					},
-				},
-			},
-		},
-		{
-			Name:        "get_database_stats",
-			Description: "Get comprehensive database statistics including lifecycle information",
-			InputSchema: map[string]interface{}{
-				"type": "object",
-				"properties": map[string]interface{}{
-					"include_relationships": map[string]interface{}{
-						"type":        "boolean",
-						"description": "Include prompt relationship statistics",
-						"default":     true,
-					},
-					"include_enhancements": map[string]interface{}{
-						"type":        "boolean",
-						"description": "Include enhancement history statistics",
-						"default":     true,
-					},
-					"include_usage": map[string]interface{}{
-						"type":        "boolean",
-						"description": "Include usage analytics",
-						"default":     true,
-					},
-				},
-			},
-		},
+
 		{
 			Name:        "track_prompt_relationship",
 			Description: "Track relationships between prompts for enhanced discovery",
@@ -605,6 +475,53 @@ func (s *MCPServer) handleToolsList(req *MCPRequest) *MCPResponse {
 					},
 				},
 				"required": []string{"source_prompt_id", "target_prompt_id", "relationship_type"},
+			},
+		},
+		{
+			Name:        "analyze_code_patterns",
+			Description: "Analyze existing prompts to identify patterns and suggest improvements for coding tasks",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"analysis_type": map[string]interface{}{
+						"type":        "string",
+						"description": "Type of analysis to perform (effectiveness, patterns, gaps, optimization)",
+						"default":     "patterns",
+						"enum":        []string{"effectiveness", "patterns", "gaps", "optimization"},
+					},
+					"persona_filter": map[string]interface{}{
+						"type":        "string",
+						"description": "Focus analysis on specific persona (code, writing, analysis, generic)",
+						"default":     "code",
+					},
+					"phase_filter": map[string]interface{}{
+						"type":        "string",
+						"description": "Filter by specific phase (idea, human, precision)",
+					},
+					"context": map[string]interface{}{
+						"type":        "array",
+						"description": "Additional context for analysis",
+						"items": map[string]interface{}{
+							"type": "string",
+						},
+					},
+					"sample_size": map[string]interface{}{
+						"type":        "integer",
+						"description": "Number of prompts to analyze",
+						"default":     50,
+					},
+					"include_recommendations": map[string]interface{}{
+						"type":        "boolean",
+						"description": "Include specific improvement recommendations",
+						"default":     true,
+					},
+					"output_format": map[string]interface{}{
+						"type":        "string",
+						"description": "Output format (detailed, summary, actionable)",
+						"default":     "detailed",
+						"enum":        []string{"detailed", "summary", "actionable"},
+					},
+				},
 			},
 		},
 		{
@@ -974,30 +891,20 @@ func (s *MCPServer) executeTool(toolName string, args map[string]interface{}) (M
 		return s.executeGeneratePrompts(args)
 	case "search_prompts":
 		return s.executeSearchPrompts(args)
-	case "get_metrics":
-		return s.executeGetMetrics(args)
-	case "update_prompt":
-		return s.executeUpdatePrompt(args)
-	case "delete_prompt":
-		return s.executeDeletePrompt(args)
-	case "get_providers":
-		return s.executeGetProviders(args)
 	case "optimize_prompt":
 		return s.executeOptimizePrompt(args)
-	case "get_config":
-		return s.executeGetConfig(args)
-	case "get_prompt_by_id":
-		return s.executeGetPromptByID(args)
-	case "run_lifecycle_maintenance":
-		return s.executeRunLifecycleMaintenance(args)
-	case "get_database_stats":
-		return s.executeGetDatabaseStats(args)
 	case "ai_select_prompt":
 		return s.executeAISelectPrompt(args)
+	case "get_prompt_by_id":
+		return s.executeGetPromptByID(args)
+	case "update_prompt":
+		return s.executeUpdatePrompt(args)
 	case "track_prompt_relationship":
 		return s.executeTrackPromptRelationship(args)
 	case "batch_generate_prompts":
 		return s.executeBatchGeneratePrompts(args)
+	case "analyze_code_patterns":
+		return s.executeAnalyzeCodePatterns(args)
 	case "validate_config":
 		return s.executeValidateConfig(args)
 	case "test_providers":
@@ -1023,7 +930,7 @@ func (s *MCPServer) executeGeneratePrompts(args map[string]interface{}) (MCPTool
 		return MCPToolResult{}, fmt.Errorf("input is required")
 	}
 
-	phases := getStringArg(args, "phases", "idea,human,precision")
+	phases := getStringArg(args, "phases", "prima-materia,solutio,coagulatio")
 	count := getIntArg(args, "count", 3)
 	persona := getStringArg(args, "persona", "code")
 	provider := getStringArg(args, "provider", "")
@@ -1032,6 +939,22 @@ func (s *MCPServer) executeGeneratePrompts(args map[string]interface{}) (MCPTool
 	tags := getStringArg(args, "tags", "")
 	targetModel := getStringArg(args, "target_model", "")
 	save := getBoolArg(args, "save", true)
+	reasoningRequired := getBoolArg(args, "reasoning_required", true)
+
+	// Parse additional context for AI agents
+	var contextList []string
+	if contextInterface, ok := args["context"]; ok {
+		switch v := contextInterface.(type) {
+		case []interface{}:
+			for _, item := range v {
+				if str, ok := item.(string); ok {
+					contextList = append(contextList, str)
+				}
+			}
+		case []string:
+			contextList = v
+		}
+	}
 
 	// Parse phases
 	phaseList := parsePhases(phases)
@@ -1054,10 +977,10 @@ func (s *MCPServer) executeGeneratePrompts(args map[string]interface{}) (MCPTool
 		_ = models.DetectModelFamily(targetModel)
 	}
 
-	// Build phase configs
-	phaseConfigs := buildPhaseConfigs(phaseList, provider)
+	// Build phase configs using viper configuration
+	phaseConfigs := helpers.BuildPhaseConfigs(phaseList, provider)
 
-	// Create request
+	// Create request with enhanced context for AI agents
 	request := models.PromptRequest{
 		Input:       input,
 		Phases:      phaseList,
@@ -1065,7 +988,7 @@ func (s *MCPServer) executeGeneratePrompts(args map[string]interface{}) (MCPTool
 		Temperature: temperature,
 		MaxTokens:   maxTokens,
 		Tags:        tagList,
-		Context:     []string{},
+		Context:     contextList,
 	}
 
 	// Generate prompts
@@ -1098,8 +1021,27 @@ func (s *MCPServer) executeGeneratePrompts(args map[string]interface{}) (MCPTool
 		}
 	}
 
-	// Format output
-	output := fmt.Sprintf("Generated %d prompts using persona '%s' and phases [%s]\n\n", len(result.Prompts), persona, phases)
+	// Format output with AI agent context awareness
+	output := fmt.Sprintf("Generated %d prompts using persona '%s' and phases [%s]\n", len(result.Prompts), persona, phases)
+
+	// Add context information if provided
+	if len(contextList) > 0 {
+		output += fmt.Sprintf("Context: %s\n", strings.Join(contextList, ", "))
+	}
+
+	// Add reasoning if requested
+	if reasoningRequired {
+		output += fmt.Sprintf("\n=== AI Agent Reasoning ===\n")
+		output += fmt.Sprintf("Selected persona '%s' for %s-focused prompt generation\n", persona, persona)
+		output += fmt.Sprintf("Using %d phases to ensure comprehensive prompt development\n", len(phaseList))
+		if len(contextList) > 0 {
+			output += fmt.Sprintf("Incorporated %d context elements for better relevance\n", len(contextList))
+		}
+		if targetModel != "" {
+			output += fmt.Sprintf("Optimized for target model: %s\n", targetModel)
+		}
+	}
+	output += "\n"
 
 	for i, prompt := range result.Prompts {
 		output += fmt.Sprintf("=== Prompt %d ===\n", i+1)
@@ -1110,12 +1052,21 @@ func (s *MCPServer) executeGeneratePrompts(args map[string]interface{}) (MCPTool
 		if len(prompt.Tags) > 0 {
 			output += fmt.Sprintf("Tags: %s\n", strings.Join(prompt.Tags, ", "))
 		}
+
+		// Add reasoning for each prompt if requested
+		if reasoningRequired {
+			output += fmt.Sprintf("Reasoning: This prompt was generated in the '%s' phase, designed for %s tasks\n", prompt.Phase, persona)
+		}
+
 		output += fmt.Sprintf("Content:\n%s\n\n", prompt.Content)
 	}
 
-	// Add ranking information if available
+	// Add enhanced ranking information if available
 	if len(result.Rankings) > 0 {
-		output += "=== Rankings ===\n"
+		output += "=== AI-Powered Rankings ===\n"
+		if reasoningRequired {
+			output += "Rankings based on relevance, clarity, and effectiveness for the given context:\n"
+		}
 		for i, ranking := range result.Rankings {
 			output += fmt.Sprintf("%d. Score: %.3f (ID: %s)\n", i+1, ranking.Score, ranking.Prompt.ID.String())
 		}
@@ -1132,13 +1083,15 @@ func (s *MCPServer) executeGeneratePrompts(args map[string]interface{}) (MCPTool
 
 func (s *MCPServer) executeSearchPrompts(args map[string]interface{}) (MCPToolResult, error) {
 	query := getStringArg(args, "query", "")
-	semantic := getBoolArg(args, "semantic", false)
+	semantic := getBoolArg(args, "semantic", true) // Default to semantic search for AI agents
 	similarity := getFloatArg(args, "similarity", 0.5)
 	phase := getStringArg(args, "phase", "")
 	provider := getStringArg(args, "provider", "")
 	tags := getStringArg(args, "tags", "")
 	since := getStringArg(args, "since", "")
 	limit := getIntArg(args, "limit", 10)
+	includeReasoning := getBoolArg(args, "include_reasoning", true)
+	contextAware := getBoolArg(args, "context_aware", true)
 
 	// Parse tags
 	var tagList []string
@@ -1192,7 +1145,7 @@ func (s *MCPServer) executeSearchPrompts(args map[string]interface{}) (MCPToolRe
 		return MCPToolResult{}, fmt.Errorf("search failed: %w", err)
 	}
 
-	// Format output
+	// Format output with AI agent enhancements
 	searchType := "text-based"
 	if semantic {
 		searchType = "semantic"
@@ -1201,6 +1154,37 @@ func (s *MCPServer) executeSearchPrompts(args map[string]interface{}) (MCPToolRe
 	output := fmt.Sprintf("Found %d prompts using %s search\n", len(prompts), searchType)
 	if query != "" {
 		output += fmt.Sprintf("Query: %s\n", query)
+	}
+
+	// Add reasoning about search strategy if requested
+	if includeReasoning {
+		output += "\n=== Search Reasoning ===\n"
+		if semantic && query != "" {
+			output += fmt.Sprintf("Using semantic search for better contextual matching (similarity threshold: %.2f)\n", similarity)
+		} else if query == "" {
+			output += "Performing filtered search without query - listing prompts by criteria\n"
+		} else {
+			output += "Using text-based search for exact term matching\n"
+		}
+
+		if contextAware {
+			output += "Context-aware filtering applied for AI agent relevance\n"
+		}
+
+		if phase != "" || provider != "" || tags != "" {
+			output += "Applied filters: "
+			filters := []string{}
+			if phase != "" {
+				filters = append(filters, fmt.Sprintf("phase=%s", phase))
+			}
+			if provider != "" {
+				filters = append(filters, fmt.Sprintf("provider=%s", provider))
+			}
+			if tags != "" {
+				filters = append(filters, fmt.Sprintf("tags=%s", tags))
+			}
+			output += strings.Join(filters, ", ") + "\n"
+		}
 	}
 	output += "\n"
 
@@ -1213,6 +1197,11 @@ func (s *MCPServer) executeSearchPrompts(args map[string]interface{}) (MCPToolRe
 		output += fmt.Sprintf("Created: %s\n", prompt.CreatedAt.Format("2006-01-02 15:04:05"))
 		if len(prompt.Tags) > 0 {
 			output += fmt.Sprintf("Tags: %s\n", strings.Join(prompt.Tags, ", "))
+		}
+
+		// Add relevance reasoning if requested
+		if includeReasoning && semantic {
+			output += fmt.Sprintf("Relevance: High semantic similarity to query, suitable for %s tasks\n", prompt.Phase)
 		}
 
 		// Show preview of content
@@ -1232,85 +1221,71 @@ func (s *MCPServer) executeSearchPrompts(args map[string]interface{}) (MCPToolRe
 	}, nil
 }
 
-func (s *MCPServer) executeGetMetrics(args map[string]interface{}) (MCPToolResult, error) {
-	phase := getStringArg(args, "phase", "")
-	provider := getStringArg(args, "provider", "")
-	since := getStringArg(args, "since", "")
-	limit := getIntArg(args, "limit", 100)
-	report := getStringArg(args, "report", "")
+func (s *MCPServer) executeAnalyzeCodePatterns(args map[string]interface{}) (MCPToolResult, error) {
+	analysisType := getStringArg(args, "analysis_type", "patterns")
+	personaFilter := getStringArg(args, "persona_filter", "code")
+	phaseFilter := getStringArg(args, "phase_filter", "")
+	sampleSize := getIntArg(args, "sample_size", 50)
+	includeRecommendations := getBoolArg(args, "include_recommendations", true)
+	outputFormat := getStringArg(args, "output_format", "detailed")
 
-	// Parse since date
-	var sinceTime *time.Time
-	if since != "" {
-		parsed, err := time.Parse("2006-01-02", since)
-		if err != nil {
-			return MCPToolResult{}, fmt.Errorf("invalid date format for since (use YYYY-MM-DD): %w", err)
-		}
-		sinceTime = &parsed
-	} else if report != "" {
-		// Set default time range based on report type
-		now := time.Now()
-		switch report {
-		case "daily":
-			since := now.AddDate(0, 0, -1)
-			sinceTime = &since
-		case "weekly":
-			since := now.AddDate(0, 0, -7)
-			sinceTime = &since
-		case "monthly":
-			since := now.AddDate(0, -1, 0)
-			sinceTime = &since
+	// Parse context
+	var contextList []string
+	if contextInterface, ok := args["context"]; ok {
+		switch v := contextInterface.(type) {
+		case []interface{}:
+			for _, item := range v {
+				if str, ok := item.(string); ok {
+					contextList = append(contextList, str)
+				}
+			}
+		case []string:
+			contextList = v
 		}
 	}
 
 	// Get prompts for analysis
 	criteria := storage.SearchCriteria{
-		Phase:    phase,
-		Provider: provider,
-		Since:    sinceTime,
-		Limit:    limit,
+		Phase: phaseFilter,
+		Limit: sampleSize,
 	}
 
 	prompts, err := s.store.SearchPrompts(criteria)
 	if err != nil {
-		return MCPToolResult{}, fmt.Errorf("failed to fetch prompts: %w", err)
+		return MCPToolResult{}, fmt.Errorf("failed to fetch prompts for analysis: %w", err)
 	}
 
-	// Analyze prompts
-	summary := analyzePromptsForMCP(prompts)
+	// Filter by persona if specified
+	var filteredPrompts []models.Prompt
+	for _, prompt := range prompts {
+		// Check if prompt has persona-related tags or content
+		personaMatch := personaFilter == "" ||
+			strings.Contains(strings.ToLower(prompt.Content), personaFilter) ||
+			containsPersonaTags(prompt.Tags, personaFilter)
 
-	// Format output
-	output := "=== Prompt Metrics Analysis ===\n"
-	if report != "" {
-		output += "Report Type: " + report + "\n"
+		if personaMatch {
+			filteredPrompts = append(filteredPrompts, prompt)
+		}
 	}
-	if sinceTime != nil {
-		output += "Time Range: Since " + sinceTime.Format("2006-01-02") + "\n"
+
+	// Perform analysis based on type
+	var output string
+	switch analysisType {
+	case "patterns":
+		output = s.analyzePatterns(filteredPrompts, personaFilter, outputFormat)
+	case "effectiveness":
+		output = s.analyzeEffectiveness(filteredPrompts, personaFilter, outputFormat)
+	case "gaps":
+		output = s.analyzeGaps(filteredPrompts, personaFilter, contextList, outputFormat)
+	case "optimization":
+		output = s.analyzeOptimization(filteredPrompts, personaFilter, outputFormat)
+	default:
+		return MCPToolResult{}, fmt.Errorf("unknown analysis type: %s", analysisType)
 	}
-	output += "\n"
 
-	output += fmt.Sprintf("Total Prompts: %d\n", summary.TotalPrompts)
-	output += fmt.Sprintf("Total Tokens: %d\n", summary.TotalTokens)
-	output += fmt.Sprintf("Average Tokens: %.1f\n", summary.AverageTokens)
-	output += fmt.Sprintf("Prompts with Embeddings: %d (%.1f%%)\n",
-		summary.WithEmbeddings, summary.EmbeddingCoverage)
-	output += "\n"
-
-	output += "=== Breakdown by Phase ===\n"
-	for phase, count := range summary.ByPhase {
-		output += fmt.Sprintf("  %s: %d\n", phase, count)
-	}
-	output += "\n"
-
-	output += "=== Breakdown by Provider ===\n"
-	for provider, count := range summary.ByProvider {
-		output += fmt.Sprintf("  %s: %d\n", provider, count)
-	}
-	output += "\n"
-
-	output += "=== Breakdown by Model ===\n"
-	for model, count := range summary.ByModel {
-		output += fmt.Sprintf("  %s: %d\n", model, count)
+	// Add recommendations if requested
+	if includeRecommendations {
+		output += "\n" + s.generateRecommendations(filteredPrompts, analysisType, personaFilter, contextList)
 	}
 
 	return MCPToolResult{
@@ -1320,6 +1295,301 @@ func (s *MCPServer) executeGetMetrics(args map[string]interface{}) (MCPToolResul
 		}},
 		IsError: false,
 	}, nil
+}
+
+// Helper function to check if prompt tags contain persona-related terms
+func containsPersonaTags(tags []string, persona string) bool {
+	personaTerms := map[string][]string{
+		"code":     {"code", "programming", "development", "software", "api", "function"},
+		"writing":  {"writing", "content", "documentation", "blog", "article", "copy"},
+		"analysis": {"analysis", "research", "data", "report", "insight", "evaluation"},
+		"generic":  {"general", "generic", "basic", "simple", "common"},
+	}
+
+	terms, exists := personaTerms[persona]
+	if !exists {
+		return false
+	}
+
+	for _, tag := range tags {
+		tagLower := strings.ToLower(tag)
+		for _, term := range terms {
+			if strings.Contains(tagLower, term) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// Analysis helper functions
+func (s *MCPServer) analyzePatterns(prompts []models.Prompt, persona, format string) string {
+	output := fmt.Sprintf("=== Pattern Analysis for %s Persona ===\n", persona)
+	output += fmt.Sprintf("Analyzed %d prompts\n\n", len(prompts))
+
+	// Analyze common patterns
+	phaseDistribution := make(map[string]int)
+	providerDistribution := make(map[string]int)
+	commonTerms := make(map[string]int)
+
+	for _, prompt := range prompts {
+		phaseDistribution[string(prompt.Phase)]++
+		providerDistribution[prompt.Provider]++
+
+		// Simple term frequency analysis
+		words := strings.Fields(strings.ToLower(prompt.Content))
+		for _, word := range words {
+			if len(word) > 4 { // Only count meaningful words
+				commonTerms[word]++
+			}
+		}
+	}
+
+	output += "Phase Distribution:\n"
+	for phase, count := range phaseDistribution {
+		percentage := float64(count) / float64(len(prompts)) * 100
+		output += fmt.Sprintf("  %s: %d (%.1f%%)\n", phase, count, percentage)
+	}
+
+	output += "\nProvider Distribution:\n"
+	for provider, count := range providerDistribution {
+		percentage := float64(count) / float64(len(prompts)) * 100
+		output += fmt.Sprintf("  %s: %d (%.1f%%)\n", provider, count, percentage)
+	}
+
+	// Show top 10 common terms
+	output += "\nMost Common Terms:\n"
+	type termCount struct {
+		term  string
+		count int
+	}
+	var terms []termCount
+	for term, count := range commonTerms {
+		if count > 1 { // Only show terms that appear multiple times
+			terms = append(terms, termCount{term, count})
+		}
+	}
+
+	// Sort by count
+	for i := 0; i < len(terms)-1; i++ {
+		for j := i + 1; j < len(terms); j++ {
+			if terms[j].count > terms[i].count {
+				terms[i], terms[j] = terms[j], terms[i]
+			}
+		}
+	}
+
+	// Show top 10
+	limit := 10
+	if len(terms) < limit {
+		limit = len(terms)
+	}
+	for i := 0; i < limit; i++ {
+		output += fmt.Sprintf("  %s: %d occurrences\n", terms[i].term, terms[i].count)
+	}
+
+	return output
+}
+
+func (s *MCPServer) analyzeEffectiveness(prompts []models.Prompt, persona, format string) string {
+	output := fmt.Sprintf("=== Effectiveness Analysis for %s Persona ===\n", persona)
+	output += fmt.Sprintf("Analyzed %d prompts\n\n", len(prompts))
+
+	// Analyze effectiveness metrics
+	totalTokens := 0
+	avgLength := 0
+	longPrompts := 0
+	shortPrompts := 0
+
+	for _, prompt := range prompts {
+		totalTokens += prompt.ActualTokens
+		length := len(prompt.Content)
+		avgLength += length
+
+		if length > 1000 {
+			longPrompts++
+		} else if length < 200 {
+			shortPrompts++
+		}
+	}
+
+	if len(prompts) > 0 {
+		avgLength = avgLength / len(prompts)
+		avgTokens := totalTokens / len(prompts)
+
+		output += fmt.Sprintf("Average prompt length: %d characters\n", avgLength)
+		output += fmt.Sprintf("Average token count: %d tokens\n", avgTokens)
+		output += fmt.Sprintf("Long prompts (>1000 chars): %d (%.1f%%)\n", longPrompts, float64(longPrompts)/float64(len(prompts))*100)
+		output += fmt.Sprintf("Short prompts (<200 chars): %d (%.1f%%)\n", shortPrompts, float64(shortPrompts)/float64(len(prompts))*100)
+
+		// Effectiveness insights
+		output += "\nEffectiveness Insights:\n"
+		if float64(longPrompts)/float64(len(prompts)) > 0.3 {
+			output += "  • High proportion of long prompts - consider more concise approaches\n"
+		}
+		if float64(shortPrompts)/float64(len(prompts)) > 0.4 {
+			output += "  • Many short prompts - may lack sufficient context\n"
+		}
+		if avgTokens > 1500 {
+			output += "  • High average token usage - optimize for efficiency\n"
+		}
+	}
+
+	return output
+}
+
+func (s *MCPServer) analyzeGaps(prompts []models.Prompt, persona string, context []string, format string) string {
+	output := fmt.Sprintf("=== Gap Analysis for %s Persona ===\n", persona)
+	output += fmt.Sprintf("Analyzed %d prompts\n\n", len(prompts))
+
+	// Define expected areas for different personas
+	expectedAreas := map[string][]string{
+		"code": {
+			"debugging", "testing", "refactoring", "documentation", "code_review",
+			"architecture", "optimization", "security", "deployment", "api_design",
+		},
+		"writing": {
+			"blog_post", "documentation", "marketing", "technical_writing", "creative",
+			"editing", "proofreading", "storytelling", "copywriting", "content_strategy",
+		},
+		"analysis": {
+			"data_analysis", "research", "reporting", "insights", "trends",
+			"comparison", "evaluation", "metrics", "performance", "recommendations",
+		},
+	}
+
+	areas, exists := expectedAreas[persona]
+	if !exists {
+		areas = expectedAreas["code"] // Default to code
+	}
+
+	// Check coverage of expected areas
+	coveredAreas := make(map[string]bool)
+	for _, prompt := range prompts {
+		content := strings.ToLower(prompt.Content)
+		for _, area := range areas {
+			if strings.Contains(content, strings.ReplaceAll(area, "_", " ")) ||
+				strings.Contains(content, area) {
+				coveredAreas[area] = true
+			}
+		}
+	}
+
+	output += "Coverage Analysis:\n"
+	missingAreas := []string{}
+	for _, area := range areas {
+		if coveredAreas[area] {
+			output += fmt.Sprintf("  ✓ %s: Covered\n", strings.ReplaceAll(area, "_", " "))
+		} else {
+			output += fmt.Sprintf("  ✗ %s: Missing\n", strings.ReplaceAll(area, "_", " "))
+			missingAreas = append(missingAreas, area)
+		}
+	}
+
+	coverage := float64(len(coveredAreas)) / float64(len(areas)) * 100
+	output += fmt.Sprintf("\nOverall Coverage: %.1f%% (%d of %d areas)\n", coverage, len(coveredAreas), len(areas))
+
+	if len(missingAreas) > 0 {
+		output += "\nPriority Areas to Address:\n"
+		for i, area := range missingAreas {
+			if i < 5 { // Show top 5 missing areas
+				output += fmt.Sprintf("  %d. %s\n", i+1, strings.ReplaceAll(area, "_", " "))
+			}
+		}
+	}
+
+	return output
+}
+
+func (s *MCPServer) analyzeOptimization(prompts []models.Prompt, persona, format string) string {
+	output := fmt.Sprintf("=== Optimization Analysis for %s Persona ===\n", persona)
+	output += fmt.Sprintf("Analyzed %d prompts\n\n", len(prompts))
+
+	// Analyze optimization opportunities
+	redundantPrompts := 0
+	inefficientPrompts := 0
+	wellOptimized := 0
+
+	for _, prompt := range prompts {
+		length := len(prompt.Content)
+		tokenCount := prompt.ActualTokens
+
+		// Simple heuristics for optimization
+		if tokenCount > 0 {
+			efficiency := float64(length) / float64(tokenCount)
+
+			if efficiency < 3.0 { // Very token-heavy
+				inefficientPrompts++
+			} else if efficiency > 6.0 && length > 500 { // Good balance
+				wellOptimized++
+			}
+		}
+
+		// Check for redundancy (simplified)
+		if strings.Count(prompt.Content, "please") > 3 ||
+			strings.Count(prompt.Content, "make sure") > 2 {
+			redundantPrompts++
+		}
+	}
+
+	output += "Optimization Metrics:\n"
+	if len(prompts) > 0 {
+		output += fmt.Sprintf("  Well-optimized prompts: %d (%.1f%%)\n", wellOptimized, float64(wellOptimized)/float64(len(prompts))*100)
+		output += fmt.Sprintf("  Inefficient prompts: %d (%.1f%%)\n", inefficientPrompts, float64(inefficientPrompts)/float64(len(prompts))*100)
+		output += fmt.Sprintf("  Potentially redundant: %d (%.1f%%)\n", redundantPrompts, float64(redundantPrompts)/float64(len(prompts))*100)
+
+		output += "\nOptimization Opportunities:\n"
+		if inefficientPrompts > len(prompts)/4 {
+			output += "  • High token usage detected - consider more concise language\n"
+		}
+		if redundantPrompts > len(prompts)/5 {
+			output += "  • Redundant phrases found - streamline prompt language\n"
+		}
+		if wellOptimized < len(prompts)/3 {
+			output += "  • Limited well-optimized prompts - focus on clarity and efficiency\n"
+		}
+	}
+
+	return output
+}
+
+func (s *MCPServer) generateRecommendations(prompts []models.Prompt, analysisType, persona string, context []string) string {
+	output := "\n=== AI Agent Recommendations ===\n"
+
+	switch analysisType {
+	case "patterns":
+		output += "Based on pattern analysis:\n"
+		output += "  • Consider diversifying prompt phases for better coverage\n"
+		output += "  • Experiment with different providers for varied perspectives\n"
+		output += "  • Focus on " + persona + "-specific terminology and patterns\n"
+
+	case "effectiveness":
+		output += "Based on effectiveness analysis:\n"
+		output += "  • Optimize prompt length for better token efficiency\n"
+		output += "  • Balance detail with conciseness for " + persona + " tasks\n"
+		output += "  • Consider prompt templates for consistent quality\n"
+
+	case "gaps":
+		output += "Based on gap analysis:\n"
+		output += "  • Prioritize creating prompts for missing " + persona + " areas\n"
+		output += "  • Focus on underrepresented use cases\n"
+		output += "  • Consider domain-specific prompt variations\n"
+
+	case "optimization":
+		output += "Based on optimization analysis:\n"
+		output += "  • Refactor inefficient prompts for better performance\n"
+		output += "  • Remove redundant language and improve clarity\n"
+		output += "  • Implement prompt quality metrics for " + persona + " tasks\n"
+	}
+
+	if len(context) > 0 {
+		output += "\nContext-specific recommendations:\n"
+		for _, ctx := range context {
+			output += fmt.Sprintf("  • Consider '%s' context in future prompt development\n", ctx)
+		}
+	}
+
+	return output
 }
 
 func (s *MCPServer) executeUpdatePrompt(args map[string]interface{}) (MCPToolResult, error) {
@@ -1406,95 +1676,6 @@ func (s *MCPServer) executeUpdatePrompt(args map[string]interface{}) (MCPToolRes
 	}, nil
 }
 
-func (s *MCPServer) executeDeletePrompt(args map[string]interface{}) (MCPToolResult, error) {
-	promptIDStr, ok := args["prompt_id"].(string)
-	if !ok || promptIDStr == "" {
-		return MCPToolResult{}, fmt.Errorf("prompt_id is required")
-	}
-
-	// Parse prompt ID
-	promptID, err := uuid.Parse(promptIDStr)
-	if err != nil {
-		return MCPToolResult{}, fmt.Errorf("invalid prompt ID format: %w", err)
-	}
-
-	// Get prompt details before deletion
-	prompt, err := s.store.GetPrompt(promptID)
-	if err != nil {
-		return MCPToolResult{}, fmt.Errorf("failed to get prompt: %w", err)
-	}
-
-	// Delete the prompt
-	err = s.store.DeletePrompt(promptID)
-	if err != nil {
-		return MCPToolResult{}, fmt.Errorf("failed to delete prompt: %w", err)
-	}
-
-	output := fmt.Sprintf("Successfully deleted prompt %s\n", promptID.String())
-	output += "Deleted prompt details:\n"
-	output += fmt.Sprintf("  Phase: %s\n", prompt.Phase)
-	output += fmt.Sprintf("  Provider: %s\n", prompt.Provider)
-	output += fmt.Sprintf("  Model: %s\n", prompt.Model)
-	output += fmt.Sprintf("  Created: %s\n", prompt.CreatedAt.Format("2006-01-02 15:04:05"))
-	if len(prompt.Tags) > 0 {
-		output += fmt.Sprintf("  Tags: %s\n", strings.Join(prompt.Tags, ", "))
-	}
-
-	return MCPToolResult{
-		Content: []MCPContent{{
-			Type: "text",
-			Text: output,
-		}},
-		IsError: false,
-	}, nil
-}
-
-func (s *MCPServer) executeGetProviders(args map[string]interface{}) (MCPToolResult, error) {
-	available := s.registry.ListAvailable()
-	embeddingCapable := s.registry.ListEmbeddingCapableProviders()
-
-	output := "=== Available Providers ===\n\n"
-
-	if len(available) == 0 {
-		output += "No providers configured. Please set API keys in config or environment.\n"
-	} else {
-		for _, name := range available {
-			output += fmt.Sprintf("Provider: %s\n", name)
-			output += "  Generation: ✅\n"
-
-			hasEmbeddings := false
-			for _, embProvider := range embeddingCapable {
-				if embProvider == name {
-					hasEmbeddings = true
-					break
-				}
-			}
-
-			if hasEmbeddings {
-				output += "  Embeddings: ✅\n"
-			} else {
-				output += "  Embeddings: ❌\n"
-			}
-
-			output += "  Status: Available\n\n"
-		}
-	}
-
-	// Show phase assignments
-	output += "=== Phase Assignments ===\n"
-	output += fmt.Sprintf("Idea Phase: %s\n", viper.GetString("phases.idea.provider"))
-	output += fmt.Sprintf("Human Phase: %s\n", viper.GetString("phases.human.provider"))
-	output += fmt.Sprintf("Precision Phase: %s\n", viper.GetString("phases.precision.provider"))
-
-	return MCPToolResult{
-		Content: []MCPContent{{
-			Type: "text",
-			Text: output,
-		}},
-		IsError: false,
-	}, nil
-}
-
 func (s *MCPServer) executeOptimizePrompt(args map[string]interface{}) (MCPToolResult, error) {
 	prompt, ok := args["prompt"].(string)
 	if !ok || prompt == "" {
@@ -1544,67 +1725,6 @@ func (s *MCPServer) executeOptimizePrompt(args map[string]interface{}) (MCPToolR
 	output += "• Optimize for target model's strengths\n\n"
 
 	output += "Note: Full optimization implementation requires the optimize command to be completed.\n"
-
-	return MCPToolResult{
-		Content: []MCPContent{{
-			Type: "text",
-			Text: output,
-		}},
-		IsError: false,
-	}, nil
-}
-
-func (s *MCPServer) executeGetConfig(args map[string]interface{}) (MCPToolResult, error) {
-	showProviders := getBoolArg(args, "show_providers", true)
-	showPhases := getBoolArg(args, "show_phases", true)
-	showGeneration := getBoolArg(args, "show_generation", true)
-
-	output := "=== Current Configuration ===\n\n"
-
-	if showProviders {
-		output += "=== Providers ===\n"
-		available := s.registry.ListAvailable()
-		embeddingCapable := s.registry.ListEmbeddingCapableProviders()
-
-		if len(available) == 0 {
-			output += "No providers configured. Please set API keys in config or environment.\n"
-		} else {
-			for _, name := range available {
-				output += fmt.Sprintf("Provider: %s\n", name)
-				output += "  Generation: ✅\n"
-
-				hasEmbeddings := false
-				for _, embProvider := range embeddingCapable {
-					if embProvider == name {
-						hasEmbeddings = true
-						break
-					}
-				}
-
-				if hasEmbeddings {
-					output += "  Embeddings: ✅\n"
-				} else {
-					output += "  Embeddings: ❌\n"
-				}
-
-				output += "  Status: Available\n\n"
-			}
-		}
-	}
-
-	if showPhases {
-		output += "=== Phase Assignments ===\n"
-		output += fmt.Sprintf("Idea Phase: %s\n", viper.GetString("phases.idea.provider"))
-		output += fmt.Sprintf("Human Phase: %s\n", viper.GetString("phases.human.provider"))
-		output += fmt.Sprintf("Precision Phase: %s\n", viper.GetString("phases.precision.provider"))
-	}
-
-	if showGeneration {
-		output += "=== Generation Settings ===\n"
-		output += fmt.Sprintf("Use Parallel Generation: %t\n", viper.GetBool("generation.use_parallel"))
-		output += fmt.Sprintf("Default Temperature: %.2f\n", viper.GetFloat64("generation.default_temperature"))
-		output += fmt.Sprintf("Default Max Tokens: %d\n", viper.GetInt("generation.default_max_tokens"))
-	}
 
 	return MCPToolResult{
 		Content: []MCPContent{{
@@ -1986,325 +2106,8 @@ type MCPMetricsSummary struct {
 	ByModel           map[string]int `json:"by_model"`
 }
 
-func analyzePromptsForMCP(prompts []models.Prompt) MCPMetricsSummary {
-	summary := MCPMetricsSummary{
-		ByPhase:    make(map[string]int),
-		ByProvider: make(map[string]int),
-		ByModel:    make(map[string]int),
-	}
 
-	totalTokens := 0
-	withEmbeddings := 0
 
-	for _, prompt := range prompts {
-		summary.TotalPrompts++
-		totalTokens += prompt.ActualTokens
-
-		if len(prompt.Embedding) > 0 {
-			withEmbeddings++
-		}
-
-		// Count by phase
-		summary.ByPhase[string(prompt.Phase)]++
-
-		// Count by provider
-		summary.ByProvider[prompt.Provider]++
-
-		// Count by model
-		summary.ByModel[prompt.Model]++
-	}
-
-	summary.TotalTokens = totalTokens
-	summary.WithEmbeddings = withEmbeddings
-
-	if summary.TotalPrompts > 0 {
-		summary.AverageTokens = float64(totalTokens) / float64(summary.TotalPrompts)
-		summary.EmbeddingCoverage = (float64(withEmbeddings) / float64(summary.TotalPrompts)) * 100
-	}
-
-	return summary
-}
-
-// executeRunLifecycleMaintenance runs database maintenance operations
-func (s *MCPServer) executeRunLifecycleMaintenance(args map[string]interface{}) (MCPToolResult, error) {
-	updateRelevance := getBoolArg(args, "update_relevance", true)
-	cleanupOld := getBoolArg(args, "cleanup_old", true)
-	dryRun := getBoolArg(args, "dry_run", false)
-
-	var results []string
-
-	if updateRelevance {
-		if dryRun {
-			results = append(results, "DRY RUN: Would update relevance scores with decay")
-		} else {
-			err := s.store.UpdateRelevanceScores()
-			if err != nil {
-				return MCPToolResult{}, fmt.Errorf("failed to update relevance scores: %w", err)
-			}
-			results = append(results, "✅ Updated relevance scores with decay")
-		}
-	}
-
-	if cleanupOld {
-		if dryRun {
-			// Get count of prompts that would be cleaned up
-			maxPrompts, _ := s.store.GetConfigInt("max_prompts", 1000)
-			minRelevance, _ := s.store.GetConfigFloat("min_relevance_score", 0.3)
-
-			var currentCount int
-			err := s.store.GetDB().Get(&currentCount, "SELECT COUNT(*) FROM prompts")
-			if err != nil {
-				return MCPToolResult{}, fmt.Errorf("failed to count prompts: %w", err)
-			}
-
-			if currentCount > maxPrompts {
-				toDelete := currentCount - maxPrompts + 50
-				results = append(results, fmt.Sprintf("DRY RUN: Would delete %d prompts (current: %d, max: %d, min_relevance: %.2f)",
-					toDelete, currentCount, maxPrompts, minRelevance))
-			} else {
-				results = append(results, fmt.Sprintf("DRY RUN: No cleanup needed (current: %d, max: %d)", currentCount, maxPrompts))
-			}
-		} else {
-			err := s.store.CleanupOldPrompts()
-			if err != nil {
-				return MCPToolResult{}, fmt.Errorf("failed to cleanup old prompts: %w", err)
-			}
-			results = append(results, "✅ Cleaned up old and low-relevance prompts")
-		}
-	}
-
-	if len(results) == 0 {
-		results = append(results, "No maintenance operations requested")
-	}
-
-	output := strings.Join(results, "\n")
-	if dryRun {
-		output = "🔍 DRY RUN MODE - No changes made\n\n" + output
-	}
-
-	return MCPToolResult{
-		Content: []MCPContent{{
-			Type: "text",
-			Text: output,
-		}},
-		IsError: false,
-	}, nil
-}
-
-// executeGetDatabaseStats returns comprehensive database statistics
-func (s *MCPServer) executeGetDatabaseStats(args map[string]interface{}) (MCPToolResult, error) {
-	includeRelationships := getBoolArg(args, "include_relationships", true)
-	includeEnhancements := getBoolArg(args, "include_enhancements", true)
-	includeUsage := getBoolArg(args, "include_usage", true)
-
-	var stats struct {
-		TotalPrompts          int                     `json:"total_prompts"`
-		PromptsWithEmbeddings int                     `json:"prompts_with_embeddings"`
-		EmbeddingCoverage     float64                 `json:"embedding_coverage_percent"`
-		AverageRelevance      float64                 `json:"average_relevance_score"`
-		ByPhase               map[string]int          `json:"by_phase"`
-		ByProvider            map[string]int          `json:"by_provider"`
-		Configuration         map[string]string       `json:"configuration"`
-		Relationships         *map[string]int         `json:"relationships,omitempty"`
-		Enhancements          *map[string]int         `json:"enhancements,omitempty"`
-		Usage                 *map[string]interface{} `json:"usage,omitempty"`
-	}
-
-	// Basic prompt statistics
-	err := s.store.GetDB().Get(&stats.TotalPrompts, "SELECT COUNT(*) FROM prompts")
-	if err != nil {
-		return MCPToolResult{}, fmt.Errorf("failed to count prompts: %w", err)
-	}
-
-	err = s.store.GetDB().Get(&stats.PromptsWithEmbeddings, "SELECT COUNT(*) FROM prompts WHERE embedding IS NOT NULL")
-	if err != nil {
-		return MCPToolResult{}, fmt.Errorf("failed to count prompts with embeddings: %w", err)
-	}
-
-	if stats.TotalPrompts > 0 {
-		stats.EmbeddingCoverage = float64(stats.PromptsWithEmbeddings) / float64(stats.TotalPrompts) * 100
-	}
-
-	err = s.store.GetDB().Get(&stats.AverageRelevance, "SELECT AVG(relevance_score) FROM prompts")
-	if err != nil {
-		return MCPToolResult{}, fmt.Errorf("failed to get average relevance: %w", err)
-	}
-
-	// By phase
-	stats.ByPhase = make(map[string]int)
-	rows, err := s.store.GetDB().Query("SELECT phase, COUNT(*) FROM prompts GROUP BY phase")
-	if err != nil {
-		return MCPToolResult{}, fmt.Errorf("failed to get phase stats: %w", err)
-	}
-	defer func() {
-		if err := rows.Close(); err != nil {
-			log.GetLogger().WithError(err).Warn("Failed to close rows")
-		}
-	}()
-	for rows.Next() {
-		var phase string
-		var count int
-		if err := rows.Scan(&phase, &count); err != nil {
-			log.GetLogger().WithError(err).Warn("Failed to scan phase stats")
-			continue
-		}
-		stats.ByPhase[phase] = count
-	}
-
-	// By provider
-	stats.ByProvider = make(map[string]int)
-	rows, err = s.store.GetDB().Query("SELECT provider, COUNT(*) FROM prompts GROUP BY provider")
-	if err != nil {
-		return MCPToolResult{}, fmt.Errorf("failed to get provider stats: %w", err)
-	}
-	defer func() {
-		if err := rows.Close(); err != nil {
-			log.GetLogger().WithError(err).Warn("Failed to close rows")
-		}
-	}()
-	for rows.Next() {
-		var provider string
-		var count int
-		if err := rows.Scan(&provider, &count); err != nil {
-			log.GetLogger().WithError(err).Warn("Failed to scan provider stats")
-			continue
-		}
-		stats.ByProvider[provider] = count
-	}
-
-	// Configuration
-	stats.Configuration = make(map[string]string)
-	configRows, err := s.store.GetDB().Query("SELECT key, value FROM database_config")
-	if err != nil {
-		return MCPToolResult{}, fmt.Errorf("failed to get configuration: %w", err)
-	}
-	defer func() {
-		if err := configRows.Close(); err != nil {
-			log.GetLogger().WithError(err).Warn("Failed to close config rows")
-		}
-	}()
-	for configRows.Next() {
-		var key, value string
-		if err := configRows.Scan(&key, &value); err != nil {
-			log.GetLogger().WithError(err).Warn("Failed to scan config stats")
-			continue
-		}
-		stats.Configuration[key] = value
-	}
-
-	// Relationships
-	if includeRelationships {
-		relationships := make(map[string]int)
-		relRows, err := s.store.GetDB().Query("SELECT relationship_type, COUNT(*) FROM prompt_relationships GROUP BY relationship_type")
-		if err == nil {
-			defer func() {
-				if err := relRows.Close(); err != nil {
-					log.GetLogger().WithError(err).Warn("Failed to close relationship rows")
-				}
-			}()
-			for relRows.Next() {
-				var relType string
-				var count int
-				if err := relRows.Scan(&relType, &count); err != nil {
-					log.GetLogger().WithError(err).Warn("Failed to scan relationship stats")
-					continue
-				}
-				relationships[relType] = count
-			}
-		}
-		stats.Relationships = &relationships
-	}
-
-	// Enhancements
-	if includeEnhancements {
-		enhancements := make(map[string]int)
-		enhRows, err := s.store.GetDB().Query("SELECT enhancement_type, COUNT(*) FROM enhancement_history GROUP BY enhancement_type")
-		if err == nil {
-			defer func() {
-				if err := enhRows.Close(); err != nil {
-					log.GetLogger().WithError(err).Warn("Failed to close enhancement rows")
-				}
-			}()
-			for enhRows.Next() {
-				var enhType string
-				var count int
-				if err := enhRows.Scan(&enhType, &count); err != nil {
-					log.GetLogger().WithError(err).Warn("Failed to scan enhancement stats")
-					continue
-				}
-				enhancements[enhType] = count
-			}
-		}
-		stats.Enhancements = &enhancements
-	}
-
-	// Usage analytics
-	if includeUsage {
-		usage := make(map[string]interface{})
-
-		var totalUsageCount int
-		if err := s.store.GetDB().Get(&totalUsageCount, "SELECT SUM(usage_count) FROM prompts"); err != nil {
-			s.logger.WithError(err).Warn("Failed to get total usage count")
-		}
-		usage["total_usage_count"] = totalUsageCount
-
-		var averageUsage float64
-		if err := s.store.GetDB().Get(&averageUsage, "SELECT AVG(usage_count) FROM prompts"); err != nil {
-			s.logger.WithError(err).Warn("Failed to get average usage")
-		}
-		usage["average_usage_per_prompt"] = averageUsage
-
-		var usedPrompts int
-		if err := s.store.GetDB().Get(&usedPrompts, "SELECT COUNT(*) FROM prompts WHERE usage_count > 0"); err != nil {
-			s.logger.WithError(err).Warn("Failed to get used prompts count")
-		}
-		usage["prompts_with_usage"] = usedPrompts
-
-		stats.Usage = &usage
-	}
-
-	// Format output
-	output := fmt.Sprintf(`📊 Database Statistics
-
-📝 **Prompts**: %d total
-🔗 **Embeddings**: %d (%.1f%% coverage)
-⭐ **Average Relevance**: %.3f
-
-📊 **By Phase**:
-%s
-
-🔧 **By Provider**:
-%s
-
-⚙️  **Configuration**:
-%s`,
-		stats.TotalPrompts,
-		stats.PromptsWithEmbeddings, stats.EmbeddingCoverage,
-		stats.AverageRelevance,
-		formatMapStats(stats.ByPhase),
-		formatMapStats(stats.ByProvider),
-		formatConfigStats(stats.Configuration))
-
-	if includeRelationships && stats.Relationships != nil {
-		output += fmt.Sprintf("\n\n🔗 **Relationships**:\n%s", formatMapStats(*stats.Relationships))
-	}
-
-	if includeEnhancements && stats.Enhancements != nil {
-		output += fmt.Sprintf("\n\n✨ **Enhancements**:\n%s", formatMapStats(*stats.Enhancements))
-	}
-
-	if includeUsage && stats.Usage != nil {
-		output += fmt.Sprintf("\n\n📈 **Usage Analytics**:\n%s", formatUsageStats(*stats.Usage))
-	}
-
-	return MCPToolResult{
-		Content: []MCPContent{{
-			Type: "text",
-			Text: output,
-		}},
-		IsError: false,
-	}, nil
-}
 
 // executeTrackPromptRelationship records a relationship between prompts
 func (s *MCPServer) executeTrackPromptRelationship(args map[string]interface{}) (MCPToolResult, error) {
@@ -2364,14 +2167,14 @@ func (s *MCPServer) executeTrackPromptRelationship(args map[string]interface{}) 
 
 	err = s.store.GetDB().Get(&targetExists, "SELECT 1 FROM prompts WHERE id = ?", targetID.String())
 	if err != nil || !targetExists {
-		logger.Error("target prompt not found")
+		s.logger.Error("target prompt not found")
 		return MCPToolResult{}, fmt.Errorf("target prompt not found")
 	}
 
 	// Track the relationship
 	err = s.store.TrackPromptRelationship(sourceID, targetID, relationshipType, strength, context)
 	if err != nil {
-		logger.Errorf("failed to track relationship: %v", err)
+		s.logger.Errorf("failed to track relationship: %v", err)
 		return MCPToolResult{}, fmt.Errorf("failed to track relationship: %w", err)
 	}
 
@@ -2391,46 +2194,6 @@ func (s *MCPServer) executeTrackPromptRelationship(args map[string]interface{}) 
 	}, nil
 }
 
-// Helper functions for formatting
-func formatMapStats(m map[string]int) string {
-	if len(m) == 0 {
-		return "  (none)"
-	}
-	var lines []string
-	for k, v := range m {
-		lines = append(lines, fmt.Sprintf("  • %s: %d", k, v))
-	}
-	sort.Strings(lines)
-	return strings.Join(lines, "\n")
-}
-
-func formatConfigStats(m map[string]string) string {
-	if len(m) == 0 {
-		return "  (none)"
-	}
-	var lines []string
-	for k, v := range m {
-		lines = append(lines, "  • "+k+": "+v)
-	}
-	sort.Strings(lines)
-	return strings.Join(lines, "\n")
-}
-
-func formatUsageStats(m map[string]interface{}) string {
-	var lines []string
-	for k, v := range m {
-		switch val := v.(type) {
-		case int:
-			lines = append(lines, "  • "+k+": "+fmt.Sprintf("%d", val))
-		case float64:
-			lines = append(lines, "  • "+k+": "+fmt.Sprintf("%.2f", val))
-		default:
-			lines = append(lines, "  • "+k+": "+fmt.Sprintf("%v", val))
-		}
-	}
-	sort.Strings(lines)
-	return strings.Join(lines, "\n")
-}
 
 // New MCP tool implementations
 

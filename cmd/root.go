@@ -31,7 +31,28 @@ var rootCmd = &cobra.Command{
 	Short: "Professional AI prompt generation tool",
 	Long: `Prompt Alchemy is a sophisticated prompt generation system that uses a phased approach
 to create, refine, and optimize AI prompts. It supports multiple LLM providers and includes
-advanced features like embeddings, context building, and performance tracking.`,
+advanced features like embeddings, context building, and performance tracking.
+
+EXECUTION MODES:
+  Local Mode (default): Runs all operations locally using your configured providers
+  Client Mode: Connects to a running prompt-alchemy server via HTTP API
+  
+CONFIGURATION:
+  Use --mode local|client or set client.mode in config file
+  Use --server URL to override configured server or enable client mode for one command
+  
+EXAMPLES:
+  # Local mode (default)
+  prompt-alchemy generate "create API docs"
+  
+  # Client mode via config
+  prompt-alchemy --mode client generate "create API docs"
+  
+  # Client mode with specific server
+  prompt-alchemy --server http://localhost:8080 generate "create API docs"
+  
+  # Check server health
+  prompt-alchemy health --server http://localhost:8080`,
 	// TODO: Server Mode Implementation
 	// Add 'serve' subcommand to enable HTTP/gRPC server functionality:
 	// - prompt-alchemy serve --port 8080 --mode http
@@ -73,7 +94,7 @@ func init() {
 	viper.SetDefault("generation.default_max_tokens", 2000)
 	viper.SetDefault("generation.default_count", 3)
 	viper.SetDefault("generation.use_parallel", true)
-	viper.SetDefault("generation.default_target_model", "claude-3-5-sonnet-20241022")
+	viper.SetDefault("generation.default_target_model", "claude-4-sonnet-20250522")
 	viper.SetDefault("generation.default_embedding_model", "text-embedding-3-small")
 	viper.SetDefault("generation.default_embedding_dimensions", 1536)
 
@@ -81,10 +102,22 @@ func init() {
 	viper.SetDefault("phases.human.provider", "anthropic")
 	viper.SetDefault("phases.precision.provider", "google")
 
+	// Client mode configuration
+	viper.SetDefault("client.mode", "local")                       // "local" or "client"
+	viper.SetDefault("client.server_url", "http://localhost:8080") // Server URL for client mode
+	viper.SetDefault("client.timeout", 30)                         // Client timeout in seconds
+	viper.SetDefault("client.retry_attempts", 3)                   // Number of retry attempts
+	viper.SetDefault("client.health_check_interval", 60)           // Health check interval in seconds
+
 	// Global flags
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.github.com/jonwraymond/prompt-alchemy/config.yaml)")
 	rootCmd.PersistentFlags().StringVar(&dataDir, "data-dir", "", "data directory (default is $HOME/.prompt-alchemy)")
 	rootCmd.PersistentFlags().StringVar(&logLevel, "log-level", "info", "log level (debug, info, warn, error)")
+
+	// Client mode flags
+	rootCmd.PersistentFlags().String("mode", "", "execution mode: 'local' or 'client' (default from config)")
+	rootCmd.PersistentFlags().String("server", "", "server URL for client mode (default from config)")
+	rootCmd.PersistentFlags().Int("timeout", 0, "client timeout in seconds (default from config)")
 
 	// Bind flags to viper
 	if err := viper.BindPFlag("data_dir", rootCmd.PersistentFlags().Lookup("data-dir")); err != nil {
@@ -92,6 +125,17 @@ func init() {
 	}
 	if err := viper.BindPFlag("log_level", rootCmd.PersistentFlags().Lookup("log-level")); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to bind log-level flag: %v\n", err)
+	}
+
+	// Bind client mode flags
+	if err := viper.BindPFlag("client.mode", rootCmd.PersistentFlags().Lookup("mode")); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to bind mode flag: %v\n", err)
+	}
+	if err := viper.BindPFlag("client.server_url", rootCmd.PersistentFlags().Lookup("server")); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to bind server flag: %v\n", err)
+	}
+	if err := viper.BindPFlag("client.timeout", rootCmd.PersistentFlags().Lookup("timeout")); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to bind timeout flag: %v\n", err)
 	}
 
 	// Add commands
@@ -120,6 +164,7 @@ func init() {
 	// nightlyCmd and scheduleCmd are registered in their own init() functions
 	// Add new document command
 	rootCmd.AddCommand(documentCmd)
+	rootCmd.AddCommand(healthCmd)
 }
 
 // initConfig reads in config file and ENV variables
@@ -183,6 +228,12 @@ func initConfig() {
 	viper.SetEnvPrefix("PROMPT_ALCHEMY")
 	viper.AutomaticEnv()
 	logger.Debug("Checking for environment variables with prefix PROMPT_ALCHEMY")
+	
+	// Explicitly bind provider API key environment variables
+	viper.BindEnv("providers.openai.api_key", "PROMPT_ALCHEMY_PROVIDERS_OPENAI_API_KEY")
+	viper.BindEnv("providers.anthropic.api_key", "PROMPT_ALCHEMY_PROVIDERS_ANTHROPIC_API_KEY")
+	viper.BindEnv("providers.google.api_key", "PROMPT_ALCHEMY_PROVIDERS_GOOGLE_API_KEY")
+	viper.BindEnv("providers.openrouter.api_key", "PROMPT_ALCHEMY_PROVIDERS_OPENROUTER_API_KEY")
 
 	// Read config file
 	if err := viper.ReadInConfig(); err != nil {

@@ -46,6 +46,10 @@ func BuildPhaseConfigs(phases []models.Phase, overrideProvider string) []models.
 		provider := overrideProvider
 		if provider == "" {
 			provider = viper.GetString("phases." + string(phase) + ".provider")
+			// Fallback to ollama if viper returns empty (configuration issue)
+			if provider == "" {
+				provider = "ollama"
+			}
 		}
 		configs = append(configs, models.PhaseConfig{Phase: phase, Provider: provider})
 	}
