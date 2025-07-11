@@ -1,13 +1,7 @@
 name: Test Suite
 
 on:
-  push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main, develop ]
-  schedule:
-    # Run tests daily at 2 AM UTC
-    - cron: '0 2 * * *'
+  # Disabled automatic triggers to avoid duplication with ci.yml. This workflow can now be run manually only.
   workflow_dispatch:
     inputs:
       test_suite:
@@ -33,7 +27,7 @@ permissions:
   security-events: write
 
 env:
-  GO_VERSION: '1.24'
+  GO_VERSION: '1.22'
   TIMEOUT: '30m'
 
 jobs:
@@ -43,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go-version: ['1.23', '1.24']
+        go-version: ['1.22.x']
     
     steps:
     - name: Checkout code
