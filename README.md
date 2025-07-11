@@ -310,6 +310,286 @@ prompt-alchemy schedule --time "0 2 * * *" --dry-run
 prompt-alchemy nightly
 ```
 
+## Troubleshooting
+
+### Configuration Validation
+
+#### Validate Configuration File
+```bash
+# Validate configuration syntax and structure
+prompt-alchemy config --validate
+
+# Test all configured providers
+prompt-alchemy providers --test
+
+# Check specific provider connectivity
+prompt-alchemy providers --test --provider openai
+
+# Debug configuration loading
+prompt-alchemy --log-level debug config --show
+```
+
+#### Common Configuration Issues
+- **Invalid YAML Syntax**: Use [yamllint.com](https://yamllint.com) to validate your `config.yaml`
+- **Wrong Indentation**: YAML requires consistent spacing (use spaces, not tabs)
+- **Missing API Keys**: Ensure all required providers have valid API keys
+- **Incorrect Model Names**: Verify model names match provider documentation
+
+### Error Handling Guide
+
+#### API Key Errors
+```bash
+# Error: Invalid OpenAI API key
+Error: authentication failed: invalid API key
+
+# Solutions:
+1. Check API key in config.yaml or environment variables
+2. Verify key hasn't expired or been revoked
+3. Ensure key has correct permissions
+4. Test key directly with provider's API
+```
+
+#### Network Connectivity Errors
+```bash
+# Error: Failed to connect to provider
+Error: network timeout: failed to connect to api.openai.com
+
+# Solutions:
+1. Check internet connection
+2. Verify firewall/proxy settings
+3. Test DNS resolution: nslookup api.openai.com
+4. Try different network or VPN
+5. Check provider status pages
+```
+
+#### Provider-Specific Errors
+```bash
+# OpenAI Errors
+Error: rate limit exceeded (429)
+Solution: Wait and retry, or upgrade API plan
+
+Error: model not found (404)
+Solution: Check model name in configuration
+
+# Anthropic Errors  
+Error: invalid request format (400)
+Solution: Check prompt length and formatting
+
+# Google Errors
+Error: safety filter triggered
+Solution: Adjust safety_threshold in config
+
+# Ollama Errors
+Error: connection refused (localhost:11434)
+Solution: Start Ollama service: ollama serve
+```
+
+#### Database and Storage Errors
+```bash
+# Error: Database locked
+Error: database is locked
+
+# Solutions:
+1. Close other instances of prompt-alchemy
+2. Check file permissions on database directory
+3. Ensure sufficient disk space
+
+# Error: Permission denied
+Error: permission denied: ~/.prompt-alchemy/
+
+# Solutions:
+1. Check directory permissions: ls -la ~/.prompt-alchemy/
+2. Create directory manually: mkdir -p ~/.prompt-alchemy/
+3. Fix permissions: chmod 755 ~/.prompt-alchemy/
+```
+
+### Debug and Logging
+
+#### Enable Debug Mode
+```bash
+# Enable debug logging for all commands
+export LOG_LEVEL=debug
+prompt-alchemy generate "test prompt"
+
+# Or use flag for single command
+prompt-alchemy --log-level debug generate "test prompt"
+
+# Enable verbose output
+prompt-alchemy --verbose generate "test prompt"
+```
+
+#### Log File Locations
+- **Linux/macOS**: `~/.prompt-alchemy/logs/`
+- **Windows**: `%USERPROFILE%\.prompt-alchemy\logs\`
+- **Docker**: `/app/logs/` (if volume mounted)
+
+#### Analyzing Logs
+```bash
+# View recent logs
+tail -f ~/.prompt-alchemy/logs/prompt-alchemy.log
+
+# Search for errors
+grep -i error ~/.prompt-alchemy/logs/prompt-alchemy.log
+
+# Filter by provider
+grep "openai" ~/.prompt-alchemy/logs/prompt-alchemy.log
+```
+
+### Troubleshooting Steps
+
+#### 1. Check Configuration
+```bash
+# Step 1: Validate YAML syntax
+yamllint ~/.prompt-alchemy/config.yaml
+
+# Step 2: Test configuration loading
+prompt-alchemy config --show
+
+# Step 3: Validate provider settings
+prompt-alchemy providers --list
+
+# Step 4: Test provider connections
+prompt-alchemy providers --test
+```
+
+#### 2. Test Individual Components
+```bash
+# Test database connectivity
+prompt-alchemy search --query "test" --dry-run
+
+# Test specific provider
+prompt-alchemy generate --provider openai --dry-run "test"
+
+# Test embeddings
+prompt-alchemy --log-level debug search "test query"
+```
+
+#### 3. Check System Health
+```bash
+# Check disk space
+df -h ~/.prompt-alchemy/
+
+# Check memory usage
+ps aux | grep prompt-alchemy
+
+# Check network connectivity
+curl -I https://api.openai.com/v1/models
+
+# Check Go version
+go version
+```
+
+### Common Issues and Solutions
+
+#### Installation Issues
+```bash
+# Issue: Go version too old
+Error: go: go.mod requires go >= 1.23
+
+# Solution: Update Go
+1. Download latest Go from golang.org
+2. Update PATH environment variable
+3. Verify: go version
+
+# Issue: Build fails
+Error: package not found
+
+# Solution: Clean and rebuild
+go clean -modcache
+go mod download
+go build -o prompt-alchemy cmd/promgen/main.go
+```
+
+#### Runtime Issues
+```bash
+# Issue: Slow response times
+# Solutions:
+1. Check network latency to providers
+2. Use faster models (e.g., GPT-4o-mini vs GPT-4)
+3. Reduce max_tokens in configuration
+4. Use local Ollama for faster responses
+
+# Issue: High API costs
+# Solutions:
+1. Use cheaper models in configuration
+2. Reduce generation count
+3. Implement local Ollama for development
+4. Monitor usage with provider dashboards
+```
+
+#### Provider-Specific Setup Issues
+```bash
+# OpenAI Setup
+1. Create account at platform.openai.com
+2. Add payment method (required for API access)
+3. Generate API key in API Keys section
+4. Test: curl -H "Authorization: Bearer YOUR_KEY" https://api.openai.com/v1/models
+
+# Anthropic Setup  
+1. Join waitlist at console.anthropic.com (if required)
+2. Create API key in account settings
+3. Test: curl -H "x-api-key: YOUR_KEY" https://api.anthropic.com/v1/models
+
+# Google Setup
+1. Visit aistudio.google.com
+2. Create or select project
+3. Enable Generative AI API
+4. Create API key in credentials
+5. Test: curl "https://generativelanguage.googleapis.com/v1/models?key=YOUR_KEY"
+
+# Ollama Setup
+1. Install from ollama.ai
+2. Start service: ollama serve
+3. Pull model: ollama pull gemma3:4b
+4. Test: curl http://localhost:11434/api/tags
+```
+
+### Performance Optimization
+
+#### Speed Improvements
+- Use faster models (Flash vs Pro)
+- Reduce max_tokens for shorter responses
+- Enable parallel processing in config
+- Use local Ollama for development
+- Cache frequently used prompts
+
+#### Cost Optimization  
+- Use cheaper models for development
+- Implement prompt caching
+- Monitor token usage
+- Use free tiers when available
+- Batch similar requests
+
+#### Memory Optimization
+- Limit concurrent requests
+- Clear old database entries
+- Monitor SQLite database size
+- Use streaming responses when available
+
+### Getting Help
+
+#### Before Reporting Issues
+1. Check this troubleshooting guide
+2. Search existing GitHub issues
+3. Enable debug logging and collect logs
+4. Test with minimal configuration
+5. Verify all prerequisites are met
+
+#### When Reporting Issues
+Include the following information:
+- Operating system and version
+- Go version (`go version`)
+- Prompt Alchemy version (`prompt-alchemy version`)
+- Configuration file (with API keys redacted)
+- Complete error message and stack trace
+- Steps to reproduce the issue
+- Debug logs (with sensitive data removed)
+
+#### Community Resources
+- **GitHub Issues**: [Report bugs and request features](https://github.com/jonwraymond/prompt-alchemy/issues)
+- **Discussions**: [Ask questions and share tips](https://github.com/jonwraymond/prompt-alchemy/discussions)
+- **Documentation**: [Complete documentation](https://jonwraymond.github.io/prompt-alchemy/)
+
 ## The Alchemical Process
 
 Prompt Alchemy follows the ancient principles of transformation through three sacred phases:
