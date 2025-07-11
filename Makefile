@@ -75,7 +75,7 @@ test-integration:
 # Run specific test suite
 .PHONY: test-suite
 test-suite:
-	@echo "Test suites: Passed (no integration tests in release build)"
+	@echo "Test suite target skipped – placeholder (no specific tests implemented)"
 
 # Run all tests
 .PHONY: test
@@ -92,27 +92,27 @@ test-ci:
 # Run tests with verbose output
 .PHONY: test-verbose
 test-verbose:
-	@echo "Verbose tests: Passed (no integration tests in release build)"
+	@echo "Verbose tests target skipped – placeholder (no verbose suite implemented)"
 
 # Run tests in parallel
 .PHONY: test-parallel
 test-parallel:
-	@echo "Parallel tests: Passed (no integration tests in release build)"
+	@echo "Parallel tests target skipped – placeholder (not implemented)"
 
 # Test global flags and environment variables
 .PHONY: test-global-flags
 test-global-flags:
-	@echo "Global flags tests: Passed (no integration tests in release build)"
+	@echo "Global flags tests skipped – placeholder (not implemented)"
 
 # Test CLI commands
 .PHONY: test-cli
 test-cli:
-	@echo "CLI tests: Passed (no integration tests in release build)"
+	@echo "CLI tests skipped – placeholder (not implemented)"
 
 # Test MCP server
 .PHONY: test-mcp
 test-mcp:
-	@echo "MCP tests: Passed (no integration tests in release build)"
+	@echo "MCP tests skipped – placeholder (not implemented)"
 
 # Generate test report
 .PHONY: test-report
