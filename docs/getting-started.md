@@ -11,7 +11,7 @@ Welcome to Prompt Alchemy! This guide will help you get up and running quickly.
 
 Before you begin, ensure you have:
 
-- Go 1.23 or higher installed
+- Go 1.24 or higher installed
 - Git for cloning the repository
 - At least one LLM provider API key (OpenAI, Anthropic, Google, OpenRouter, or Ollama setup)
 - SQLite (usually pre-installed on most systems)
@@ -30,7 +30,7 @@ make build
 make setup
 
 # Edit configuration with your API keys
-nano ~/.prompt-alchemy/config.yaml
+nano ~/.github.com/jonwraymond/prompt-alchemy/config.yaml
 ```
 
 ## Your First Prompt
@@ -91,7 +91,7 @@ For complete command documentation, see the [CLI Reference](./cli-reference).
 
 ## Configuration Basics
 
-Your configuration file (`~/.prompt-alchemy/config.yaml`) controls:
+Your configuration file (`~/.github.com/jonwraymond/prompt-alchemy/config.yaml`) controls:
 
 - **API Keys**: For each provider
 - **Default Models**: Which models to use
@@ -103,25 +103,28 @@ Example configuration:
 providers:
   openai:
     api_key: "sk-..."
-    model: "o4-mini"
-  anthropic:
+    model: "gpt-4o-mini"
+  claude:
     api_key: "sk-ant-..."
-    model: "claude-sonnet-4-20250514"
+    model: "claude-3-5-sonnet-20241022"
+  gemini:
+    api_key: "..."
+    model: "gemini-2.5-flash"
 
 phases:
   idea:
-    provider: openai
+    provider: "openai"
   human:
-    provider: anthropic
+    provider: "claude"
   precision:
-    provider: google
+    provider: "gemini"
 
 generation:
   default_temperature: 0.7
   default_max_tokens: 2000
   default_count: 3
   use_parallel: true
-  default_target_model: "claude-sonnet-4-20250514"
+  default_target_model: "claude-3-5-sonnet-20241022"
   default_embedding_model: "text-embedding-3-small"
   default_embedding_dimensions: 1536
 ```
@@ -143,7 +146,7 @@ If you run into issues:
 
 1. Check the configuration: `./prompt-alchemy config`
 2. Verify providers: `./prompt-alchemy providers`
-3. See logs in `~/.prompt-alchemy/logs/`
+3. Enable debug logging: `./prompt-alchemy --log-level debug`
 4. Open an issue on GitHub
 
 Happy prompting! 🚀
