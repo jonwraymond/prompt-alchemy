@@ -158,11 +158,7 @@ func (s *Storage) SavePrompt(prompt *models.Prompt) error {
 		s.logger.WithError(err).Error("Failed to begin transaction for saving prompt")
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer func() {
-		if err := tx.Rollback(); err != nil {
-			s.logger.WithError(err).Warn("Failed to rollback transaction")
-		}
-	}()
+	defer safeRollback(tx, s.logger)
 
 	// Serialize tags
 	tagsJSON, err := json.Marshal(prompt.Tags)
@@ -687,7 +683,7 @@ func (s *Storage) SearchPrompts(criteria SearchCriteria) ([]models.Prompt, error
 		}
 		// Convert embedding data from bytes to float32 slice
 		if len(dbPrompt.Embedding) > 0 {
-			prompt.Embedding = bytesToFloat32Slice(dbPrompt.Embedding)
+			prompt.Embedding = bytesToFloat32Array(dbPrompt.Embedding)
 		}
 
 		prompts = append(prompts, prompt)
@@ -1027,11 +1023,7 @@ func (s *Storage) TrackPromptUsage(promptID uuid.UUID, context string) error {
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer func() {
-		if err := tx.Rollback(); err != nil {
-			s.logger.WithError(err).Warn("Failed to rollback transaction")
-		}
-	}()
+	defer safeRollback(tx, s.logger)
 
 	// Update last_used_at (triggers will update usage_count and relevance_score)
 	_, err = tx.Exec(
@@ -1347,11 +1339,7 @@ func (s *Storage) UpdatePrompt(prompt *models.Prompt) error {
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer func() {
-		if err := tx.Rollback(); err != nil {
-			s.logger.WithError(err).Warn("Failed to rollback transaction")
-		}
-	}()
+	defer safeRollback(tx, s.logger)
 
 	// Convert tags to JSON
 	tagsJSON, err := json.Marshal(prompt.Tags)
@@ -1472,11 +1460,7 @@ func (s *Storage) DeletePrompt(id uuid.UUID) error {
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer func() {
-		if err := tx.Rollback(); err != nil {
-			s.logger.WithError(err).Warn("Failed to rollback transaction")
-		}
-	}()
+	defer safeRollback(tx, s.logger)
 
 	// Delete related data first (due to foreign key constraints)
 
@@ -1805,19 +1789,6 @@ func float32ArrayToBytes(data []float32) []byte {
 	return result
 }
 
-// bytesToFloat32Slice converts byte array back to float32 slice
-func bytesToFloat32Slice(data []byte) []float32 {
-	if len(data)%4 != 0 {
-		return nil // Invalid data length
-	}
-	result := make([]float32, len(data)/4)
-	for i := 0; i < len(result); i++ {
-		bits := binary.LittleEndian.Uint32(data[i*4:])
-		result[i] = math.Float32frombits(bits)
-	}
-	return result
-}
-
 // cosineSimilarity calculates cosine similarity between two embeddings
 func cosineSimilarity(a, b []float32) float64 {
 	if len(a) != len(b) {
@@ -1915,4 +1886,11 @@ func (s *Storage) GetMetrics(criteria MetricsCriteria) ([]models.PromptMetrics, 
 	}
 
 	return metrics, nil
+}
+
+// Add safeRollback helper after imports and type definitions
+func safeRollback(tx *sqlx.Tx, logger *logrus.Logger) {
+	if err := tx.Rollback(); err != nil && err != sql.ErrTxDone {
+		logger.WithError(err).Warn("Failed to rollback transaction")
+	}
 }
