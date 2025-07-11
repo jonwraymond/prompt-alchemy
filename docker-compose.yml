@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  prompt-alchemy:
+    build: .
+    image: prompt-alchemy-hybrid:latest
+    container_name: prompt-alchemy-hybrid
+    volumes:
+      # Mount configuration file
+      - ./docker-config.yaml:/app/config.yaml:ro
+      # Mount data directory for persistence
+      - prompt-alchemy-data:/app/data
+      # Mount logs directory
+      - prompt-alchemy-logs:/app/logs
+    environment:
+      # API Keys from .env file with proper naming
+      - PROMPT_ALCHEMY_PROVIDERS_OPENAI_API_KEY=${PROMPT_ALCHEMY_PROVIDERS_OPENAI_API_KEY}
+      - PROMPT_ALCHEMY_PROVIDERS_OPENAI_MODEL=${PROMPT_ALCHEMY_PROVIDERS_OPENAI_MODEL}
+      - PROMPT_ALCHEMY_PROVIDERS_OPENROUTER_API_KEY=${PROMPT_ALCHEMY_PROVIDERS_OPENROUTER_API_KEY}
+      - PROMPT_ALCHEMY_PROVIDERS_OPENROUTER_MODEL=${PROMPT_ALCHEMY_PROVIDERS_OPENROUTER_MODEL}
+      - PROMPT_ALCHEMY_PROVIDERS_ANTHROPIC_API_KEY=${PROMPT_ALCHEMY_PROVIDERS_ANTHROPIC_API_KEY}
+      - PROMPT_ALCHEMY_PROVIDERS_ANTHROPIC_MODEL=${PROMPT_ALCHEMY_PROVIDERS_ANTHROPIC_MODEL}
+      - PROMPT_ALCHEMY_PROVIDERS_GOOGLE_API_KEY=${PROMPT_ALCHEMY_PROVIDERS_GOOGLE_API_KEY}
+      - PROMPT_ALCHEMY_PROVIDERS_GOOGLE_MODEL=${PROMPT_ALCHEMY_PROVIDERS_GOOGLE_MODEL}
+      - PROMPT_ALCHEMY_PROVIDERS_OLLAMA_MODEL=${PROMPT_ALCHEMY_PROVIDERS_OLLAMA_MODEL}
+      - PROMPT_ALCHEMY_PROVIDERS_OLLAMA_BASE_URL=${PROMPT_ALCHEMY_PROVIDERS_OLLAMA_BASE_URL}
+      # Application configuration
+      - PROMPT_ALCHEMY_CONFIG=/app/config.yaml
+      - PROMPT_ALCHEMY_DATA_DIR=/app/data
+      - PROMPT_ALCHEMY_LOG_LEVEL=info
+    # Hybrid mode runs both MCP and HTTP servers
+    # No command override needed - using Dockerfile ENTRYPOINT
+    # HTTP API port exposed
+    ports:
+      - "9090:8080"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  prompt-alchemy-data:
+    driver: local
+  prompt-alchemy-logs:
+    driver: local 

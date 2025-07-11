@@ -1,0 +1,40 @@
+graph TB
+    A[Text Input] --> B[Embedding Generation]
+    B --> C[Provider Selection]
+    C --> D[OpenAI Embeddings]
+    C --> E[Alternative Embeddings]
+    
+    D --> F[Vector Processing]
+    E --> F
+    
+    F --> G[Dimensionality: 1536]
+    G --> H[Normalization]
+    H --> I[Binary Storage]
+    
+    I --> J[SQLite BLOB]
+    J --> K[Indexed Storage]
+    
+    subgraph "Search Process"
+        L[Query Input] --> M[Query Embedding]
+        M --> N[Similarity Calculation]
+        N --> O[Cosine Similarity]
+        O --> P[Ranking by Score]
+        P --> Q[Filtered Results]
+    end
+    
+    K --> N
+    
+    subgraph "Optimization"
+        R[Search Performance] --> S[Index Management]
+        S --> T[Composite Indexes]
+        T --> U[Query Optimization]
+        U --> V[Result Caching]
+    end
+    
+    Q --> R
+    
+    style A fill:#e3f2fd
+    style F fill:#f1f8e9
+    style J fill:#fff3e0
+    style L fill:#e8f5e8
+    style R fill:#ffebee

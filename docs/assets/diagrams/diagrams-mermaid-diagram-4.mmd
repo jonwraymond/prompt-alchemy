@@ -1,0 +1,75 @@
+graph TD
+    A[CLI Entry Point] --> B{Command Router}
+    
+    B --> C[generate]
+    B --> D[search]
+    B --> E[optimize]
+    B --> F[evaluate]
+    B --> G[export]
+    B --> H[config]
+    B --> I[providers]
+    B --> J[metrics]
+    
+    C --> K[Prompt Engine]
+    K --> L[Phase Execution]
+    L --> M[Provider Selection]
+    M --> N[Generation Request]
+    N --> O[Response Processing]
+    O --> P[Storage & Ranking]
+    P --> Q[Result Display]
+    
+    D --> R[Search Engine]
+    R --> S{Search Type}
+    S --> T[Text Search]
+    S --> U[Semantic Search]
+    S --> V[Hybrid Search]
+    
+    T --> W[SQL LIKE Query]
+    U --> X[Vector Similarity]
+    V --> Y[Combined Results]
+    
+    W --> Z[Search Results]
+    X --> Z
+    Y --> Z
+    
+    E --> AA[Optimization Engine]
+    AA --> BB[Meta-Prompt Generation]
+    BB --> CC[Provider Request]
+    CC --> DD[Optimized Prompt]
+    DD --> EE[Comparison & Storage]
+    
+    F --> FF[Evaluation Engine]
+    FF --> GG[LLM-as-Judge]
+    GG --> HH[Scoring Criteria]
+    HH --> II[Evaluation Results]
+    
+    G --> JJ[Export Engine]
+    JJ --> KK{Export Format}
+    KK --> LL[JSON Export]
+    KK --> MM[CSV Export]
+    KK --> NN[Markdown Export]
+    
+    H --> OO[Configuration Manager]
+    OO --> PP[Provider Settings]
+    OO --> QQ[Phase Configuration]
+    OO --> RR[Generation Settings]
+    
+    I --> SS[Provider Registry]
+    SS --> TT[Health Checks]
+    SS --> UU[Capability Discovery]
+    
+    J --> VV[Analytics Engine]
+    VV --> WW[Usage Metrics]
+    VV --> XX[Performance Stats]
+    VV --> YY[Cost Analysis]
+    
+    style A fill:#e1f5fe
+    style B fill:#f3e5f5
+    style K fill:#e8f5e8
+    style R fill:#fff3e0
+    style AA fill:#ffebee
+    style FF fill:#f1f8e9
+    style JJ fill:#fce4ec
+    style OO fill:#e0f2f1
+    style SS fill:#fff8e1
+    style VV fill:#f3e5f5

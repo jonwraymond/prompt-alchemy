@@ -24,6 +24,20 @@ The provider abstraction layer that enables seamless integration with multiple L
 ### 💾 [Database Schema](./assets/diagrams/database-schema)
 Complete database design with tables, relationships, and indexes that power the intelligent storage and retrieval system.
 
+### 🏆 [Learning-to-Rank Flow](./assets/diagrams/learning-to-rank)
+The adaptive learning pipeline from user feedback to improved prompt ranking.
+
+## Operational Mode Diagrams
+
+### 🖥️ [On-Demand Mode Architecture](./assets/diagrams/on-demand-architecture)
+Complete architecture for command-line interface mode, showing stateless execution flow and resource lifecycle.
+
+### 🌐 [Server Mode Architecture](./assets/diagrams/server-mode-architecture)
+Comprehensive server mode design including MCP protocol layer, learning engine, and high-availability features.
+
+### 📊 [Feature Comparison Matrix](./assets/diagrams/feature-comparison-matrix)
+Visual comparison of feature availability, performance characteristics, and integration capabilities between modes.
+
 ## Quick Visual Overview
 
 ### The Alchemical Transformation Process

@@ -21,8 +21,14 @@ Complete documentation for all Prompt Alchemy command-line interface options, fl
 10. [config](#config)
 11. [providers](#providers)
 12. [serve](#serve)
-13. [Environment Variables](#environment-variables)
-14. [Configuration Files](#configuration-files)
+13. [nightly](#nightly)
+14. [schedule](#schedule)
+15. [batch](#batch)
+16. [test](#test)
+17. [validate](#validate)
+18. [version](#version)
+19. [Environment Variables](#environment-variables)
+20. [Configuration Files](#configuration-files)
 
 ## Global Options
 
@@ -51,71 +57,37 @@ prompt-alchemy --log-level debug generate "test prompt"
 
 | Command | Description |
 |---------|-------------|
-| `generate` | Generate AI prompts using phased approach |
-| `search` | Search existing prompts with filters |
-| `optimize` | Optimize existing prompts using meta-prompting |
-| `delete` | Delete prompts from the database |
-| `update` | Update existing prompt properties |
-| `metrics` | Analyze prompt performance and usage |
-| `migrate` | Migrate database schema or data |
-| `config` | Show current configuration |
-| `providers` | List configured providers and status |
-| `serve` | Start MCP server for IDE integration |
-| `batch` | Process multiple prompts from various input sources |
-| `test` | Test provider connectivity and configuration |
-| `validate` | Validate configuration and prompt data |
-| `version` | Show version and build information |
+| generate | Generate refined prompts via phases |
+| search | Search stored prompts semantically |
+| optimize | Optimize prompts using meta-prompting |
+| delete | Delete specific prompts |
+| update | Update prompt metadata |
+| metrics | View prompt metrics and reports |
+| migrate | Run database migrations |
+| config | Manage configuration |
+| providers | List AI providers |
+| serve | Start HTTP/MCP server |
+| nightly | Run learning training job |
+| schedule | Schedule nightly jobs |
+| batch | Batch process inputs |
+| test | Test provider connections |
+| validate | Validate config/settings |
+| version | Display version info |
 
 ## generate
 
-Generate AI prompts through a sophisticated phased approach.
-
-### Usage
-```bash
-prompt-alchemy generate [flags] <input>
-```
-
-### Flags
-
-| Flag | Short | Type | Default | Description |
-|------|-------|------|---------|-------------|
-| `--phases` | `-p` | string | `prima-materia,solutio,coagulatio` | Alchemical phases to use (comma-separated) |
-| `--count` | `-c` | int | `3` | Number of prompt variants to generate |
-| `--temperature` | `-t` | float | `0.7` | Temperature for generation (0.0-1.0) |
-| `--max-tokens` | `-m` | int | `2000` | Maximum tokens for generation |
-| `--tags` | | string | | Tags for the prompt (comma-separated) |
-| `--context` | | stringSlice | | Context files to include |
-| `--provider` | | string | | Override default provider for all phases |
-| `--output` | `-o` | string | `text` | Output format (text, json, yaml) |
-| `--save` | | bool | `true` | Save generated prompts to database |
-| `--persona` | | string | `code` | AI persona to use (code, writing, analysis, generic) |
-| `--target-model` | | string | | Target model family for optimization |
-| `--embedding-dimensions` | | int | `0` | Embedding dimensions for similarity search |
-
-### Examples
-
-```bash
-# Basic generation
-prompt-alchemy generate "Create a REST API for user management"
-
-# Custom phases and count
-prompt-alchemy generate -p "prima-materia,coagulatio" -c 5 "Database schema design"
-
-# With specific provider and tags
-prompt-alchemy generate --provider openai --tags "api,backend" "Authentication system"
-
-# Include context files
-prompt-alchemy generate --context schema.sql --context requirements.txt "API design"
-
-# Generate for specific persona
-prompt-alchemy generate --persona writing "Marketing copy for SaaS product"
-
-# JSON output format
-prompt-alchemy generate -o json "Code review checklist"
-
-# Target specific model family
-prompt-alchemy generate --target-model claude-3-opus "Complex reasoning task"
-```
+Usage: promgen generate <input> [flags]
+Flags:
+--phases string
+--persona string
+--auto-select bool
+--count int
+--temperature float
+--max-tokens int
+--tags string
+--context []string
+--provider string
+Example: promgen generate "API design" --phases=prima-materia,coagulatio --auto-select
 
 ## search
 
@@ -392,6 +364,85 @@ prompt-alchemy serve
 # Start with custom port
 prompt-alchemy --config custom-config.yaml serve
 ```
+
+## nightly
+
+Run the nightly training job to update ranking weights based on user interactions.
+
+### Usage
+```bash
+prompt-alchemy nightly [flags]
+```
+
+### Flags
+- `--dry-run` - Preview training without updating weights
+- `--force` - Force training even if insufficient data
+
+### Examples
+```bash
+# Run nightly training
+prompt-alchemy nightly
+
+# Dry run to preview changes
+prompt-alchemy nightly --dry-run
+
+# Force training
+prompt-alchemy nightly --force
+```
+
+## schedule
+
+Install, uninstall, or manage scheduled nightly training jobs using cron or launchd.
+
+### Usage
+```bash
+prompt-alchemy schedule [flags]
+```
+
+### Flags
+- `--time` - Schedule time in cron format (default: "0 2 * * *" for 2 AM daily)
+- `--method` - Scheduling method: auto, cron, or launchd (default: auto)
+- `--uninstall` - Uninstall the scheduled job
+- `--list` - List current scheduled jobs
+- `--dry-run` - Show what would be done without making changes
+
+### Examples
+```bash
+# Install nightly job at 2 AM using auto-detected method
+prompt-alchemy schedule --time "0 2 * * *"
+
+# Install job at 3:30 AM using cron specifically
+prompt-alchemy schedule --time "30 3 * * *" --method cron
+
+# Install job using launchd on macOS
+prompt-alchemy schedule --time "0 2 * * *" --method launchd
+
+# List current scheduled jobs
+prompt-alchemy schedule --list
+
+# Uninstall scheduled job
+prompt-alchemy schedule --uninstall
+
+# Dry run to see what would be installed
+prompt-alchemy schedule --time "0 2 * * *" --dry-run
+```
+
+### Scheduling Methods
+
+**Auto (default)**: Automatically detects the best method for your system:
+- macOS: Prefers launchd, falls back to cron
+- Linux: Uses cron
+
+**Cron**: Traditional Unix cron scheduler
+- Works on Linux and macOS
+- Uses standard cron syntax
+- Managed via `crontab`
+
+**Launchd**: macOS system scheduler
+- Native macOS scheduling service
+- More reliable than cron on macOS
+- Creates plist files in `~/Library/LaunchAgents/`
+- Logs output to `/tmp/prompt-alchemy-nightly.log`
 
 ## Environment Variables
 

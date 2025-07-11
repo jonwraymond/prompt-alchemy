@@ -15,8 +15,7 @@ flowchart TD
     Raw Material Extraction`"]
     
     subgraph "Prima Materia Phase"
-        PM_Start --> PM_Provider["`🤖 **Select Provider**
-        (Default: OpenAI)`"]
+        PM_Start --> PM_Provider['Select Provider (e.g. OpenAI)']
         PM_Provider --> PM_Generate["`⚗️ **Extract Essence**
         Brainstorm & Explore`"]
         PM_Generate --> PM_Store["`💾 **Store Result**

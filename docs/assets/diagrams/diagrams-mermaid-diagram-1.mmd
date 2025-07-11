@@ -1,0 +1,49 @@
+graph TD
+    A[User Input] --> B[Prompt Engine]
+    B --> C{Phase 1: Idea}
+    C --> D[OpenAI GPT-4]
+    C --> E[Anthropic Claude]
+    C --> F[Google Gemini]
+    
+    D --> G[Idea Prompts Generated]
+    E --> G
+    F --> G
+    
+    G --> H{Phase 2: Human}
+    H --> I[Human-Centric Refinement]
+    H --> J[Context Enhancement]
+    H --> K[Clarity Optimization]
+    
+    I --> L[Human-Optimized Prompts]
+    J --> L
+    K --> L
+    
+    L --> M{Phase 3: Precision}
+    M --> N[Technical Precision]
+    M --> O[Parameter Optimization]
+    M --> P[Format Standardization]
+    
+    N --> Q[Final Ranked Prompts]
+    O --> Q
+    P --> Q
+    
+    Q --> R[SQLite Storage]
+    R --> S[Vector Embeddings]
+    R --> T[Metadata Storage]
+    
+    Q --> U[Ranking System]
+    U --> V[Temperature Score]
+    U --> W[Token Efficiency]
+    U --> X[Context Relevance]
+    
+    V --> Y[Best Prompt Selection]
+    W --> Y
+    X --> Y
+    
+    Y --> Z[User Output]
+    
+    style A fill:#e1f5fe
+    style B fill:#f3e5f5
+    style Q fill:#e8f5e8
+    style Y fill:#fff3e0
+    style Z fill:#ffebee

@@ -13,9 +13,9 @@ import (
 	"github.com/spf13/viper"
 
 	log "github.com/jonwraymond/prompt-alchemy/internal/log"
-	"github.com/jonwraymond/prompt-alchemy/internal/providers"
 	"github.com/jonwraymond/prompt-alchemy/internal/storage"
 	"github.com/jonwraymond/prompt-alchemy/pkg/models"
+	"github.com/jonwraymond/prompt-alchemy/pkg/providers"
 	"github.com/sirupsen/logrus"
 )
 
@@ -269,8 +269,8 @@ func (r *Ranker) calculateRanking(ctx context.Context, prompt *models.Prompt, or
 	// Length score (prefer similar lengths)
 	lengthScore := r.calculateLengthRatio(prompt.Content, originalInput)
 
-	// Historical score (placeholder for now)
-	historicalScore := 0.5 // TODO: Implement actual historical scoring
+	// Historical score
+	historicalScore := r.getHistoricalScore(prompt.ID.String())
 
 	// Calculate weighted total score using configurable weights
 	totalScore := (tempScore * r.tempWeight) + (tokenScore * r.tokenWeight) +
@@ -405,4 +405,30 @@ func cosineSimilarity(a, b []float32) float64 {
 	}
 
 	return dot / (math.Sqrt(normA) * math.Sqrt(normB))
+}
+
+// getHistoricalScore retrieves the historical quality score for a prompt
+func (r *Ranker) getHistoricalScore(promptID string) float64 {
+	// Get metrics for this specific prompt
+	criteria := storage.MetricsCriteria{
+		Limit: 1,
+	}
+
+	metrics, err := r.storage.GetMetrics(criteria)
+	if err != nil {
+		r.logger.WithError(err).Debug("Failed to get historical metrics")
+		return 0.5 // Default fallback score
+	}
+
+	// Find the metrics for this specific prompt
+	for _, m := range metrics {
+		if m.PromptID.String() == promptID {
+			// Use engagement score as a proxy for quality
+			if m.EngagementScore > 0 {
+				return m.EngagementScore / 100.0 // Normalize to 0-1
+			}
+		}
+	}
+
+	return 0.5 // Default if no metrics found
 }

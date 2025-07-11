@@ -146,3 +146,20 @@ type UserInteraction struct {
 	Score     float64   `json:"score,omitempty"` // For ratings (0-1)
 	Timestamp time.Time `json:"timestamp"`
 }
+
+// PhaseConfig maps phases to providers
+type PhaseConfig struct {
+	Phase    Phase
+	Provider string
+}
+
+// GenerateOptions contains options for prompt generation
+type GenerateOptions struct {
+	Request        PromptRequest
+	PhaseConfigs   []PhaseConfig
+	UseParallel    bool
+	IncludeContext bool
+	Persona        string
+	TargetModel    string
+	AutoSelect     bool `json:"auto_select,omitempty"`
+}

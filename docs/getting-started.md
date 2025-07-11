@@ -18,6 +18,8 @@ Before you begin, ensure you have:
 
 ## Quick Installation
 
+### Local Build
+
 ```bash
 # Clone the repository
 git clone https://github.com/jonwraymond/prompt-alchemy.git
@@ -32,6 +34,28 @@ make setup
 # Edit configuration with your API keys
 nano ~/.prompt-alchemy/config.yaml
 ```
+
+### Docker Deployment
+
+```bash
+# Clone the repository
+git clone https://github.com/jonwraymond/prompt-alchemy.git
+cd prompt-alchemy
+
+# Set up environment
+cp docker.env.example .env
+# Edit .env with your API keys
+
+# Build and start
+make docker-build
+docker-compose up -d
+
+# Verify
+docker-compose ps
+docker-compose logs prompt-alchemy
+```
+
+See [Docker Deployment Guide](./docker-hybrid-deployment.md) for details.
 
 ## Your First Prompt
 
@@ -128,6 +152,32 @@ generation:
   default_embedding_model: "text-embedding-3-small"
   default_embedding_dimensions: 1536
 ```
+
+## Automated Learning (Optional)
+
+Prompt Alchemy includes a learning-to-rank system that improves prompt recommendations over time by analyzing user interactions:
+
+```bash
+# Run the nightly training job manually
+./prompt-alchemy nightly
+
+# Set up automated scheduling (runs daily at 2 AM)
+./prompt-alchemy schedule --time "0 2 * * *"
+
+# List current scheduled jobs
+./prompt-alchemy schedule --list
+
+# Uninstall scheduled job
+./prompt-alchemy schedule --uninstall
+```
+
+The schedule command automatically:
+- Detects your system (macOS uses launchd, Linux uses cron)
+- Finds the correct binary and config paths  
+- Handles installation and uninstallation
+- Provides logging for troubleshooting
+
+This keeps the server lightweight while running training jobs separately as scheduled tasks.
 
 ## Next Steps
 

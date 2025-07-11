@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"database/sql"
 	"encoding/binary"
 	"encoding/json"
@@ -1133,6 +1134,118 @@ func (s *Storage) TrackPromptEnhancement(promptID, parentID uuid.UUID, enhanceme
 	return nil
 }
 
+// ListPrompts returns all prompts with optional pagination
+func (s *Storage) ListPrompts(limit, offset int) ([]models.Prompt, error) {
+	query := `
+		SELECT id, content, content_hash, phase, provider, model, temperature, max_tokens, actual_tokens,
+		       tags, parent_id, source_type, enhancement_method, relevance_score, usage_count,
+		       generation_count, last_used_at, original_input, generation_request, generation_context,
+		       persona_used, target_model_family, created_at, updated_at, embedding_model, embedding_provider
+		FROM prompts
+		ORDER BY created_at DESC
+		LIMIT ? OFFSET ?
+	`
+
+	var dbPrompts []struct {
+		ID                string     `db:"id"`
+		Content           string     `db:"content"`
+		ContentHash       *string    `db:"content_hash"`
+		Phase             string     `db:"phase"`
+		Provider          string     `db:"provider"`
+		Model             string     `db:"model"`
+		Temperature       float64    `db:"temperature"`
+		MaxTokens         int        `db:"max_tokens"`
+		ActualTokens      int        `db:"actual_tokens"`
+		Tags              string     `db:"tags"`
+		ParentID          *string    `db:"parent_id"`
+		SourceType        *string    `db:"source_type"`
+		EnhancementMethod *string    `db:"enhancement_method"`
+		RelevanceScore    *float64   `db:"relevance_score"`
+		UsageCount        *int       `db:"usage_count"`
+		GenerationCount   *int       `db:"generation_count"`
+		LastUsedAt        *time.Time `db:"last_used_at"`
+		OriginalInput     *string    `db:"original_input"`
+		GenerationRequest *string    `db:"generation_request"`
+		GenerationContext *string    `db:"generation_context"`
+		PersonaUsed       *string    `db:"persona_used"`
+		TargetModelFamily *string    `db:"target_model_family"`
+		CreatedAt         time.Time  `db:"created_at"`
+		UpdatedAt         time.Time  `db:"updated_at"`
+		EmbeddingModel    *string    `db:"embedding_model"`
+		EmbeddingProvider *string    `db:"embedding_provider"`
+	}
+
+	err := s.db.Select(&dbPrompts, query, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list prompts: %w", err)
+	}
+
+	prompts := make([]models.Prompt, len(dbPrompts))
+	for i, dbPrompt := range dbPrompts {
+		// Convert back to model
+		prompt := models.Prompt{
+			ID:           uuid.MustParse(dbPrompt.ID),
+			Content:      dbPrompt.Content,
+			Phase:        models.Phase(dbPrompt.Phase),
+			Provider:     dbPrompt.Provider,
+			Model:        dbPrompt.Model,
+			Temperature:  dbPrompt.Temperature,
+			MaxTokens:    dbPrompt.MaxTokens,
+			ActualTokens: dbPrompt.ActualTokens,
+			CreatedAt:    dbPrompt.CreatedAt,
+			UpdatedAt:    dbPrompt.UpdatedAt,
+			SessionID:    uuid.New(), // Generate a new session ID for compatibility
+		}
+
+		// Set optional fields
+		if dbPrompt.SourceType != nil {
+			prompt.SourceType = *dbPrompt.SourceType
+		}
+		if dbPrompt.EnhancementMethod != nil {
+			prompt.EnhancementMethod = *dbPrompt.EnhancementMethod
+		}
+		if dbPrompt.RelevanceScore != nil {
+			prompt.RelevanceScore = *dbPrompt.RelevanceScore
+		}
+		if dbPrompt.UsageCount != nil {
+			prompt.UsageCount = *dbPrompt.UsageCount
+		}
+		if dbPrompt.GenerationCount != nil {
+			prompt.GenerationCount = *dbPrompt.GenerationCount
+		}
+		if dbPrompt.OriginalInput != nil {
+			prompt.OriginalInput = *dbPrompt.OriginalInput
+		}
+		if dbPrompt.PersonaUsed != nil {
+			prompt.PersonaUsed = *dbPrompt.PersonaUsed
+		}
+		if dbPrompt.TargetModelFamily != nil {
+			prompt.TargetModelFamily = *dbPrompt.TargetModelFamily
+		}
+		if dbPrompt.EmbeddingModel != nil {
+			prompt.EmbeddingModel = *dbPrompt.EmbeddingModel
+		}
+		if dbPrompt.EmbeddingProvider != nil {
+			prompt.EmbeddingProvider = *dbPrompt.EmbeddingProvider
+		}
+
+		// Parse tags
+		if err := json.Unmarshal([]byte(dbPrompt.Tags), &prompt.Tags); err != nil {
+			s.logger.WithError(err).Warn("Failed to unmarshal tags")
+		}
+
+		// Convert parent ID
+		if dbPrompt.ParentID != nil {
+			parentID := uuid.MustParse(*dbPrompt.ParentID)
+			prompt.ParentID = &parentID
+		}
+
+		prompts[i] = prompt
+	}
+
+	return prompts, nil
+}
+
 // GetPromptsByRelevance returns prompts ordered by relevance score
 func (s *Storage) GetPromptsByRelevance(limit int) ([]models.Prompt, error) {
 	// Override the query to order by relevance
@@ -1995,4 +2108,115 @@ func (s *Storage) ListInteractions(filter map[string]interface{}) ([]*models.Use
 	}
 
 	return interactions, nil
+}
+
+// SaveUsageAnalytics saves usage analytics for learning
+func (s *Storage) SaveUsageAnalytics(usage models.UsageAnalytics) error {
+	query := `
+		INSERT INTO usage_analytics (
+			id, prompt_id, used_in_generation, generated_prompt_id,
+			usage_context, effectiveness_score, created_at
+		) VALUES (
+			:id, :prompt_id, :used_in_generation, :generated_prompt_id,
+			:usage_context, :effectiveness_score, :created_at
+		)
+	`
+
+	args := map[string]interface{}{
+		"id":                  usage.ID.String(),
+		"prompt_id":           usage.PromptID.String(),
+		"used_in_generation":  usage.UsedInGeneration,
+		"generated_prompt_id": nil,
+		"usage_context":       usage.UsageContext,
+		"effectiveness_score": usage.EffectivenessScore,
+		"created_at":          usage.CreatedAt,
+	}
+
+	if usage.GeneratedPromptID != nil {
+		args["generated_prompt_id"] = usage.GeneratedPromptID.String()
+	}
+
+	_, err := s.db.NamedExec(query, args)
+	return err
+}
+
+// SearchPromptsByRelevance searches prompts by relevance score
+func (s *Storage) SearchPromptsByRelevance(ctx context.Context, minRelevance float64, limit int) ([]models.Prompt, error) {
+	query := `
+		SELECT id, content, phase, provider, model, temperature, max_tokens,
+			   actual_tokens, persona_used, parent_id, created_at, updated_at,
+			   embedding, embedding_model, embedding_provider, relevance_score,
+			   usage_count, last_used_at
+		FROM prompts
+		WHERE relevance_score >= ?
+		ORDER BY relevance_score DESC, usage_count DESC
+		LIMIT ?
+	`
+
+	rows, err := s.db.QueryContext(ctx, query, minRelevance, limit)
+	if err != nil {
+		return nil, fmt.Errorf("failed to search prompts by relevance: %w", err)
+	}
+	defer rows.Close()
+
+	var prompts []models.Prompt
+	for rows.Next() {
+		var p models.Prompt
+		var embeddingBlob []byte
+		var embeddingModel, embeddingProvider *string
+
+		err := rows.Scan(
+			&p.ID, &p.Content, &p.Phase, &p.Provider, &p.Model,
+			&p.Temperature, &p.MaxTokens, &p.ActualTokens, &p.PersonaUsed,
+			&p.ParentID, &p.CreatedAt, &p.UpdatedAt, &embeddingBlob,
+			&embeddingModel, &embeddingProvider, &p.RelevanceScore,
+			&p.UsageCount, &p.LastUsedAt,
+		)
+		if err != nil {
+			s.logger.WithError(err).Warn("Failed to scan prompt")
+			continue
+		}
+
+		// Parse embedding if present
+		if len(embeddingBlob) > 0 {
+			p.Embedding = bytesToFloat32Slice(embeddingBlob)
+		}
+		if embeddingModel != nil {
+			p.EmbeddingModel = *embeddingModel
+		}
+		if embeddingProvider != nil {
+			p.EmbeddingProvider = *embeddingProvider
+		}
+
+		prompts = append(prompts, p)
+	}
+
+	return prompts, nil
+}
+
+// DecayRelevanceScores applies time-based decay to all relevance scores
+func (s *Storage) DecayRelevanceScores(decayRate float64) error {
+	query := `
+		UPDATE prompts
+		SET relevance_score = CASE
+			WHEN last_used_at IS NULL THEN relevance_score * ?
+			ELSE relevance_score * (1.0 - (? * (julianday('now') - julianday(last_used_at))))
+		END
+		WHERE relevance_score > 0
+	`
+
+	// Ensure decay doesn't go negative
+	decayFactor := 1.0 - decayRate
+	if decayFactor < 0 {
+		decayFactor = 0
+	}
+
+	_, err := s.db.Exec(query, decayFactor, decayRate/365.0) // Daily decay rate
+	if err != nil {
+		return fmt.Errorf("failed to decay relevance scores: %w", err)
+	}
+
+	// Ensure scores stay in [0, 1] range
+	_, err = s.db.Exec("UPDATE prompts SET relevance_score = MAX(0.0, MIN(1.0, relevance_score))")
+	return err
 }

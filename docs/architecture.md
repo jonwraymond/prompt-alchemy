@@ -5,200 +5,31 @@ title: Architecture
 
 # Architecture
 
-This document describes the technical architecture of Prompt Alchemy.
+Prompt Alchemy is structured as a modular Go application with clear separation between public packages, internal implementations, and CLI commands.
 
-## System Overview
+### Core Components
+- Engine: Orchestrates phases (internal/engine/)
+- Phases: Handlers for Prima Materia, Solutio, Coagulatio (internal/phases/)
+- Providers: Unified interface for LLMs (pkg/providers/)
+- Selection: AI selector (internal/selection/)
+- Ranking: Learning-to-rank (internal/ranking/)
+- Storage: SQLite (internal/storage/)
+- CLI: Cobra commands (cmd/)
 
-```
-┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│   CLI Interface │────▶│  Prompt Engine   │────▶│    Providers    │
-└─────────────────┘     └──────────────────┘     └─────────────────┘
-         │                       │                         │
-         ▼                       ▼                         ▼
-┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│  Configuration  │     │   Ranking System │     │   LLM Services  │
-└─────────────────┘     └──────────────────┘     └─────────────────┘
-         │                       │                         
-         ▼                       ▼                         
-┌─────────────────────────────────────────────────────────────────┐
-│                         Storage Layer (SQLite)                   │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-## Core Components
-
-### 1. CLI Interface (`internal/cmd/`)
-
-The command-line interface built with Cobra provides:
-
-- Command parsing and validation
-- Flag management
-- Output formatting
-- User interaction
-
-Key files:
-- `root.go` - Base command setup
-- `generate.go` - Prompt generation command
-- `search.go` - Search functionality
-- `metrics.go` - Analytics commands
-
-### 2. Prompt Engine (`internal/engine/`)
-
-The heart of the system that orchestrates prompt generation:
-
-```go
-type Engine struct {
-    providers map[string]Provider
-    storage   Storage
-    ranker    *Ranker
-}
-```
-
-Responsibilities:
-- Alchemical phase management (prima-materia → solutio → coagulatio)
-- Provider coordination
-- Parallel processing
-- Result aggregation
-
-### 3. Provider System (`internal/providers/`)
-
-Abstraction layer for LLM providers:
-
-```go
-type Provider interface {
-    Generate(context.Context, GenerateRequest) (*GenerateResponse, error)
-    GetEmbedding(context.Context, string) ([]float32, error)
-    Name() string
-    IsAvailable() bool
-    SupportsEmbeddings() bool
-}
-```
-
-Supported providers:
-- **OpenAI** - Full support including embeddings
-- **Anthropic** - Generation only
-- **Google** - Gemini models
-- **OpenRouter** - Multi-model gateway
-- **Ollama** - Local models
-
-### 4. Storage Layer (`internal/storage/`)
-
-SQLite-based persistence with:
-
-- Prompt storage with metadata
-- Vector embeddings (BLOB storage)
-- Metrics and analytics
-- Lifecycle management
-
-Database schema highlights:
-```sql
--- Main prompts table
-CREATE TABLE prompts (
-    id TEXT PRIMARY KEY,
-    content TEXT NOT NULL,
-    phase TEXT,
-    provider TEXT,
-    embedding BLOB,
-    created_at TIMESTAMP,
-    -- ... more fields
-);
-
--- Ranking data
-CREATE TABLE prompt_rankings (
-    prompt_id TEXT,
-    score REAL,
-    temperature_score REAL,
-    token_score REAL,
-    context_score REAL
-);
-```
-
-### 5. Ranking System (`internal/ranking/`)
-
-Multi-factor scoring system:
-
-```go
-type Ranker struct {
-    weights RankingWeights
-}
-
-type RankingWeights struct {
-    Temperature float64
-    TokenUsage  float64
-    Context     float64
-    Recency     float64
-}
-```
-
-Factors considered:
-- Temperature appropriateness
-- Token efficiency
-- Context relevance
-- Historical performance
-
-### 6. Advanced Features
-
-#### LLM-as-a-Judge (`internal/judge/`)
-
-Automated quality evaluation:
-- Objective scoring (1-10 scale)
-- Multi-criteria assessment
-- Bias detection
-- Improvement suggestions
-
-#### Meta-Prompt Optimizer (`internal/optimizer/`)
-
-Iterative improvement system:
-1. Generate initial prompt
-2. Evaluate with LLM judge
-3. Generate improved version
-4. Repeat until target score reached
-
-## Data Flow
-
-### Generation Flow
-
-```
-User Input
-    │
-    ▼
-Parse Request ──────▶ Load Persona
-    │                      │
-    ▼                      ▼
-Phase: Idea ───────▶ Select Provider ──▶ Generate
-    │                                         │
-    ▼                                         ▼
-Phase: Human ──────▶ Select Provider ──▶ Generate
-    │                                         │
-    ▼                                         ▼
-Phase: Precision ──▶ Select Provider ──▶ Generate
-    │                                         │
-    ▼                                         ▼
-Store Results ◀──────── Rank Results ◀────────┘
-    │
-    ▼
-Display Output
-```
-
-### Search Flow
-
-```
-Search Query
-    │
-    ├── Text Search ────▶ SQL LIKE Query
-    │                            │
-    └── Semantic Search         │
-            │                    │
-            ▼                    ▼
-        Get Embedding ──▶ Vector Similarity
-            │                    │
-            └────────────────────┘
-                       │
-                       ▼
-                 Rank Results
-                       │
-                       ▼
-                Return Matches
+### Data Flow
+```mermaid
+graph TD
+A[User Input] --> B[CLI/Command]
+B --> C[Engine]
+C --> D[Phase Handlers]
+D --> E[AI Providers]
+E --> D
+C --> F[AI Selector]
+F --> G[Ranker]
+C --> H[SQLite Storage]
+H --> I[Search/Retrieval]
+I --> B
+linkStyle default stroke:#DAA520,stroke-width:2px
 ```
 
 ## Configuration System

@@ -3,14 +3,17 @@ package engine
 import (
 	"context"
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/gorilla/websocket"
+	"github.com/jonwraymond/prompt-alchemy/internal/helpers"
 	log "github.com/jonwraymond/prompt-alchemy/internal/log"
-	"github.com/jonwraymond/prompt-alchemy/internal/providers"
+	"github.com/jonwraymond/prompt-alchemy/internal/phases"
+	"github.com/jonwraymond/prompt-alchemy/internal/selection"
 	"github.com/jonwraymond/prompt-alchemy/pkg/models"
+	"github.com/jonwraymond/prompt-alchemy/pkg/providers"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
@@ -26,70 +29,26 @@ import (
 // This keeps the engine stateless and lightweight while enabling
 // powerful server-side features for API consumers.
 type Engine struct {
-	registry       *providers.Registry
-	phaseTemplates map[models.Phase]string
-	logger         *logrus.Logger
+	registry      *providers.Registry
+	phaseHandlers map[models.Phase]phases.PhaseHandler
+	logger        *logrus.Logger
 }
 
 // NewEngine creates a new prompt generation engine
 func NewEngine(registry *providers.Registry, logger *logrus.Logger) *Engine {
 	return &Engine{
-		registry:       registry,
-		phaseTemplates: initializePhaseTemplates(),
-		logger:         log.GetLogger(),
+		registry: registry,
+		phaseHandlers: map[models.Phase]phases.PhaseHandler{
+			models.PhasePrimaMaterial: &phases.PrimaMateria{},
+			models.PhaseSolutio:       &phases.Solutio{},
+			models.PhaseCoagulatio:    &phases.Coagulatio{},
+		},
+		logger: log.GetLogger(),
 	}
-}
-
-// initializePhaseTemplates returns the default templates for each alchemical phase
-func initializePhaseTemplates() map[models.Phase]string {
-	return map[models.Phase]string{
-		models.PhasePrimaMaterial: `You are an alchemical prompt engineer, working with the Prima Materia - the raw, unformed potential. Extract and shape the essential elements from the user's vision into a comprehensive prompt that generates {{TYPE}} for {{AUDIENCE}}, using {{TONE}}, focusing on {{THEME}}.
-
-Requirements:
-- Extract the pure essence of the request
-- Shape raw ideas into structured form
-- Define the vessel (output format) clearly
-- Consider all elemental aspects
-
-Raw Material: {{INPUT}}`,
-
-		models.PhaseSolutio: `You are a linguistic alchemist performing Solutio - the dissolution phase. Take this crystallized prompt and dissolve it into flowing, natural language that resonates with the soul. Transform rigid structure into fluid conversation.
-
-Material to Dissolve:
-{{PROMPT}}
-
-Transformation Requirements:
-- Dissolve formality into natural flow
-- Infuse with emotional resonance
-- Add the warmth of human connection
-- Preserve the essential truth while softening edges`,
-
-		models.PhaseCoagulatio: `You are a master alchemist performing Coagulatio - the final crystallization. Take this flowing prompt and crystallize it into its most potent, refined form. Remove all impurities to reveal the philosopher's stone of prompts.
-
-Solution to Crystallize:
-{{PROMPT}}
-
-Crystallization Requirements:
-- Distill to pure essence
-- Remove all redundant matter
-- Perfect the structural lattice
-- Optimize for maximum potency
-- Achieve the golden ratio of clarity to power`,
-	}
-}
-
-// GenerateOptions contains options for prompt generation
-type GenerateOptions struct {
-	Request        models.PromptRequest
-	PhaseConfigs   []providers.PhaseConfig
-	UseParallel    bool
-	IncludeContext bool
-	Persona        string
-	TargetModel    string
 }
 
 // Generate creates prompts using the phased approach
-func (e *Engine) Generate(ctx context.Context, opts GenerateOptions) (*models.GenerationResult, error) {
+func (e *Engine) Generate(ctx context.Context, opts models.GenerateOptions) (*models.GenerationResult, error) {
 	e.logger.Info("Starting prompt generation engine")
 	result := &models.GenerationResult{
 		Prompts:  make([]models.Prompt, 0),
@@ -126,12 +85,54 @@ func (e *Engine) Generate(ctx context.Context, opts GenerateOptions) (*models.Ge
 		}
 	}
 
+	if opts.AutoSelect {
+		selector := selection.NewAISelector(e.registry)
+		criteria := selection.SelectionCriteria{
+			TaskDescription: opts.Request.Input,
+			Persona:         opts.Persona,
+			// Add other relevant fields from opts
+		}
+		selectResult, err := selector.Select(ctx, result.Prompts, criteria)
+		if err == nil {
+			result.Selected = selectResult.SelectedPrompt
+		}
+	}
+
 	e.logger.Info("Prompt generation engine finished")
 	return result, nil
 }
 
+// GenerateFromParams handles prompt generation with string parameters (shared between CLI and MCP)
+func (e *Engine) GenerateFromParams(ctx context.Context, input string, phasesStr string, count int, temperature float64, maxTokens int, tagsStr string, persona string, targetModel string) (*models.GenerationResult, error) {
+	phaseList := helpers.ParsePhases(phasesStr) // Assume parsePhases is available or add it
+	tagList := helpers.ParseTags(tagsStr)
+
+	phaseConfigs := helpers.BuildPhaseConfigs(phaseList, "") // Use default providers
+
+	request := models.PromptRequest{
+		Input:       input,
+		Phases:      phaseList,
+		Count:       count,
+		Temperature: temperature,
+		MaxTokens:   maxTokens,
+		Tags:        tagList,
+		Context:     []string{},
+	}
+
+	options := models.GenerateOptions{
+		Request:        request,
+		PhaseConfigs:   phaseConfigs,
+		UseParallel:    viper.GetBool("generation.use_parallel"),
+		IncludeContext: true,
+		Persona:        persona,
+		TargetModel:    targetModel,
+	}
+
+	return e.Generate(ctx, options)
+}
+
 // processPhase handles generation for a single phase
-func (e *Engine) processPhase(ctx context.Context, phase models.Phase, provider providers.Provider, inputs []string, opts GenerateOptions) ([]models.Prompt, error) {
+func (e *Engine) processPhase(ctx context.Context, phase models.Phase, provider providers.Provider, inputs []string, opts models.GenerateOptions) ([]models.Prompt, error) {
 	e.logger.Debugf("Processing phase %s with %d inputs", phase, len(inputs))
 	prompts := make([]models.Prompt, 0, len(inputs))
 
@@ -183,21 +184,23 @@ func (e *Engine) processPhase(ctx context.Context, phase models.Phase, provider 
 }
 
 // generateSinglePrompt generates a single prompt for a phase
-func (e *Engine) generateSinglePrompt(ctx context.Context, phase models.Phase, provider providers.Provider, input string, opts GenerateOptions) (*models.Prompt, error) {
+func (e *Engine) generateSinglePrompt(ctx context.Context, phase models.Phase, provider providers.Provider, input string, opts models.GenerateOptions) (*models.Prompt, error) {
 	e.logger.Debugf("Generating single prompt for phase %s", phase)
 	startTime := time.Now()
 
 	// Get the template for this phase
-	template, exists := e.phaseTemplates[phase]
+	handler, exists := e.phaseHandlers[phase]
 	if !exists {
-		return nil, fmt.Errorf("no template for phase %s", phase)
+		return nil, fmt.Errorf("no handler for phase %s", phase)
 	}
 
+	template := handler.GetTemplate()
+
 	// Build the system prompt based on phase
-	systemPrompt := e.buildSystemPrompt(phase, opts)
+	systemPrompt := handler.BuildSystemPrompt(opts)
 
 	// Prepare the prompt content
-	promptContent := e.preparePromptContent(template, input, opts)
+	promptContent := handler.PreparePromptContent(input, opts)
 	e.logger.Debugf("Prompt content for provider: %s", promptContent)
 
 	// Generate using the provider
@@ -259,7 +262,7 @@ func (e *Engine) generateSinglePrompt(ctx context.Context, phase models.Phase, p
 	}
 
 	// Get embedding if available
-	var embeddingModel, embeddingProvider string
+	var embeddingModel, embeddingProviderName string
 	if opts.IncludeContext {
 		embeddingProvider := providers.GetEmbeddingProvider(provider, e.registry)
 
@@ -274,7 +277,7 @@ func (e *Engine) generateSinglePrompt(ctx context.Context, phase models.Phase, p
 			} else {
 				prompt.Embedding = embedding
 				embeddingModel = getEmbeddingModelName(embeddingProvider.Name())
-				embeddingProviderName := embeddingProvider.Name()
+				embeddingProviderName = embeddingProvider.Name()
 				prompt.EmbeddingModel = embeddingModel
 				prompt.EmbeddingProvider = embeddingProviderName
 
@@ -298,7 +301,7 @@ func (e *Engine) generateSinglePrompt(ctx context.Context, phase models.Phase, p
 		GenerationModel:    resp.Model,
 		GenerationProvider: provider.Name(),
 		EmbeddingModel:     embeddingModel,
-		EmbeddingProvider:  embeddingProvider,
+		EmbeddingProvider:  embeddingProviderName,
 		ProcessingTime:     processingTime,
 		InputTokens:        calculateInputTokens(promptContent), // Estimate
 		OutputTokens:       resp.TokensUsed,
@@ -312,93 +315,6 @@ func (e *Engine) generateSinglePrompt(ctx context.Context, phase models.Phase, p
 	}
 
 	return prompt, nil
-}
-
-// buildSystemPrompt creates the system prompt for a phase
-func (e *Engine) buildSystemPrompt(phase models.Phase, opts GenerateOptions) string {
-	baseSystem := "You are a master alchemist of language, transforming raw ideas into golden prompts through ancient processes."
-
-	switch phase {
-	case models.PhasePrimaMaterial:
-		return baseSystem + " In this Prima Materia phase, extract the pure essence from raw materials to create the foundation stone of comprehensive, well-structured prompts."
-	case models.PhaseSolutio:
-		return baseSystem + " In this Solutio phase, dissolve rigid structures into flowing, natural language that speaks to the human soul while maintaining clarity of purpose."
-	case models.PhaseCoagulatio:
-		return baseSystem + " In this Coagulatio phase, crystallize the dissolved essence into its most potent form - achieving maximum effectiveness through perfect refinement."
-	default:
-		return baseSystem
-	}
-}
-
-// preparePromptContent prepares the prompt content with template substitution
-func (e *Engine) preparePromptContent(template, input string, opts GenerateOptions) string {
-	content := template
-
-	// Replace placeholders
-	replacements := map[string]string{
-		"{{INPUT}}":    input,
-		"{{TYPE}}":     extractType(input),
-		"{{AUDIENCE}}": extractAudience(input),
-		"{{TONE}}":     extractTone(input),
-		"{{THEME}}":    extractTheme(input),
-		"{{PROMPT}}":   input,
-	}
-
-	for placeholder, value := range replacements {
-		content = strings.ReplaceAll(content, placeholder, value)
-	}
-
-	// Add context if provided
-	if len(opts.Request.Context) > 0 {
-		content += "\n\nAdditional Context:\n"
-		for _, ctx := range opts.Request.Context {
-			content += fmt.Sprintf("- %s\n", ctx)
-		}
-	}
-
-	return content
-}
-
-// Helper functions to extract information from input
-func extractType(input string) string {
-	// Simple extraction logic - can be enhanced with NLP
-	if strings.Contains(strings.ToLower(input), "email") {
-		return "email content"
-	} else if strings.Contains(strings.ToLower(input), "code") {
-		return "code snippets"
-	} else if strings.Contains(strings.ToLower(input), "article") {
-		return "article content"
-	}
-	return "content"
-}
-
-func extractAudience(input string) string {
-	// Simple extraction logic - can be enhanced
-	if strings.Contains(strings.ToLower(input), "developer") {
-		return "developers"
-	} else if strings.Contains(strings.ToLower(input), "business") {
-		return "business professionals"
-	}
-	return "general audience"
-}
-
-func extractTone(input string) string {
-	// Simple extraction logic - can be enhanced
-	if strings.Contains(strings.ToLower(input), "formal") {
-		return "formal tone"
-	} else if strings.Contains(strings.ToLower(input), "casual") {
-		return "casual tone"
-	}
-	return "professional tone"
-}
-
-func extractTheme(input string) string {
-	// Simple extraction logic - can be enhanced
-	words := strings.Fields(input)
-	if len(words) > 5 {
-		return strings.Join(words[:5], " ") + "..."
-	}
-	return input
 }
 
 // getEmbeddingModelName returns the embedding model name for a provider
@@ -468,4 +384,17 @@ func calculateCost(provider, model string, tokens int) float64 {
 	}
 
 	return float64(tokens) * costPerToken
+}
+
+// StreamGenerate handles real-time generation for server mode
+func (e *Engine) StreamGenerate(ctx context.Context, opts models.GenerateOptions, conn *websocket.Conn) error {
+	// TODO: Implement streaming logic
+	for phase := range e.phaseHandlers {
+		// Generate and stream partial results
+		content := "Streaming phase: " + string(phase) // Placeholder
+		if err := conn.WriteMessage(websocket.TextMessage, []byte(content)); err != nil {
+			return err
+		}
+	}
+	return nil
 }

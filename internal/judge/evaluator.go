@@ -10,8 +10,8 @@ import (
 	"time"
 
 	log "github.com/jonwraymond/prompt-alchemy/internal/log"
-	"github.com/jonwraymond/prompt-alchemy/internal/providers"
 	"github.com/jonwraymond/prompt-alchemy/pkg/models"
+	"github.com/jonwraymond/prompt-alchemy/pkg/providers"
 
 	"github.com/sirupsen/logrus"
 )

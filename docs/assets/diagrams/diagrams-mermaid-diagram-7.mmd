@@ -1,0 +1,43 @@
+graph TD
+    A[Generated Prompts] --> B[Ranking Engine]
+    
+    B --> C[Temperature Analysis]
+    B --> D[Token Efficiency]
+    B --> E[Context Relevance]
+    B --> F[Historical Performance]
+    B --> G[Semantic Quality]
+    
+    C --> H[Temperature Score]
+    D --> I[Efficiency Score]
+    E --> J[Relevance Score]
+    F --> K[Performance Score]
+    G --> L[Quality Score]
+    
+    H --> M[Weighted Scoring]
+    I --> M
+    J --> M
+    K --> M
+    L --> M
+    
+    M --> N[Composite Score]
+    N --> O[Rank Assignment]
+    O --> P[Best Prompt Selection]
+    
+    subgraph "LLM-as-Judge Evaluation"
+        Q[Evaluation Criteria] --> R[Judge Prompt]
+        R --> S[LLM Evaluator]
+        S --> T[Detailed Feedback]
+        T --> U[Quantitative Scores]
+        U --> V[Qualitative Analysis]
+    end
+    
+    P --> Q
+    V --> W[Enhanced Ranking]
+    W --> X[Final Results]
+    
+    style A fill:#e1f5fe
+    style B fill:#f3e5f5
+    style M fill:#e8f5e8
+    style P fill:#fff3e0
+    style S fill:#ffebee
+    style X fill:#f1f8e9

@@ -5,12 +5,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/jonwraymond/prompt-alchemy/internal/providers"
 	"github.com/jonwraymond/prompt-alchemy/pkg/models"
+	"github.com/jonwraymond/prompt-alchemy/pkg/providers"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+const testModelName = "test-model"
 
 // MockJudgeProvider implements providers.Provider for testing
 type MockJudgeProvider struct {
@@ -70,7 +72,7 @@ func (m *MockJudgeProvider) SetError(prompt string, err error) {
 	m.errors[prompt] = err
 }
 
-func (m *MockJudgeProvider) GetEmbedding(ctx context.Context, text string, registry *providers.Registry) ([]float32, error) {
+func (m *MockJudgeProvider) GetEmbedding(ctx context.Context, text string, registry providers.RegistryInterface) ([]float32, error) {
 	// Mock embedding - return a simple vector
 	return []float32{0.1, 0.2, 0.3, 0.4, 0.5}, nil
 }
@@ -85,18 +87,18 @@ func (m *MockJudgeProvider) SupportsEmbeddings() bool {
 
 func TestNewLLMJudge(t *testing.T) {
 	provider := NewMockJudgeProvider()
-	judge := NewLLMJudge(provider, "test-model")
+	judge := NewLLMJudge(provider, testModelName)
 
 	assert.NotNil(t, judge)
 	assert.Equal(t, provider, judge.provider)
-	assert.Equal(t, "test-model", judge.modelName)
+	assert.Equal(t, testModelName, judge.modelName)
 	assert.NotNil(t, judge.biasChecks)
 	assert.Len(t, judge.biasChecks, 3) // verbosity, position, fine_grained
 }
 
-func TestEvaluatePrompt_Success(t *testing.T) {
+func TestEvaluatePromptSuccess(t *testing.T) {
 	provider := NewMockJudgeProvider()
-	judge := NewLLMJudge(provider, "test-model")
+	judge := NewLLMJudge(provider, testModelName)
 
 	request := &PromptEvaluationRequest{
 		OriginalPrompt:    "Write a Python function to calculate fibonacci numbers",
@@ -127,9 +129,9 @@ func TestEvaluatePrompt_Success(t *testing.T) {
 	assert.Contains(t, result.CriteriaScores, "code_quality")
 }
 
-func TestEvaluatePrompt_DifferentModelFamilies(t *testing.T) {
+func TestEvaluatePromptDifferentModelFamilies(t *testing.T) {
 	provider := NewMockJudgeProvider()
-	judge := NewLLMJudge(provider, "test-model")
+	judge := NewLLMJudge(provider, testModelName)
 
 	testCases := []struct {
 		name        string
@@ -164,7 +166,7 @@ func TestEvaluatePrompt_DifferentModelFamilies(t *testing.T) {
 
 func TestParseEvaluationResponse_ValidJSON(t *testing.T) {
 	provider := NewMockJudgeProvider()
-	judge := NewLLMJudge(provider, "test-model")
+	judge := NewLLMJudge(provider, testModelName)
 
 	validJSON := `{
 		"overall_score": 8.5,
@@ -194,7 +196,7 @@ func TestParseEvaluationResponse_ValidJSON(t *testing.T) {
 
 func TestParseEvaluationResponse_CodeBlocks(t *testing.T) {
 	provider := NewMockJudgeProvider()
-	judge := NewLLMJudge(provider, "test-model")
+	judge := NewLLMJudge(provider, testModelName)
 
 	responseWithCodeBlocks := `Here's my evaluation:
 
@@ -224,7 +226,7 @@ This evaluation considers all criteria.`
 
 func TestParseEvaluationResponse_ClaudeAnswerTags(t *testing.T) {
 	provider := NewMockJudgeProvider()
-	judge := NewLLMJudge(provider, "test-model")
+	judge := NewLLMJudge(provider, testModelName)
 
 	claudeResponse := `<thinking>
 Let me evaluate this response...
@@ -254,7 +256,7 @@ Let me evaluate this response...
 
 func TestParseEvaluationResponse_FallbackParsing(t *testing.T) {
 	provider := NewMockJudgeProvider()
-	judge := NewLLMJudge(provider, "test-model")
+	judge := NewLLMJudge(provider, testModelName)
 
 	malformedResponse := `The response has a score of 8 out of 10. It's quite good but could be improved.`
 
@@ -291,7 +293,7 @@ func TestNormalizeScore(t *testing.T) {
 
 func TestExtractNumericScore(t *testing.T) {
 	provider := NewMockJudgeProvider()
-	judge := NewLLMJudge(provider, "test-model")
+	judge := NewLLMJudge(provider, testModelName)
 
 	testCases := []struct {
 		text     string
@@ -312,7 +314,7 @@ func TestExtractNumericScore(t *testing.T) {
 
 func TestBiasDetection(t *testing.T) {
 	provider := NewMockJudgeProvider()
-	judge := NewLLMJudge(provider, "test-model")
+	judge := NewLLMJudge(provider, testModelName)
 
 	t.Run("VerbosityBias", func(t *testing.T) {
 		request := &PromptEvaluationRequest{
@@ -356,7 +358,7 @@ func TestBiasDetection(t *testing.T) {
 
 func TestBuildCriteriaDescription(t *testing.T) {
 	provider := NewMockJudgeProvider()
-	judge := NewLLMJudge(provider, "test-model")
+	judge := NewLLMJudge(provider, testModelName)
 
 	criteria := map[string]EvaluationCriteria{
 		"accuracy": {
@@ -399,7 +401,7 @@ func TestGetDefaultCodeCriteria(t *testing.T) {
 
 func TestEvaluatePrompt_WithReferenceAnswer(t *testing.T) {
 	provider := NewMockJudgeProvider()
-	judge := NewLLMJudge(provider, "test-model")
+	judge := NewLLMJudge(provider, testModelName)
 
 	request := &PromptEvaluationRequest{
 		OriginalPrompt:    "Calculate factorial",
@@ -420,7 +422,7 @@ func TestEvaluatePrompt_WithReferenceAnswer(t *testing.T) {
 
 func TestEvaluatePrompt_ProviderError(t *testing.T) {
 	provider := NewMockJudgeProvider()
-	judge := NewLLMJudge(provider, "test-model")
+	judge := NewLLMJudge(provider, testModelName)
 
 	// Set up provider to return error
 	provider.SetError("", assert.AnError)
@@ -443,7 +445,7 @@ func TestEvaluatePrompt_ProviderError(t *testing.T) {
 
 func TestCleanLLMResponse(t *testing.T) {
 	provider := NewMockJudgeProvider()
-	judge := NewLLMJudge(provider, "test-model")
+	judge := NewLLMJudge(provider, testModelName)
 
 	testCases := []struct {
 		name     string
@@ -482,7 +484,7 @@ func TestCleanLLMResponse(t *testing.T) {
 
 func TestTryParseJSON_InvalidJSON(t *testing.T) {
 	provider := NewMockJudgeProvider()
-	judge := NewLLMJudge(provider, "test-model")
+	judge := NewLLMJudge(provider, testModelName)
 
 	invalidJSON := `{"score": 8, "invalid": }`
 
@@ -493,7 +495,7 @@ func TestTryParseJSON_InvalidJSON(t *testing.T) {
 
 func TestTryParseJSON_ScoreNormalization(t *testing.T) {
 	provider := NewMockJudgeProvider()
-	judge := NewLLMJudge(provider, "test-model")
+	judge := NewLLMJudge(provider, testModelName)
 
 	jsonWithInvalidScores := `{
 		"overall_score": 15.0,
@@ -515,7 +517,7 @@ func TestTryParseJSON_ScoreNormalization(t *testing.T) {
 
 func TestCreateFallbackEvaluation(t *testing.T) {
 	provider := NewMockJudgeProvider()
-	judge := NewLLMJudge(provider, "test-model")
+	judge := NewLLMJudge(provider, testModelName)
 
 	response := "The response scores 8 out of 10 and is quite good."
 	request := &PromptEvaluationRequest{
@@ -535,7 +537,7 @@ func TestCreateFallbackEvaluation(t *testing.T) {
 // Benchmark tests for performance
 func BenchmarkEvaluatePrompt(b *testing.B) {
 	provider := NewMockJudgeProvider()
-	judge := NewLLMJudge(provider, "test-model")
+	judge := NewLLMJudge(provider, testModelName)
 
 	request := &PromptEvaluationRequest{
 		OriginalPrompt:    "Write a sorting algorithm",
@@ -558,7 +560,7 @@ func BenchmarkEvaluatePrompt(b *testing.B) {
 
 func BenchmarkParseEvaluationResponse(b *testing.B) {
 	provider := NewMockJudgeProvider()
-	judge := NewLLMJudge(provider, "test-model")
+	judge := NewLLMJudge(provider, testModelName)
 
 	jsonResponse := `{
 		"overall_score": 7.5,

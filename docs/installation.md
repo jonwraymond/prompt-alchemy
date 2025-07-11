@@ -10,14 +10,43 @@ This guide covers all installation methods for Prompt Alchemy.
 ## System Requirements
 
 - **Operating System**: Linux, macOS, or Windows
-- **Go**: Version 1.23 or higher
+- **Go**: Version 1.24 or higher
 - **Database**: SQLite3 (usually pre-installed)
 - **Memory**: At least 512MB RAM
 - **Storage**: 100MB for application + space for prompt database
+- **Docker**: Required for containerized deployment (Docker Desktop or Engine)
 
 ## Installation Methods
 
-### 1. Build from Source (Recommended)
+### 1. Docker (Recommended for Production)
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/jonwraymond/prompt-alchemy.git
+   cd prompt-alchemy
+   ```
+
+2. Copy and edit environment file:
+   ```bash
+   cp docker.env.example .env
+   # Edit .env with your API keys
+   ```
+
+3. Build and start:
+   ```bash
+   make docker-build
+   docker-compose up -d
+   ```
+
+4. Verify:
+   ```bash
+   docker-compose ps  # Should show running and healthy
+   docker-compose logs prompt-alchemy  # Check for successful startup
+   ```
+
+See the [Docker Deployment Guide](./docker-hybrid-deployment.md) for details.
+
+### 2. Build from Source (Recommended)
 
 ```bash
 # Clone the repository
@@ -34,7 +63,7 @@ make build
 sudo make install
 ```
 
-### 2. Pre-built Binaries
+### 3. Pre-built Binaries
 
 Download the latest release for your platform:
 
@@ -55,7 +84,7 @@ chmod +x prompt-alchemy
 # Download prompt-alchemy-windows-amd64.exe from releases page
 ```
 
-### 3. Using Go Install
+### 4. Using Go Install
 
 ```bash
 go install github.com/jonwraymond/prompt-alchemy/cmd@latest

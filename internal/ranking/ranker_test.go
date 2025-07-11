@@ -5,9 +5,9 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/jonwraymond/prompt-alchemy/internal/providers"
 	"github.com/jonwraymond/prompt-alchemy/internal/storage"
 	"github.com/jonwraymond/prompt-alchemy/pkg/models"
+	"github.com/jonwraymond/prompt-alchemy/pkg/providers"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -22,7 +22,7 @@ func (m *mockProvider) Generate(ctx context.Context, req providers.GenerateReque
 	return args.Get(0).(*providers.GenerateResponse), args.Error(1)
 }
 
-func (m *mockProvider) GetEmbedding(ctx context.Context, text string, registry *providers.Registry) ([]float32, error) {
+func (m *mockProvider) GetEmbedding(ctx context.Context, text string, registry providers.RegistryInterface) ([]float32, error) {
 	args := m.Called(ctx, text, registry)
 	return args.Get(0).([]float32), args.Error(1)
 }
@@ -37,6 +37,9 @@ type mockRegistry struct {
 
 func (m *mockRegistry) Get(name string) (providers.Provider, error) {
 	args := m.Called(name)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
 	return args.Get(0).(providers.Provider), args.Error(1)
 }
 
@@ -46,18 +49,20 @@ func (m *mockRegistry) ListAvailable() []string {
 }
 
 func (m *mockRegistry) ListEmbeddingCapableProviders() []string {
-	args := m.Called()
-	return args.Get(0).([]string)
+	return m.Called().Get(0).([]string)
 }
 
 func TestCalculateSemanticSimilarity(t *testing.T) {
-	r := &Ranker{embedProvider: "mock"}
+	mockReg := new(mockRegistry)
+	r := &Ranker{
+		embedProvider: "mock",
+		registry:      mockReg,
+		logger:        logrus.New(),
+	}
 	ctx := context.Background()
 
 	mockProv := new(mockProvider)
-	mockReg := new(mockRegistry)
 	mockReg.On("Get", "mock").Return(mockProv, nil)
-	r.registry = mockReg
 
 	emb1 := []float32{1, 0, 0}
 	emb2 := []float32{0, 1, 0}
@@ -80,10 +85,26 @@ func TestCalculateLengthRatio(t *testing.T) {
 }
 
 func TestRankPrompts(t *testing.T) {
-	store := &storage.Storage{} // Mock if needed
+	// Create mock registry and provider
 	reg := new(mockRegistry)
+	mockProv := new(mockProvider)
+
+	// Set up expectations for embedding capability check
+	reg.On("ListEmbeddingCapableProviders").Return([]string{"openai"})
+
+	// Create ranker with proper mocks
 	logger := logrus.New()
-	r := NewRanker(store, reg, logger)
+	r := &Ranker{
+		storage:          &storage.Storage{}, // Mock if needed
+		registry:         reg,
+		logger:           logger,
+		embedProvider:    "openai",
+		tempWeight:       0.2,
+		tokenWeight:      0.2,
+		semanticWeight:   0.3,
+		lengthWeight:     0.1,
+		historicalWeight: 0.2,
+	}
 
 	prompts := []models.Prompt{{
 		ID:          uuid.New(),
@@ -96,8 +117,7 @@ func TestRankPrompts(t *testing.T) {
 	}}
 
 	// Mock embeddings for "original" and prompts
-	mockProv := new(mockProvider)
-	reg.On("Get", "openai").Return(mockProv, nil) // Assume openai
+	reg.On("Get", "openai").Return(mockProv, nil)
 	mockProv.On("GetEmbedding", mock.Anything, "original", reg).Return([]float32{1, 0}, nil)
 	mockProv.On("GetEmbedding", mock.Anything, "similar", reg).Return([]float32{0.9, 0.1}, nil)
 	mockProv.On("GetEmbedding", mock.Anything, "different", reg).Return([]float32{0, 1}, nil)

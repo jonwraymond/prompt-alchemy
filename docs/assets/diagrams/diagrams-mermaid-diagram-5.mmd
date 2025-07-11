@@ -1,0 +1,44 @@
+graph TD
+    A[New Prompt] --> B[Initial Processing]
+    B --> C[Content Hashing]
+    C --> D[Deduplication Check]
+    D --> E{Duplicate Found?}
+    
+    E -->|Yes| F[Update Existing]
+    E -->|No| G[Create New Entry]
+    
+    F --> H[Increment Usage Count]
+    G --> I[Generate Embedding]
+    
+    H --> J[Update Relevance Score]
+    I --> K[Store in Database]
+    
+    J --> L[Lifecycle Monitoring]
+    K --> L
+    
+    L --> M[Usage Tracking]
+    M --> N[Relevance Decay]
+    N --> O[Performance Metrics]
+    
+    O --> P{Cleanup Criteria}
+    P -->|Low Relevance| Q[Mark for Cleanup]
+    P -->|High Usage| R[Boost Relevance]
+    P -->|Inactive| S[Decay Score]
+    
+    Q --> T[Cleanup Process]
+    R --> U[Optimization Candidate]
+    S --> V[Archive Consideration]
+    
+    T --> W[Remove from Database]
+    U --> X[Meta-Prompt Enhancement]
+    V --> Y[Long-term Storage]
+    
+    X --> Z[Enhanced Prompt]
+    Z --> AA[Relationship Tracking]
+    AA --> BB[Performance Comparison]
+    
+    style A fill:#e8f5e8
+    style L fill:#f3e5f5
+    style T fill:#ffebee
+    style U fill:#fff3e0
+    style Z fill:#e1f5fe

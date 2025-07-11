@@ -1,0 +1,113 @@
+erDiagram
+    PROMPTS {
+        string id PK
+        text content
+        string content_hash
+        string phase
+        string provider
+        string model
+        real temperature
+        integer max_tokens
+        integer actual_tokens
+        text tags
+        string parent_id FK
+        string source_type
+        string enhancement_method
+        real relevance_score
+        integer usage_count
+        timestamp last_used_at
+        timestamp created_at
+        timestamp updated_at
+        blob embedding
+        string embedding_model
+        string embedding_provider
+        text original_input
+        text generation_request
+        text generation_context
+        string persona_used
+        string target_model_family
+    }
+    
+    MODEL_METADATA {
+        string id PK
+        string prompt_id FK
+        string generation_model
+        string generation_provider
+        string embedding_model
+        string embedding_provider
+        string model_version
+        string api_version
+        integer processing_time
+        integer input_tokens
+        integer output_tokens
+        integer total_tokens
+        real cost
+        timestamp created_at
+    }
+    
+    ENHANCEMENT_HISTORY {
+        string id PK
+        string prompt_id FK
+        string parent_prompt_id FK
+        string enhancement_type
+        string enhancement_method
+        real improvement_score
+        text metadata
+        timestamp created_at
+    }
+    
+    PROMPT_RELATIONSHIPS {
+        string id PK
+        string source_prompt_id FK
+        string target_prompt_id FK
+        string relationship_type
+        real strength
+        text context
+        timestamp created_at
+    }
+    
+    USAGE_ANALYTICS {
+        string id PK
+        string prompt_id FK
+        boolean used_in_generation
+        string generated_prompt_id FK
+        text usage_context
+        real effectiveness_score
+        timestamp created_at
+    }
+    
+    METRICS {
+        string id PK
+        string prompt_id FK
+        real conversion_rate
+        real engagement_score
+        integer token_usage
+        integer response_time
+        integer usage_count
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    CONTEXT {
+        string id PK
+        string prompt_id FK
+        string context_type
+        text content
+        real relevance_score
+        timestamp created_at
+    }
+    
+    DATABASE_CONFIG {
+        string key PK
+        string value
+        string description
+        timestamp updated_at
+    }
+    
+    PROMPTS ||--o{ MODEL_METADATA : "has"
+    PROMPTS ||--o{ ENHANCEMENT_HISTORY : "tracks"
+    PROMPTS ||--o{ PROMPT_RELATIONSHIPS : "relates_to"
+    PROMPTS ||--o{ USAGE_ANALYTICS : "analyzes"
+    PROMPTS ||--o{ METRICS : "measures"
+    PROMPTS ||--o{ CONTEXT : "provides"
+    PROMPTS ||--o| PROMPTS : "parent_of"

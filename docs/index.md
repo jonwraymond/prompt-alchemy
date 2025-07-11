@@ -15,52 +15,26 @@ title: Home
 Prompt Alchemy is a sophisticated AI system that transmutes concepts through three sacred phases of refinement. Like the ancient alchemists who sought to transform base metals into gold, we transform raw ideas into potent, precisely-crafted prompts ready for any AI system.
 </div>
 
-## Key Features
-
-- ⚗️ **Three-Phase Alchemical Transformation**: Prima Materia → Solutio → Coagulatio
-- 🤖 **Multiple Provider Support**: OpenAI, Anthropic, Google, OpenRouter, Ollama
-- 💾 **Intelligent Grimoire**: SQLite-based storage with vector embeddings
-- 📊 **Alchemical Ranking**: Automated prompt evaluation and transmutation scoring
-- 🔄 **Iterative Refinement**: Meta-prompt optimization through successive iterations
-- 🎭 **Persona-Based Transmutation**: Specialized alchemical processes for different domains
-- 🔍 **Semantic Scrying**: Discover similar prompts through embedding-based search
-- 📈 **Performance Tracking**: Monitor costs, usage patterns, and transmutation success rates
+## Features
+- ⚗️ **Alchemical Phases**: Prima Materia (raw essence extraction), Solutio (natural language flow), Coagulatio (precision crystallization)
+- 🤖 **Multi-Provider**: OpenAI (GPT), Anthropic (Claude), Google (Gemini), OpenRouter, Ollama with fallback
+- 🏆 **AI Selection**: LLM-as-Judge in internal/selection/ with criteria/weights
+- 🔄 **Modes**: On-Demand (CLI), Server (HTTP/MCP with serve command)
+- 📈 **Learning-to-Rank**: Feedback via judge/evaluator, ranking in ranker.go, nightly training
+- 💾 **Storage**: SQLite with prompts, metrics, embeddings for semantic search
 
 ## Quick Start
-
-```bash
-# Install from source
-git clone https://github.com/jonwraymond/prompt-alchemy.git
-cd prompt-alchemy
-make build
-
-# Set up configuration
-make setup
-
-# Generate your first prompt
-./prompt-alchemy generate "Write a function to calculate fibonacci numbers"
-```
+# On-Demand
+prompt-alchemy generate "Blog post idea" --phases=prima-materia,solutio,coagulatio --persona=writing --count=3 --auto-select --provider=openai
+# Server
+prompt-alchemy serve
+curl -X POST http://localhost:8080/api/v1/prompts/generate -d '{"input":"Code optimization","phases":"coagulatio"}'
 
 ## The Alchemical Process
-
-<div class="alchemical-process">
-Transform your ideas through three sacred phases of refinement:
-
-### 1. <span class="phase-badge">Prima Materia</span> (First Matter)
-*The raw, unformed potential of your ideas*
-
-Extract the essential essence from your concept. Like gathering the prima materia - the first matter from which all things are made - we capture the raw potential of your request and begin the process of refinement.
-
-### 2. <span class="phase-badge">Solutio</span> (Dissolution)
-*The breakdown and purification of ideas*
-
-Dissolve the rigid structures of conventional thinking. Your idea is broken down into its fundamental components and reconstituted in a more fluid, natural form. This phase embodies the flow of human conversation and intuitive understanding.
-
-### 3. <span class="phase-badge">Coagulatio</span> (Crystallization)
-*The final form of perfected expression*
-
-Crystallize the refined essence into its most precise and powerful form. Like the philosopher's stone, this final prompt represents the perfect synthesis of clarity, precision, and purpose.
-</div>
+Transform ideas through:
+1. **Prima Materia**: Extract essence
+2. **Solutio**: Create natural flow
+3. **Coagulatio**: Achieve precision
 
 ## The Alchemical Advantage
 
@@ -73,20 +47,35 @@ Traditional prompt engineering is like working with raw metals - unpredictable a
 
 ## Documentation
 
+### Getting Started
 - [Getting Started](./getting-started) - Installation and first steps
 - [Installation Guide](./installation) - Detailed setup instructions
 - [Usage Guide](./usage) - Command reference and examples
+
+### 🔄 Operational Modes
+- **[On-Demand vs Server Mode](./on-demand-vs-server-mode)** - Comprehensive comparison of operational modes
+- **[Mode Quick Reference](./mode-quick-reference)** - Quick decision guide and command reference
+- **[Mode Selection FAQ](./mode-faq)** - Frequently asked questions about choosing modes
+- **[Deployment Guide](./deployment-guide)** - Complete deployment strategies for both modes
+
+### Technical Documentation
 - [Architecture](./architecture) - Technical design and internals
+- [Database](./database) - Database schema and implementation details
+- [Vector Embeddings](./vector-embeddings) - Semantic search and vector storage implementation
+- [Diagrams](./diagrams) - Visual architecture and flow diagrams
+
+### Server Mode & Integration
+- [MCP Integration](./mcp-integration) - Model Context Protocol server setup
+- [MCP Tools](./mcp-tools) - Detailed MCP tools and resources reference
+- [Learning Mode](./learning-mode) - Adaptive learning configuration
+- [API Reference](./api-reference) - Provider interfaces and models
+
+### Development & Operations
+- [CLI Reference](./cli-reference) - Complete command-line interface documentation
+- [Automated Scheduling](./scheduling) - Set up nightly training jobs with cron/launchd
 - [Multi-Arch Builds](./multi-arch-builds) - Cross-platform build system and CI/CD
 - [Renovate Setup](./renovate-setup) - Automated dependency updates
 - [Release Automation](./release-automation) - Semantic versioning and GitHub releases
-- [Diagrams](./diagrams) - Visual architecture and flow diagrams
-- [Database](./database) - Database schema and implementation details
-- [Vector Embeddings](./vector-embeddings) - Semantic search and vector storage implementation
-- [MCP Integration](./mcp-integration) - Model Context Protocol server setup
-- [MCP Tools](./mcp-tools) - Detailed MCP tools and resources reference
-- [CLI Reference](./cli-reference) - Complete command-line interface documentation
-- [API Reference](./api-reference) - Provider interfaces and models
 
 ## Support
 

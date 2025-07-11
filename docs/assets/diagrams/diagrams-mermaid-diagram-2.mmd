@@ -1,0 +1,37 @@
+graph TB
+    A[Provider Interface] --> B[OpenAI Provider]
+    A --> C[Anthropic Provider]
+    A --> D[Google Provider]
+    A --> E[OpenRouter Provider]
+    A --> F[Ollama Provider]
+    
+    B --> G[OpenAI API]
+    C --> H[Anthropic API]
+    D --> I[Google API]
+    E --> J[OpenRouter API]
+    F --> K[Local Ollama]
+    
+    subgraph "Provider Capabilities"
+        B --> L[Generation + Embeddings]
+        C --> M[Generation Only]
+        D --> N[Generation Only]
+        E --> O[Generation + Embeddings]
+        F --> P[Generation Only (Local)]
+    end
+    
+    subgraph "Provider Registry"
+        Q[Registry Manager] --> R[Provider Discovery]
+        Q --> S[Health Checks]
+        Q --> T[Load Balancing]
+        Q --> U[Failover Logic]
+    end
+    
+    A --> Q
+    
+    style A fill:#e3f2fd
+    style Q fill:#f1f8e9
+    style L fill:#e8f5e8
+    style M fill:#fff3e0
+    style N fill:#fff3e0
+    style O fill:#e8f5e8
+    style P fill:#fff3e0

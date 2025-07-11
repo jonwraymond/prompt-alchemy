@@ -28,6 +28,7 @@
 - **🔌 MCP Integration**: AI agent-friendly interface for seamless integration
 - **⚡ Fast & Efficient**: Parallel alchemical processing
 - **📈 Detailed Metadata**: Complete transmutation records including costs
+- **🕒 Automated Scheduling**: Easy setup of nightly training jobs via cron/launchd
 
 ## Installation
 
@@ -188,6 +189,36 @@ prompt-alchemy search --phase solutio "natural language"
 prompt-alchemy search --model "o4-mini"
 ```
 
+### Automated Learning
+
+Set up automated nightly training to improve prompt rankings over time:
+
+```bash
+# Install nightly job at 2 AM (auto-detects best method for your system)
+prompt-alchemy schedule --time "0 2 * * *"
+
+# Install at a different time (3:30 AM)
+prompt-alchemy schedule --time "30 3 * * *"
+
+# Force use of cron (Linux/macOS)
+prompt-alchemy schedule --time "0 2 * * *" --method cron
+
+# Force use of launchd (macOS only)
+prompt-alchemy schedule --time "0 2 * * *" --method launchd
+
+# List current scheduled jobs
+prompt-alchemy schedule --list
+
+# Uninstall scheduled job
+prompt-alchemy schedule --uninstall
+
+# Preview what would be installed
+prompt-alchemy schedule --time "0 2 * * *" --dry-run
+
+# Run training manually
+prompt-alchemy nightly
+```
+
 ## The Alchemical Process
 
 Prompt Alchemy follows the ancient principles of transformation through three sacred phases:
@@ -205,6 +236,209 @@ Prompt Alchemy follows the ancient principles of transformation through three sa
    - *Purpose*: Creates the final, polished prompt ready for use
 
 Each phase can be powered by different AI providers, creating a unique alchemical blend optimized for different strengths.
+
+## Testing
+
+Prompt Alchemy includes a comprehensive testing suite to ensure reliability and quality across all components.
+
+### Test Types
+
+- **Unit Tests**: Test individual components and functions in isolation
+- **Integration Tests**: Test provider integrations and database operations  
+- **End-to-End Tests**: Test complete workflows from CLI to storage
+- **Learning Tests**: Test the learning-to-rank system and feedback loops
+- **Mock Tests**: Test with simulated provider responses for consistent results
+
+### Running Tests
+
+#### Basic Test Commands
+```bash
+# Run all tests (unit + integration)
+make test
+
+# Run unit tests only
+make test-unit
+
+# Run integration tests
+make test-integration
+
+# Run CI tests (optimized for automated environments)
+make test-ci
+```
+
+#### Advanced Test Commands
+```bash
+# Run end-to-end tests
+make test-e2e
+
+# Run learning-to-rank tests
+make test-ltr
+
+# Run smoke tests (quick validation)
+make test-smoke
+
+# Run comprehensive tests (all features)
+make test-comprehensive
+
+# Generate coverage report
+make coverage
+```
+
+#### Test Management
+```bash
+# Setup test environment
+make test-setup
+
+# Clean test artifacts
+make test-clean
+
+# View test results
+make test-report
+```
+
+### Test Structure
+
+The test suite is organized across several directories:
+
+- **Unit Tests**: Located alongside source files (`*_test.go`)
+  - `internal/engine/engine_test.go` - Core generation engine tests
+  - `internal/ranking/ranker_test.go` - Prompt ranking algorithm tests
+  - `internal/judge/evaluator_test.go` - Quality evaluation tests
+  - `internal/learning/learner_test.go` - Learning system tests
+  - `pkg/providers/*_test.go` - Provider implementation tests
+  - `pkg/models/prompt_test.go` - Data model tests
+
+- **Integration Tests**: `scripts/integration-test.sh`
+  - Provider connectivity and API integration
+  - Database operations and migrations
+  - Configuration loading and validation
+
+- **End-to-End Tests**: `scripts/run-e2e-tests.sh`
+  - Complete CLI workflows
+  - Multi-phase prompt generation
+  - Storage and retrieval operations
+  - MCP server functionality
+
+- **Learning Tests**: `scripts/test-learning-to-rank.sh`
+  - Feedback processing and pattern detection
+  - Ranking weight updates and optimization
+  - Nightly training job validation
+
+### Test Configuration
+
+Tests support multiple execution modes:
+
+```bash
+# Mock mode (default) - uses simulated responses
+make test-e2e
+
+# Live mode - uses real provider APIs (requires API keys)
+MOCK_MODE=false make test-e2e
+
+# Specific test levels
+make test-smoke      # Basic functionality only
+make test-comprehensive  # All features including performance
+```
+
+### Coverage
+
+- **Target**: 80%+ code coverage across all components
+- **Current Coverage**: Run `make coverage` to generate detailed reports
+- **Coverage Reports**: Generated as `coverage.html` for detailed analysis
+
+### CI/CD Pipeline
+
+Automated testing runs on every push and pull request through GitHub Actions:
+
+#### Workflows
+
+- **`test.yml`**: Core testing pipeline
+  - Runs on Go 1.23+ across Linux, macOS, and Windows
+  - Executes unit, integration, and smoke tests
+  - Generates coverage reports
+  - Validates code formatting and linting
+
+- **`e2e-tests.yml`**: End-to-end testing
+  - Comprehensive workflow testing
+  - Provider integration validation
+  - Performance benchmarking
+  - Learning system verification
+
+- **`ci.yml`**: Continuous integration checks
+  - Code quality analysis
+  - Security scanning
+  - Dependency validation
+  - Build verification
+
+- **`release.yml`**: Release automation
+  - Multi-platform builds
+  - Integration test validation
+  - Automated deployment
+  - Version tagging
+
+#### Quality Gates
+
+All tests must pass before:
+- Merging pull requests
+- Creating releases
+- Deploying documentation
+
+### Writing Tests
+
+#### Unit Test Example
+```go
+func TestPromptGeneration(t *testing.T) {
+    engine := NewEngine(mockRegistry, logger)
+    
+    opts := models.GenerateOptions{
+        Request: models.PromptRequest{
+            Input: "test input",
+            Phases: []models.Phase{models.PhasePrimaMaterial},
+        },
+    }
+    
+    result, err := engine.Generate(context.Background(), opts)
+    assert.NoError(t, err)
+    assert.NotEmpty(t, result.Prompts)
+}
+```
+
+#### Integration Test Guidelines
+- Use real database connections with test isolation
+- Mock external API calls when possible
+- Clean up test data after execution
+- Test error conditions and edge cases
+
+#### Test Utilities
+- **Mocks**: Located in `internal/mocks/` for consistent test data
+- **Fixtures**: Test configurations and sample prompts
+- **Helpers**: Common test setup and teardown functions
+
+### Debugging Test Failures
+
+```bash
+# Run tests with verbose output
+make test-verbose
+
+# Run specific test files
+go test -v ./internal/engine/
+
+# Run tests with race detection
+go test -race ./...
+
+# Debug with additional logging
+LOG_LEVEL=debug make test
+```
+
+### Performance Testing
+
+```bash
+# Run benchmarks
+make bench
+
+# Performance profiling
+go test -bench=. -benchmem -cpuprofile=cpu.prof ./...
+```
 
 ## Architecture
 

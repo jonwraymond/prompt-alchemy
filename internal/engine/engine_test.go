@@ -5,13 +5,15 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/jonwraymond/prompt-alchemy/internal/providers"
 	"github.com/jonwraymond/prompt-alchemy/pkg/models"
+	"github.com/jonwraymond/prompt-alchemy/pkg/providers"
 
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+const failedToRegisterTestProvider = "Failed to register test provider: %v"
 
 // MockProvider implements the Provider interface for testing
 type MockProvider struct {
@@ -19,7 +21,7 @@ type MockProvider struct {
 	available          bool
 	supportsEmbeddings bool
 	generateFunc       func(ctx context.Context, req providers.GenerateRequest) (*providers.GenerateResponse, error)
-	embeddingFunc      func(ctx context.Context, text string, registry *providers.Registry) ([]float32, error)
+	embeddingFunc      func(ctx context.Context, text string, registry providers.RegistryInterface) ([]float32, error)
 }
 
 func (m *MockProvider) Name() string             { return m.name }
@@ -37,7 +39,7 @@ func (m *MockProvider) Generate(ctx context.Context, req providers.GenerateReque
 	}, nil
 }
 
-func (m *MockProvider) GetEmbedding(ctx context.Context, text string, registry *providers.Registry) ([]float32, error) {
+func (m *MockProvider) GetEmbedding(ctx context.Context, text string, registry providers.RegistryInterface) ([]float32, error) {
 	if m.embeddingFunc != nil {
 		return m.embeddingFunc(ctx, text, registry)
 	}
@@ -57,7 +59,7 @@ func TestNewEngine(t *testing.T) {
 	require.NotNil(t, engine)
 }
 
-func TestEngine_Generate_SinglePhase(t *testing.T) {
+func TestEngineGenerateSinglePhase(t *testing.T) {
 	engine, registry := setupTestEngine(t)
 
 	// Register mock provider
@@ -66,11 +68,11 @@ func TestEngine_Generate_SinglePhase(t *testing.T) {
 		available: true,
 	}
 	if err := registry.Register("test-provider", mockProvider); err != nil {
-		t.Fatalf("Failed to register test provider: %v", err)
+		t.Fatalf(failedToRegisterTestProvider, err)
 	}
 
 	// Create generation options
-	opts := GenerateOptions{
+	opts := models.GenerateOptions{
 		Request: models.PromptRequest{
 			Input:       "Create a login system",
 			Phases:      []models.Phase{models.PhaseIdea},
@@ -78,7 +80,7 @@ func TestEngine_Generate_SinglePhase(t *testing.T) {
 			MaxTokens:   1000,
 			Count:       1,
 		},
-		PhaseConfigs: []providers.PhaseConfig{
+		PhaseConfigs: []models.PhaseConfig{
 			{Phase: models.PhaseIdea, Provider: "test-provider"},
 		},
 		UseParallel: false,
@@ -130,7 +132,7 @@ func TestEngine_Generate_MultiplePhases(t *testing.T) {
 	}
 
 	// Create generation options with multiple phases
-	opts := GenerateOptions{
+	opts := models.GenerateOptions{
 		Request: models.PromptRequest{
 			Input:       "Create a user authentication system",
 			Phases:      []models.Phase{models.PhaseIdea, models.PhaseHuman},
@@ -138,7 +140,7 @@ func TestEngine_Generate_MultiplePhases(t *testing.T) {
 			MaxTokens:   1500,
 			Count:       1,
 		},
-		PhaseConfigs: []providers.PhaseConfig{
+		PhaseConfigs: []models.PhaseConfig{
 			{Phase: models.PhaseIdea, Provider: "idea-provider"},
 			{Phase: models.PhaseHuman, Provider: "human-provider"},
 		},
@@ -174,11 +176,11 @@ func TestEngine_Generate_WithPersona(t *testing.T) {
 		available: true,
 	}
 	if err := registry.Register("test-provider", mockProvider); err != nil {
-		t.Fatalf("Failed to register test provider: %v", err)
+		t.Fatalf(failedToRegisterTestProvider, err)
 	}
 
 	// Create generation options with persona
-	opts := GenerateOptions{
+	opts := models.GenerateOptions{
 		Request: models.PromptRequest{
 			Input:       "Write a function to sort an array",
 			Phases:      []models.Phase{models.PhaseIdea},
@@ -186,7 +188,7 @@ func TestEngine_Generate_WithPersona(t *testing.T) {
 			MaxTokens:   800,
 			Count:       1,
 		},
-		PhaseConfigs: []providers.PhaseConfig{
+		PhaseConfigs: []models.PhaseConfig{
 			{Phase: models.PhaseIdea, Provider: "test-provider"},
 		},
 		Persona: string(models.PersonaCode),
@@ -210,11 +212,11 @@ func TestEngine_Generate_WithTags(t *testing.T) {
 		available: true,
 	}
 	if err := registry.Register("test-provider", mockProvider); err != nil {
-		t.Fatalf("Failed to register test provider: %v", err)
+		t.Fatalf(failedToRegisterTestProvider, err)
 	}
 
 	// Create generation options with tags
-	opts := GenerateOptions{
+	opts := models.GenerateOptions{
 		Request: models.PromptRequest{
 			Input:       "Create a REST API",
 			Phases:      []models.Phase{models.PhaseIdea},
@@ -223,7 +225,7 @@ func TestEngine_Generate_WithTags(t *testing.T) {
 			Count:       1,
 			Tags:        []string{"api", "backend", "test"},
 		},
-		PhaseConfigs: []providers.PhaseConfig{
+		PhaseConfigs: []models.PhaseConfig{
 			{Phase: models.PhaseIdea, Provider: "test-provider"},
 		},
 	}
@@ -253,7 +255,7 @@ func TestEngine_Generate_ProviderError(t *testing.T) {
 	}
 
 	// Create generation options
-	opts := GenerateOptions{
+	opts := models.GenerateOptions{
 		Request: models.PromptRequest{
 			Input:       "Test input",
 			Phases:      []models.Phase{models.PhaseIdea},
@@ -261,7 +263,7 @@ func TestEngine_Generate_ProviderError(t *testing.T) {
 			MaxTokens:   1000,
 			Count:       1,
 		},
-		PhaseConfigs: []providers.PhaseConfig{
+		PhaseConfigs: []models.PhaseConfig{
 			{Phase: models.PhaseIdea, Provider: "error-provider"},
 		},
 	}
@@ -287,7 +289,7 @@ func TestEngine_Generate_UnavailableProvider(t *testing.T) {
 	}
 
 	// Create generation options
-	opts := GenerateOptions{
+	opts := models.GenerateOptions{
 		Request: models.PromptRequest{
 			Input:       "Test input",
 			Phases:      []models.Phase{models.PhaseIdea},
@@ -295,7 +297,7 @@ func TestEngine_Generate_UnavailableProvider(t *testing.T) {
 			MaxTokens:   1000,
 			Count:       1,
 		},
-		PhaseConfigs: []providers.PhaseConfig{
+		PhaseConfigs: []models.PhaseConfig{
 			{Phase: models.PhaseIdea, Provider: "unavailable-provider"},
 		},
 	}
@@ -315,7 +317,7 @@ func TestEngine_Generate_NonExistentProvider(t *testing.T) {
 	engine, _ := setupTestEngine(t)
 
 	// Create generation options with non-existent provider
-	opts := GenerateOptions{
+	opts := models.GenerateOptions{
 		Request: models.PromptRequest{
 			Input:       "Test input",
 			Phases:      []models.Phase{models.PhaseIdea},
@@ -323,7 +325,7 @@ func TestEngine_Generate_NonExistentProvider(t *testing.T) {
 			MaxTokens:   1000,
 			Count:       1,
 		},
-		PhaseConfigs: []providers.PhaseConfig{
+		PhaseConfigs: []models.PhaseConfig{
 			{Phase: models.PhaseIdea, Provider: "non-existent-provider"},
 		},
 	}
@@ -334,21 +336,6 @@ func TestEngine_Generate_NonExistentProvider(t *testing.T) {
 	assert.Error(t, err)
 	assert.Nil(t, result)
 	assert.Contains(t, err.Error(), "provider not found")
-}
-
-func TestEngine_PhaseTemplates(t *testing.T) {
-	engine, _ := setupTestEngine(t)
-
-	// Test that phase templates are initialized
-	assert.NotNil(t, engine.phaseTemplates)
-	assert.Contains(t, engine.phaseTemplates, models.PhaseIdea)
-	assert.Contains(t, engine.phaseTemplates, models.PhaseHuman)
-	assert.Contains(t, engine.phaseTemplates, models.PhasePrecision)
-
-	// Test template content
-	ideaTemplate := engine.phaseTemplates[models.PhaseIdea]
-	assert.Contains(t, ideaTemplate, "{{INPUT}}")
-	assert.Contains(t, ideaTemplate, "{{TYPE}}")
 }
 
 // Helper functions
@@ -390,7 +377,7 @@ func BenchmarkEngine_Generate_SinglePhase(b *testing.B) {
 		b.Fatalf("Failed to register bench provider: %v", err)
 	}
 
-	opts := GenerateOptions{
+	opts := models.GenerateOptions{
 		Request: models.PromptRequest{
 			Input:       "Benchmark test input",
 			Phases:      []models.Phase{models.PhaseIdea},
@@ -398,7 +385,7 @@ func BenchmarkEngine_Generate_SinglePhase(b *testing.B) {
 			MaxTokens:   1000,
 			Count:       1,
 		},
-		PhaseConfigs: []providers.PhaseConfig{
+		PhaseConfigs: []models.PhaseConfig{
 			{Phase: models.PhaseIdea, Provider: "bench-provider"},
 		},
 	}
@@ -432,7 +419,7 @@ func BenchmarkEngine_Generate_MultiplePhases(b *testing.B) {
 		}
 	}
 
-	opts := GenerateOptions{
+	opts := models.GenerateOptions{
 		Request: models.PromptRequest{
 			Input:       "Benchmark test input",
 			Phases:      []models.Phase{models.PhaseIdea, models.PhaseHuman, models.PhasePrecision},
@@ -440,7 +427,7 @@ func BenchmarkEngine_Generate_MultiplePhases(b *testing.B) {
 			MaxTokens:   1000,
 			Count:       1,
 		},
-		PhaseConfigs: []providers.PhaseConfig{
+		PhaseConfigs: []models.PhaseConfig{
 			{Phase: models.PhaseIdea, Provider: "idea-provider"},
 			{Phase: models.PhaseHuman, Provider: "human-provider"},
 			{Phase: models.PhasePrecision, Provider: "precision-provider"},

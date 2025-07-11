@@ -1,0 +1,70 @@
+# Docker Configuration for Prompt Alchemy
+# Basic configuration for container testing
+
+# Provider configurations (using environment variables)
+providers:
+  openai:
+    api_key: "${OPENAI_API_KEY}"
+    model: "gpt-4o-mini"
+    timeout: 30
+  
+  anthropic:
+    api_key: "${ANTHROPIC_API_KEY}"
+    model: "claude-3-5-sonnet-20241022"
+    timeout: 30
+  
+  google:
+    api_key: "${GOOGLE_API_KEY}"
+    model: "gemini-1.5-flash"
+    timeout: 60
+
+# Phase configurations
+phases:
+  prima-materia:
+    provider: "openai"
+  solutio:
+    provider: "anthropic"
+  coagulatio:
+    provider: "google"
+
+# Embedding configuration
+embeddings:
+  standard_model: "text-embedding-3-small"
+  standard_dimensions: 1536
+  provider_priority:
+    - "openai"
+    - "anthropic"
+    - "google"
+  auto_migrate_legacy: true
+  cache_embeddings: true
+  similarity_threshold: 0.3
+
+# Generation settings
+generation:
+  default_temperature: 0.7
+  default_max_tokens: 2000
+  default_count: 3
+  use_parallel: true
+
+# Data storage (container path)
+data_dir: "/app/data"
+
+# Logging
+log_level: "info"
+
+# Learning settings
+learning:
+  enabled: true
+  learning_rate: 0.1
+  decay_rate: 0.01
+  min_confidence: 0.6
+  feedback_window: 24h
+
+# Ranking configuration
+ranking:
+  weights:
+    temperature: 0.2
+    token: 0.2
+    semantic: 0.3
+    length: 0.1
+    historical: 0.2 

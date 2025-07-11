@@ -3,7 +3,7 @@
 # Build configuration
 BINARY_NAME=prompt-alchemy
 BUILD_DIR=bin
-MAIN_PATH=cmd/main.go
+MAIN_PATH=cmd/prompt-alchemy/main.go
 TEST_DIR=tests
 RESULTS_DIR=test-results
 

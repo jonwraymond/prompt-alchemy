@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	log "github.com/jonwraymond/prompt-alchemy/internal/log"
 	"github.com/jonwraymond/prompt-alchemy/internal/storage"
 	"github.com/jonwraymond/prompt-alchemy/pkg/models"
 	"github.com/sirupsen/logrus"

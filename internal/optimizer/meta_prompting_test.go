@@ -7,12 +7,16 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/jonwraymond/prompt-alchemy/internal/providers"
 	"github.com/jonwraymond/prompt-alchemy/pkg/models"
+	"github.com/jonwraymond/prompt-alchemy/pkg/providers"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+const fibonacciPrompt = "Write a fibonacci function"
+const fibonacciTaskDescription = "Calculate fibonacci efficiently"
+const codeQuality = "code_quality"
 
 // MockOptimizerProvider implements providers.Provider for testing
 type MockOptimizerProvider struct {
@@ -56,7 +60,7 @@ func (m *MockOptimizerProvider) Generate(ctx context.Context, req providers.Gene
 	}, nil
 }
 
-func (m *MockOptimizerProvider) GetEmbedding(ctx context.Context, text string, registry *providers.Registry) ([]float32, error) {
+func (m *MockOptimizerProvider) GetEmbedding(ctx context.Context, text string, registry providers.RegistryInterface) ([]float32, error) {
 	return []float32{0.1, 0.2, 0.3, 0.4, 0.5}, nil
 }
 
@@ -134,7 +138,7 @@ func (m *MockJudgeProvider) Generate(ctx context.Context, req providers.Generate
 	}, nil
 }
 
-func (m *MockJudgeProvider) GetEmbedding(ctx context.Context, text string, registry *providers.Registry) ([]float32, error) {
+func (m *MockJudgeProvider) GetEmbedding(ctx context.Context, text string, registry providers.RegistryInterface) ([]float32, error) {
 	return []float32{0.1, 0.2, 0.3, 0.4, 0.5}, nil
 }
 
@@ -169,7 +173,7 @@ func TestNewMetaPromptOptimizer(t *testing.T) {
 	assert.NotNil(t, optimizer.judge)
 }
 
-func TestOptimizePrompt_Success(t *testing.T) {
+func TestOptimizePromptSuccess(t *testing.T) {
 	provider := NewMockOptimizerProvider()
 	judgeProvider := NewMockJudgeProvider()
 	optimizer := NewMetaPromptOptimizer(provider, judgeProvider)
@@ -209,7 +213,7 @@ func TestOptimizePrompt_Success(t *testing.T) {
 	assert.LessOrEqual(t, len(result.Iterations), 3) // Max iterations
 }
 
-func TestOptimizePrompt_TargetScoreReached(t *testing.T) {
+func TestOptimizePromptTargetScoreReached(t *testing.T) {
 	provider := NewMockOptimizerProvider()
 	judgeProvider := NewMockJudgeProvider()
 	optimizer := NewMetaPromptOptimizer(provider, judgeProvider)
@@ -218,8 +222,8 @@ func TestOptimizePrompt_TargetScoreReached(t *testing.T) {
 	judgeProvider.SetScore("", 9.0)
 
 	request := &OptimizationRequest{
-		OriginalPrompt:  "Write a fibonacci function",
-		TaskDescription: "Calculate fibonacci efficiently",
+		OriginalPrompt:  fibonacciPrompt,
+		TaskDescription: fibonacciTaskDescription,
 		ModelFamily:     models.ModelFamilyGPT,
 		PersonaType:     models.PersonaCode,
 		MaxIterations:   5,
@@ -239,14 +243,14 @@ func TestOptimizePrompt_TargetScoreReached(t *testing.T) {
 	assert.Less(t, result.ConvergedAt, 5)    // Before max iterations
 }
 
-func TestOptimizePrompt_MaxIterationsReached(t *testing.T) {
+func TestOptimizePromptMaxIterationsReached(t *testing.T) {
 	provider := NewMockOptimizerProvider()
 	judgeProvider := NewMockJudgeProvider()
 	optimizer := NewMetaPromptOptimizer(provider, judgeProvider)
 
 	request := &OptimizationRequest{
-		OriginalPrompt:  "Write a fibonacci function",
-		TaskDescription: "Calculate fibonacci efficiently",
+		OriginalPrompt:  fibonacciPrompt,
+		TaskDescription: fibonacciTaskDescription,
 		ModelFamily:     models.ModelFamilyGPT,
 		PersonaType:     models.PersonaCode,
 		MaxIterations:   2,
@@ -265,7 +269,7 @@ func TestOptimizePrompt_MaxIterationsReached(t *testing.T) {
 	assert.Equal(t, -1, result.ConvergedAt)    // Should not converge (-1 means no convergence)
 }
 
-func TestOptimizePrompt_ProviderError(t *testing.T) {
+func TestOptimizePromptProviderError(t *testing.T) {
 	provider := NewMockOptimizerProvider()
 	judgeProvider := NewMockJudgeProvider()
 	optimizer := NewMetaPromptOptimizer(provider, judgeProvider)
@@ -274,8 +278,8 @@ func TestOptimizePrompt_ProviderError(t *testing.T) {
 	provider.SetError("", errors.New("provider error"))
 
 	request := &OptimizationRequest{
-		OriginalPrompt:  "Write a fibonacci function",
-		TaskDescription: "Calculate fibonacci efficiently",
+		OriginalPrompt:  fibonacciPrompt,
+		TaskDescription: fibonacciTaskDescription,
 		ModelFamily:     models.ModelFamilyGPT,
 		PersonaType:     models.PersonaCode,
 		MaxIterations:   2,
@@ -290,7 +294,7 @@ func TestOptimizePrompt_ProviderError(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to evaluate original prompt")
 }
 
-func TestOptimizePrompt_JudgeError(t *testing.T) {
+func TestOptimizePromptJudgeError(t *testing.T) {
 	provider := NewMockOptimizerProvider()
 	judgeProvider := NewMockJudgeProvider()
 	optimizer := NewMetaPromptOptimizer(provider, judgeProvider)
@@ -299,8 +303,8 @@ func TestOptimizePrompt_JudgeError(t *testing.T) {
 	judgeProvider.SetError("", errors.New("judge error"))
 
 	request := &OptimizationRequest{
-		OriginalPrompt:  "Write a fibonacci function",
-		TaskDescription: "Calculate fibonacci efficiently",
+		OriginalPrompt:  fibonacciPrompt,
+		TaskDescription: fibonacciTaskDescription,
 		ModelFamily:     models.ModelFamilyGPT,
 		PersonaType:     models.PersonaCode,
 		MaxIterations:   2,
@@ -315,14 +319,14 @@ func TestOptimizePrompt_JudgeError(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to evaluate original prompt")
 }
 
-func TestOptimizePrompt_ImprovementTracking(t *testing.T) {
+func TestOptimizePromptImprovementTracking(t *testing.T) {
 	provider := NewMockOptimizerProvider()
 	judgeProvider := NewMockJudgeProvider()
 	optimizer := NewMetaPromptOptimizer(provider, judgeProvider)
 
 	request := &OptimizationRequest{
-		OriginalPrompt:  "Write a fibonacci function",
-		TaskDescription: "Calculate fibonacci efficiently",
+		OriginalPrompt:  fibonacciPrompt,
+		TaskDescription: fibonacciTaskDescription,
 		ModelFamily:     models.ModelFamilyGPT,
 		PersonaType:     models.PersonaCode,
 		MaxIterations:   3,
@@ -354,7 +358,7 @@ func TestOptimizePrompt_ImprovementTracking(t *testing.T) {
 	assert.Equal(t, result.FinalScore-result.OriginalScore, result.Improvement)
 }
 
-func TestOptimizePrompt_WithExamples(t *testing.T) {
+func TestOptimizePromptWithExamples(t *testing.T) {
 	provider := NewMockOptimizerProvider()
 	judgeProvider := NewMockJudgeProvider()
 	optimizer := NewMetaPromptOptimizer(provider, judgeProvider)
@@ -388,7 +392,7 @@ func TestOptimizePrompt_WithExamples(t *testing.T) {
 	assert.NotEmpty(t, result.OptimizedPrompt)
 }
 
-func TestOptimizePrompt_WithConstraints(t *testing.T) {
+func TestOptimizePromptWithConstraints(t *testing.T) {
 	provider := NewMockOptimizerProvider()
 	judgeProvider := NewMockJudgeProvider()
 	optimizer := NewMetaPromptOptimizer(provider, judgeProvider)
@@ -411,7 +415,7 @@ func TestOptimizePrompt_WithConstraints(t *testing.T) {
 	assert.NotEmpty(t, result.OptimizedPrompt)
 }
 
-func TestEvaluatePrompt_TestResponseGeneration(t *testing.T) {
+func TestEvaluatePromptTestResponseGeneration(t *testing.T) {
 	provider := NewMockOptimizerProvider()
 	judgeProvider := NewMockJudgeProvider()
 	optimizer := NewMetaPromptOptimizer(provider, judgeProvider)
@@ -439,7 +443,7 @@ func TestEvaluatePrompt_TestResponseGeneration(t *testing.T) {
 	assert.NotEmpty(t, evaluation.Reasoning)
 }
 
-func TestGenerateTestResponse_WithExample(t *testing.T) {
+func TestGenerateTestResponseWithExample(t *testing.T) {
 	provider := NewMockOptimizerProvider()
 	judgeProvider := NewMockJudgeProvider()
 	optimizer := NewMetaPromptOptimizer(provider, judgeProvider)
@@ -461,7 +465,7 @@ func TestGenerateTestResponse_WithExample(t *testing.T) {
 	assert.NotEmpty(t, response)
 }
 
-func TestGenerateTestResponse_WithoutExample(t *testing.T) {
+func TestGenerateTestResponseWithoutExample(t *testing.T) {
 	provider := NewMockOptimizerProvider()
 	judgeProvider := NewMockJudgeProvider()
 	optimizer := NewMetaPromptOptimizer(provider, judgeProvider)
@@ -478,7 +482,7 @@ func TestGenerateTestResponse_WithoutExample(t *testing.T) {
 	assert.NotEmpty(t, response)
 }
 
-func TestGenerateTestResponse_ProviderError(t *testing.T) {
+func TestGenerateTestResponseProviderError(t *testing.T) {
 	provider := NewMockOptimizerProvider()
 	judgeProvider := NewMockJudgeProvider()
 	optimizer := NewMetaPromptOptimizer(provider, judgeProvider)
@@ -501,7 +505,7 @@ func TestGetOptimizationCriteria(t *testing.T) {
 	request := &OptimizationRequest{
 		OptimizationGoals: map[string]float64{
 			"factual_accuracy": 0.4,
-			"code_quality":     0.3,
+			codeQuality:        0.3,
 			"helpfulness":      0.3,
 		},
 	}
@@ -510,16 +514,16 @@ func TestGetOptimizationCriteria(t *testing.T) {
 
 	assert.Len(t, criteria, 4) // Default code criteria has 4 items
 	assert.Contains(t, criteria, "factual_accuracy")
-	assert.Contains(t, criteria, "code_quality")
+	assert.Contains(t, criteria, codeQuality)
 	assert.Contains(t, criteria, "helpfulness")
 
 	// Check weights
 	assert.Equal(t, 0.4, criteria["factual_accuracy"].Weight)
-	assert.Equal(t, 0.3, criteria["code_quality"].Weight)
+	assert.Equal(t, 0.3, criteria[codeQuality].Weight)
 	assert.Equal(t, 0.3, criteria["helpfulness"].Weight)
 }
 
-func TestGetOptimizationCriteria_DefaultGoals(t *testing.T) {
+func TestGetOptimizationCriteriaDefaultGoals(t *testing.T) {
 	request := &OptimizationRequest{
 		// No optimization goals specified
 	}

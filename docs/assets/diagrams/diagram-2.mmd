@@ -1,0 +1,44 @@
+    subgraph "User Interface"
+        CLI["`🖥️ **CLI Commands**
+        generate, search, metrics`"]
+    end
+    
+    subgraph "Alchemical Engine"
+        Engine["`⚗️ **Prompt Engine**
+        Transformation Orchestrator`"]
+        Phases["`🔄 **Phase Manager**
+        Sacred Transformation`"]
+        Ranking["`🏆 **Quality Assessor**
+        Result Evaluation`"]
+    end
+    
+    subgraph "Provider Network"
+        OpenAI["`🤖 **OpenAI**`"]
+        Anthropic["`🧠 **Anthropic**`"]
+        Google["`🌟 **Google**`"]
+        Others["`🔗 **Others**`"]
+    end
+    
+    subgraph "Intelligent Storage"
+        Database["`💾 **SQLite**
+        Core Data`"]
+        Vectors["`🧮 **Embeddings**
+        Semantic Search`"]
+        Analytics["`📊 **Metrics**
+        Performance Data`"]
+    end
+    
+    CLI --> Engine
+    Engine --> Phases
+    Engine --> OpenAI
+    Engine --> Anthropic
+    Engine --> Google
+    Engine --> Others
+    Engine --> Ranking
+    Ranking --> Database
+    Database --> Vectors
+    Database --> Analytics
+    
+    style CLI fill:#4CAF50,stroke:#333,stroke-width:2px,color:#fff
+    style Engine fill:#FF6B35,stroke:#333,stroke-width:3px,color:#fff
+    style Database fill:#2196F3,stroke:#333,stroke-width:2px,color:#fff

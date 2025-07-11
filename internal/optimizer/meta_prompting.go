@@ -8,8 +8,8 @@ import (
 
 	"github.com/jonwraymond/prompt-alchemy/internal/judge"
 	log "github.com/jonwraymond/prompt-alchemy/internal/log"
-	"github.com/jonwraymond/prompt-alchemy/internal/providers"
 	"github.com/jonwraymond/prompt-alchemy/pkg/models"
+	"github.com/jonwraymond/prompt-alchemy/pkg/providers"
 )
 
 // MetaPromptOptimizer implements automated prompt optimization using LLMs
