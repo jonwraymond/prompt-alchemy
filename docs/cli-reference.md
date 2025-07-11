@@ -76,7 +76,7 @@ prompt-alchemy --log-level debug generate "test prompt"
 
 ## generate
 
-Usage: promgen generate <input> [flags]
+Usage: prompt-alchemy generate <input> [flags]
 Flags:
 --phases string
 --persona string
@@ -87,7 +87,7 @@ Flags:
 --tags string
 --context []string
 --provider string
-Example: promgen generate "API design" --phases=prima-materia,coagulatio --auto-select
+Example: prompt-alchemy generate "API design" --phases=prima-materia,coagulatio --auto-select
 
 ## search
 

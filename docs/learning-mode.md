@@ -13,13 +13,13 @@ Prompt Alchemy's learning mode implements a feedback-driven system to improve pr
 3. Train model nightly (cmd/nightly.go) with XGBoost stub
 
 ### Usage
-promgen nightly --train
+prompt-alchemy nightly --train
 
 // Update any inaccurate descriptions
 
 ## Overview
 
-When learning mode is enabled, PromGen:
+When learning mode is enabled, Prompt Alchemy:
 - Tracks prompt effectiveness through user feedback
 - Identifies successful patterns in prompt generation
 - Adjusts relevance scores based on usage
@@ -200,7 +200,7 @@ curl -X POST http://localhost:8080/mcp \
 - Learning can be disabled without data loss
 
 ## Usage Examples
-promgen nightly
+prompt-alchemy nightly
 
 curl -X POST localhost:8080/mcp -d '{"method":"record_feedback","params":{"prompt_id":"uuid","score":0.8}}'
 

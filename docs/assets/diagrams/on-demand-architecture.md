@@ -8,7 +8,7 @@ graph TB
         CICD[CI/CD Pipeline]
     end
 
-    subgraph "PromGen Core"
+    subgraph "Prompt Alchemy Core"
         Main[Main Entry Point]
         Config[Configuration Loader]
         

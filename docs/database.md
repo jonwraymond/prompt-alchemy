@@ -14,6 +14,6 @@ Prompt Alchemy uses SQLite for storage.
 - enhancement_history: id, prompt_id, updated_content, updated_at
 
 ## Migrations
-promgen migrate
+prompt-alchemy migrate
 
 // Match exact schema from code

@@ -279,4 +279,4 @@ make release            # Local release build
 - **E2E Tests**: Comprehensive workflow testing on Linux
 - **Smoke Tests**: Quick validation across all platforms
 
-This multi-architecture build system ensures PromGen works seamlessly across all major computing platforms while maintaining high quality and performance standards. 
+This multi-architecture build system ensures Prompt Alchemy works seamlessly across all major computing platforms while maintaining high quality and performance standards. 

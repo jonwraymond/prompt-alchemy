@@ -6,10 +6,10 @@ title: Usage Guide
 # Usage
 
 ## CLI
-promgen generate 'Story idea' --phases=prima-materia,solutio --persona=writing --auto-select
+prompt-alchemy generate 'Story idea' --phases=prima-materia,solutio --persona=writing --auto-select
 
 ## Server
-promgen serve
+prompt-alchemy serve
 curl -X POST localhost:8080/api/v1/prompts/generate -d '{"input":"Code snippet"}'
 
 ## MCP Integration

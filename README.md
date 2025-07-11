@@ -129,10 +129,10 @@ git clone https://github.com/jonwraymond/prompt-alchemy.git
 cd prompt-alchemy
 
 # Build the CLI
-go build -o prompt-alchemy cmd/promgen/main.go
+go build -o prompt-alchemy cmd/prompt-alchemy/main.go
 
 # Or install directly
-go install github.com/jonwraymond/prompt-alchemy/cmd/promgen@latest
+go install github.com/jonwraymond/prompt-alchemy/cmd/prompt-alchemy@latest
 ```
 
 ## Configuration
@@ -789,7 +789,7 @@ Error: package not found
 # Solution: Clean and rebuild
 go clean -modcache
 go mod download
-go build -o prompt-alchemy cmd/promgen/main.go
+go build -o prompt-alchemy cmd/prompt-alchemy/main.go
 ```
 
 #### Runtime Issues

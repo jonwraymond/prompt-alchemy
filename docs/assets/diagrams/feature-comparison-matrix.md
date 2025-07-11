@@ -145,7 +145,7 @@ gantt
 
 ```mermaid
 mindmap
-  root((PromGen))
+  root((Prompt Alchemy))
     On-Demand
       CLI Tools
         Bash Scripts

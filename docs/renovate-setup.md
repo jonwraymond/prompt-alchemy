@@ -26,7 +26,7 @@ Renovate is a powerful, free dependency update tool that automatically creates p
 2. Click "Install" or "Configure"
 3. Choose your account/organization
 4. Select repositories:
-   - **Recommended**: "Selected repositories" → Choose `PromGen`
+   - **Recommended**: "Selected repositories" → Choose `Prompt Alchemy`
    - **Alternative**: "All repositories" (if you want Renovate on all repos)
 5. Click "Install"
 

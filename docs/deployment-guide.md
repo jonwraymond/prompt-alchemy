@@ -5,7 +5,7 @@ title: Deployment Guide
 
 # Deployment Guide
 
-This guide covers deployment strategies for both On-Demand and Server modes of PromGen.
+This guide covers deployment strategies for both On-Demand and Server modes of Prompt Alchemy.
 
 ## On-Demand Mode Deployment
 
@@ -56,7 +56,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       
-      - name: Setup PromGen
+      - name: Setup Prompt Alchemy
         uses: jonwraymond/setup-prompt-alchemy@v1
         with:
           version: latest

@@ -1,4 +1,4 @@
-# HTTP API Proposal for PromGen
+# HTTP API Proposal for Prompt Alchemy
 
 ## Overview
 
