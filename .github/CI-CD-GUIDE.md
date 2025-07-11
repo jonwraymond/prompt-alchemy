@@ -76,8 +76,8 @@ For full functionality, configure these repository secrets:
 Add these badges to your README:
 
 ```markdown
-[![CI](https://github.com/yourusername/prompt-alchemy/workflows/CI%20Pipeline/badge.svg)](https://github.com/yourusername/prompt-alchemy/actions)
-[![codecov](https://codecov.io/gh/yourusername/prompt-alchemy/branch/main/graph/badge.svg)](https://codecov.io/gh/yourusername/prompt-alchemy)
+[![CI](https://github.com/jonwraymond/prompt-alchemy/workflows/CI%20Pipeline/badge.svg)](https://github.com/jonwraymond/prompt-alchemy/actions)
+[![codecov](https://codecov.io/gh/jonwraymond/prompt-alchemy/branch/main/graph/badge.svg)](https://codecov.io/gh/jonwraymond/prompt-alchemy)
 ```
 
 ## Dependabot Configuration (`.github/dependabot.yml`)
