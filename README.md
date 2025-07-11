@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/prompt-alchemy-logo.png" alt="Prompt Alchemy" width="300"/>
+  <img src="docs/assets/prompt_alchemy2.png" alt="Prompt Alchemy" width="300"/>
 </p>
 
 <h1 align="center">Prompt Alchemy</h1>
@@ -208,7 +208,7 @@ Each phase can be powered by different AI providers, creating a unique alchemica
 
 ## Architecture
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for a detailed overview of the alchemical laboratory.
+See [docs/architecture.md](docs/architecture.md) for a detailed overview of the alchemical laboratory.
 
 ## Contributing
 

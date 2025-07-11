@@ -2,8 +2,8 @@
 theme: jekyll-theme-minimal
 title: Prompt Alchemy
 description: Transform raw ideas into golden prompts through the ancient art of linguistic alchemy
-logo: /assets/prompt_alchemy.png
-logo2: /assets/prompt_alchemy2.png
+logo: assets/prompt_alchemy.png
+logo2: assets/prompt_alchemy2.png
 baseurl: "/prompt-alchemy" # The repository name
 url: "https://jonwraymond.github.io" # GitHub username from git URL
 

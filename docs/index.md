@@ -6,7 +6,7 @@ title: Home
 # Prompt Alchemy
 
 <div style="text-align: center; margin: 30px 0;">
-  <img src="/assets/prompt_alchemy2.png" alt="Prompt Alchemy Logo" style="max-width: 400px; border-radius: 15px; box-shadow: 0 8px 20px rgba(218, 165, 32, 0.4);">
+  <img src="assets/prompt_alchemy2.png" alt="Prompt Alchemy Logo" style="max-width: 400px; border-radius: 15px; box-shadow: 0 8px 20px rgba(218, 165, 32, 0.4);">
 </div>
 
 > Transform raw ideas into golden prompts through the ancient art of linguistic alchemy
