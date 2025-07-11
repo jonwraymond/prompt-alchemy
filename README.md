@@ -38,10 +38,10 @@ git clone https://github.com/jonwraymond/prompt-alchemy.git
 cd prompt-alchemy
 
 # Build the CLI
-go build -o prompt-alchemy cmd/main.go
+go build -o prompt-alchemy cmd/promgen/main.go
 
 # Or install directly
-go install github.com/jonwraymond/prompt-alchemy/cmd@latest
+go install github.com/jonwraymond/prompt-alchemy/cmd/promgen@latest
 ```
 
 ## Configuration
@@ -114,7 +114,7 @@ Alternatively, use environment variables (create a `.env` file or export directl
 export PROMPT_ALCHEMY_PROVIDERS_OPENAI_API_KEY="sk-your-openai-api-key"
 export PROMPT_ALCHEMY_PROVIDERS_OPENAI_MODEL="o4-mini"
 
-# OpenRouter Configuration  
+# OpenRouter Configuration
 export PROMPT_ALCHEMY_PROVIDERS_OPENROUTER_API_KEY="sk-or-your-openrouter-api-key"
 export PROMPT_ALCHEMY_PROVIDERS_OPENROUTER_MODEL="openrouter/auto"
 
@@ -227,7 +227,7 @@ Prompt Alchemy follows the ancient principles of transformation through three sa
    - *In practice*: Brainstorming and initial idea extraction
    - *Purpose*: Captures the core concept and explores possibilities
 
-2. **Solutio (Dissolution)** - Breaking down rigid structures into fluid, natural expression  
+2. **Solutio (Dissolution)** - Breaking down rigid structures into fluid, natural expression
    - *In practice*: Converting ideas into conversational, human-readable language
    - *Purpose*: Makes prompts natural and accessible
 
