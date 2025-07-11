@@ -5,28 +5,28 @@ title: Home
 
 # Prompt Alchemy
 
-<div style="text-align: center; margin: 30px 0;">
-  <img src="/assets/prompt_alchemy2.png" alt="Prompt Alchemy Logo" style="max-width: 400px; border-radius: 15px; box-shadow: 0 8px 20px rgba(218, 165, 32, 0.4);">
+<div style="text-align: center; margin: 40px 0;">
+  <img src="/assets/prompt_alchemy2.png" alt="Prompt Alchemy Logo" style="max-width: 400px; border-radius: 20px; box-shadow: 0 12px 35px rgba(218, 165, 32, 0.4);">
 </div>
 
 > Transform raw ideas into golden prompts through the ancient art of linguistic alchemy
 
 <div class="alchemical-process">
-Prompt Alchemy is a sophisticated AI system that transmutes concepts through three sacred phases of refinement. Like the ancient alchemists who sought to transform base metals into gold, we transform raw ideas into potent, precisely-crafted prompts ready for any AI system.
+**Prompt Alchemy** is a sophisticated AI system that transmutes concepts through three sacred phases of refinement. Like the ancient alchemists who sought to transform base metals into gold, we transform raw ideas into potent, precisely-crafted prompts ready for any AI system.
 </div>
 
-## Key Features
+## ⚗️ Key Features
 
-- ⚗️ **Three-Phase Alchemical Transformation**: Prima Materia → Solutio → Coagulatio
-- 🤖 **Multiple Provider Support**: OpenAI, Anthropic, Google, OpenRouter, Ollama
-- 💾 **Intelligent Grimoire**: SQLite-based storage with vector embeddings
-- 📊 **Alchemical Ranking**: Automated prompt evaluation and transmutation scoring
-- 🔄 **Iterative Refinement**: Meta-prompt optimization through successive iterations
-- 🎭 **Persona-Based Transmutation**: Specialized alchemical processes for different domains
-- 🔍 **Semantic Scrying**: Discover similar prompts through embedding-based search
-- 📈 **Performance Tracking**: Monitor costs, usage patterns, and transmutation success rates
+- **Three-Phase Alchemical Transformation**: Prima Materia → Solutio → Coagulatio
+- **Multiple Provider Support**: OpenAI, Anthropic, Google, OpenRouter, Ollama
+- **Intelligent Grimoire**: SQLite-based storage with vector embeddings
+- **Alchemical Ranking**: Automated prompt evaluation and transmutation scoring
+- **Iterative Refinement**: Meta-prompt optimization through successive iterations
+- **Persona-Based Transmutation**: Specialized alchemical processes for different domains
+- **Semantic Scrying**: Discover similar prompts through embedding-based search
+- **Performance Tracking**: Monitor costs, usage patterns, and transmutation success rates
 
-## Quick Start
+## 🚀 Quick Start
 
 ```bash
 # Install from source
@@ -41,7 +41,7 @@ make setup
 ./prompt-alchemy generate "Write a function to calculate fibonacci numbers"
 ```
 
-## The Alchemical Process
+## 🔮 The Alchemical Process
 
 <div class="alchemical-process">
 Transform your ideas through three sacred phases of refinement:
@@ -62,16 +62,16 @@ Dissolve the rigid structures of conventional thinking. Your idea is broken down
 Crystallize the refined essence into its most precise and powerful form. Like the philosopher's stone, this final prompt represents the perfect synthesis of clarity, precision, and purpose.
 </div>
 
-## The Alchemical Advantage
+## 🏆 The Alchemical Advantage
 
-Traditional prompt engineering is like working with raw metals - unpredictable and inconsistent. Prompt Alchemy brings the ancient wisdom of transformation to modern AI:
+Traditional prompt engineering is like working with raw metals - unpredictable and inconsistent. **Prompt Alchemy** brings the ancient wisdom of transformation to modern AI:
 
 1. **Sacred Phases**: Each alchemical phase refines specific qualities - from raw potential to crystallized perfection
 2. **Multi-Provider Mastery**: Harness different AI providers' unique strengths for each transformation phase
 3. **Empirical Wisdom**: Track successful transmutations with comprehensive analytics and metrics
 4. **Self-Improving System**: Let the system learn and optimize its own alchemical processes
 
-## Documentation
+## 📚 Documentation
 
 - [Getting Started](./getting-started) - Installation and first steps
 - [Installation Guide](./installation) - Detailed setup instructions
@@ -88,12 +88,12 @@ Traditional prompt engineering is like working with raw metals - unpredictable a
 - [CLI Reference](./cli-reference) - Complete command-line interface documentation
 - [API Reference](./api-reference) - Provider interfaces and models
 
-## Support
+## 🆘 Support
 
 - **Issues**: [GitHub Issues](https://github.com/jonwraymond/prompt-alchemy/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/jonwraymond/prompt-alchemy/discussions)
 - **Contributing**: See [CONTRIBUTING.md](https://github.com/jonwraymond/prompt-alchemy/blob/main/CONTRIBUTING.md)
 
-## License
+## 📄 License
 
 Prompt Alchemy is open source software licensed under the MIT License.
