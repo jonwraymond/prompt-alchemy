@@ -34,7 +34,7 @@ type Provider interface {
 	Generate(ctx context.Context, req GenerateRequest) (*GenerateResponse, error)
 
 	// GetEmbedding returns embeddings for the given text
-	GetEmbedding(ctx context.Context, text string, registry *Registry) ([]float32, error)
+	GetEmbedding(ctx context.Context, text string, registry RegistryInterface) ([]float32, error)
 
 	// Name returns the provider name
 	Name() string
@@ -89,6 +89,13 @@ type Config struct {
 	DefaultEmbeddingModel string `mapstructure:"default_embedding_model"` // Default: "nomic-embed-text"
 	EmbeddingTimeout      int    `mapstructure:"embedding_timeout"`       // Default: 5 seconds
 	GenerationTimeout     int    `mapstructure:"generation_timeout"`      // Default: 120 seconds
+}
+
+// RegistryInterface defines the methods needed for ranking (subset of full Registry).
+type RegistryInterface interface {
+	Get(name string) (Provider, error)
+	ListAvailable() []string
+	ListEmbeddingCapableProviders() []string
 }
 
 // Registry manages available providers
@@ -156,7 +163,7 @@ func GetProviderForPhase(configs []PhaseConfig, phase models.Phase, registry *Re
 }
 
 // GetEmbeddingProvider returns a provider that supports embeddings, with fallback
-func GetEmbeddingProvider(primaryProvider Provider, registry *Registry) Provider {
+func GetEmbeddingProvider(primaryProvider Provider, registry RegistryInterface) Provider {
 	logger := log.GetLogger()
 	// If primary provider supports embeddings, use it
 	if primaryProvider.SupportsEmbeddings() {

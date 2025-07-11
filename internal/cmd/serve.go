@@ -98,7 +98,12 @@ func runMCPServer(cmd *cobra.Command, args []string) error {
 	eng := engine.NewEngine(registry, logger)
 
 	// Initialize ranking
-	ranker := ranking.NewRanker(store, logger)
+	ranker := ranking.NewRanker(store, registry, logger)
+	defer func() {
+		if err := ranker.Close(); err != nil {
+			logger.WithError(err).Warn("Failed to close ranker")
+		}
+	}()
 
 	// Create MCP server
 	server := &MCPServer{

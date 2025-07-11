@@ -6,6 +6,12 @@ import (
 	"fmt"
 	"strings"
 
+	"bufio"
+	"os"
+	"strconv"
+
+	"github.com/google/uuid"
+
 	"github.com/jonwraymond/prompt-alchemy/internal/engine"
 	log "github.com/jonwraymond/prompt-alchemy/internal/log"
 	"github.com/jonwraymond/prompt-alchemy/internal/providers"
@@ -162,6 +168,9 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 		Context:     contextList,
 	}
 
+	sessionID := uuid.New()
+	request.SessionID = sessionID // Assuming PromptRequest has SessionID field; add if not
+
 	// Generate prompts
 	logger.Info("Generating prompts...")
 	ctx := context.Background()
@@ -179,9 +188,19 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 	}
 	logger.Info("Prompt generation complete")
 
+	// Assign session to all generated prompts
+	for i := range result.Prompts {
+		result.Prompts[i].SessionID = sessionID
+	}
+
 	// Rank prompts
 	logger.Info("Ranking prompts...")
-	ranker := ranking.NewRanker(store, logger)
+	ranker := ranking.NewRanker(store, registry, logger)
+	defer func() {
+		if err := ranker.Close(); err != nil {
+			logger.WithError(err).Warn("Failed to close ranker")
+		}
+	}()
 	rankings, err := ranker.RankPrompts(ctx, result.Prompts, input)
 	if err != nil {
 		logger.WithError(err).Warn("Failed to rank prompts")
@@ -203,7 +222,7 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 
 	// Output results with persona information
 	logger.Infof("Outputting results in %s format", outputFormat)
-	return outputResults(result, outputFormat, personaObj, modelFamily)
+	return outputResults(store, result, outputFormat, personaObj, modelFamily)
 }
 
 func parsePhases(phasesStr string) []models.Phase {
@@ -351,7 +370,7 @@ func buildPhaseConfigs(phases []models.Phase, overrideProvider string) []provide
 	return configs
 }
 
-func outputResults(result *models.GenerationResult, format string, persona *models.Persona, modelFamily models.ModelFamily) error {
+func outputResults(store *storage.Storage, result *models.GenerationResult, format string, persona *models.Persona, modelFamily models.ModelFamily) error {
 	logger := log.GetLogger()
 	switch format {
 	case "json":
@@ -366,7 +385,7 @@ func outputResults(result *models.GenerationResult, format string, persona *mode
 		// For simplicity, using JSON for now
 		// Can add proper YAML support later
 		logger.Warn("YAML output is not yet supported, falling back to JSON")
-		return outputResults(result, "json", persona, modelFamily)
+		return outputResults(store, result, "json", persona, modelFamily)
 
 	default: // text
 		logger.Infof("Generated Prompts (Persona: %s, Target Model Family: %s):", persona.Name, modelFamily)
@@ -404,6 +423,41 @@ func outputResults(result *models.GenerationResult, format string, persona *mode
 					logger.Infof("- Context Score: %.2f", ranking.ContextScore)
 					break
 				}
+			}
+		}
+
+		// Interactive selection for text mode
+		fmt.Println("\nSelect a prompt to use (enter number, 0 to skip):")
+		reader := bufio.NewReader(os.Stdin)
+		input, _ := reader.ReadString('\n')
+		input = strings.TrimSpace(input)
+		sel, err := strconv.Atoi(input)
+		if err != nil || sel < 0 || sel > len(result.Prompts) {
+			logger.Info("No selection made")
+			return nil
+		}
+		if sel == 0 {
+			logger.Info("Selection skipped")
+			return nil
+		}
+
+		chosen := result.Prompts[sel-1]
+		logger.Infof("Selected prompt %d: %s", sel, chosen.ID)
+
+		// Save interactions
+		for i, p := range result.Prompts {
+			inter := &models.UserInteraction{
+				PromptID:  p.ID,
+				SessionID: result.SessionID, // Assuming added to GenerationResult
+				Action:    "skipped",
+				Score:     0,
+			}
+			if i == sel-1 {
+				inter.Action = "chosen"
+				inter.Score = 1
+			}
+			if err := store.SaveInteraction(inter); err != nil {
+				logger.WithError(err).Warn("Failed to save interaction for prompt ", p.ID)
 			}
 		}
 

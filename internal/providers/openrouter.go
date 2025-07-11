@@ -208,10 +208,9 @@ func (p *OpenRouterProvider) Generate(ctx context.Context, req GenerateRequest) 
 	}, nil
 }
 
-// GetEmbedding uses standardized OpenAI embeddings for compatibility
-// All providers use the same embedding model to ensure dimensional compatibility
-func (p *OpenRouterProvider) GetEmbedding(ctx context.Context, text string, registry *Registry) ([]float32, error) {
-	// Use standardized embedding for compatibility with all other providers
+// GetEmbedding returns embeddings for the given text
+// OpenRouter doesn't provide embeddings, so we delegate to standardized embedding
+func (p *OpenRouterProvider) GetEmbedding(ctx context.Context, text string, registry RegistryInterface) ([]float32, error) {
 	return getStandardizedEmbedding(ctx, text, registry)
 }
 

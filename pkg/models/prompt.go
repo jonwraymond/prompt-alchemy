@@ -42,6 +42,8 @@ type Prompt struct {
 	Metrics           *PromptMetrics  `json:"metrics,omitempty"`
 	Context           []PromptContext `json:"context,omitempty"`
 	ModelMetadata     *ModelMetadata  `json:"model_metadata,omitempty"` // Additional model information
+
+	SessionID uuid.UUID `json:"session_id"`
 }
 
 // ModelMetadata contains detailed information about model usage
@@ -86,6 +88,8 @@ type PromptRequest struct {
 	MaxTokens   int              `json:"max_tokens"`
 	Tags        []string         `json:"tags"`
 	Context     []string         `json:"context"`
+
+	SessionID uuid.UUID
 }
 
 // PromptMetrics contains performance metrics for a prompt
@@ -120,6 +124,8 @@ type PromptRanking struct {
 	HistoricalScore   float64
 	ContextScore      float64
 	EmbeddingDistance float64
+	LengthScore       float64
+	SemanticScore     float64
 }
 
 // GenerationResult contains the result of prompt generation
@@ -127,4 +133,16 @@ type GenerationResult struct {
 	Prompts  []Prompt        `json:"prompts"`
 	Rankings []PromptRanking `json:"rankings"`
 	Selected *Prompt         `json:"selected,omitempty"`
+
+	SessionID uuid.UUID
+}
+
+// UserInteraction captures feedback on a prompt (e.g. chosen, skipped, rated).
+type UserInteraction struct {
+	ID        uuid.UUID `json:"id"`
+	PromptID  uuid.UUID `json:"prompt_id"`
+	SessionID uuid.UUID `json:"session_id"`      // Groups interactions from one generate call
+	Action    string    `json:"action"`          // "chosen", "skipped", "rated"
+	Score     float64   `json:"score,omitempty"` // For ratings (0-1)
+	Timestamp time.Time `json:"timestamp"`
 }

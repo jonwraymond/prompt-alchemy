@@ -16,6 +16,15 @@ import (
 )
 
 // Engine handles prompt generation with phased approach
+// TODO: Server Mode Enhancement - Real-time Processing Engine
+// When implementing server mode, extend the engine to support:
+// - StreamGenerate() - Stream prompt generation results as they're created
+// - DiscoverRelationshipsOnDemand() - Real-time semantic relationship discovery
+// - GetSimilarPrompts() - Find similar prompts using embedding similarity
+// - WebhookNotification() - Notify external systems when generation completes
+//
+// This keeps the engine stateless and lightweight while enabling
+// powerful server-side features for API consumers.
 type Engine struct {
 	registry       *providers.Registry
 	phaseTemplates map[models.Phase]string

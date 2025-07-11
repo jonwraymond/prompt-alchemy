@@ -32,6 +32,13 @@ var rootCmd = &cobra.Command{
 	Long: `Prompt Alchemy is a sophisticated prompt generation system that uses a phased approach
 to create, refine, and optimize AI prompts. It supports multiple LLM providers and includes
 advanced features like embeddings, context building, and performance tracking.`,
+	// TODO: Server Mode Implementation
+	// Add 'serve' subcommand to enable HTTP/gRPC server functionality:
+	// - prompt-alchemy serve --port 8080 --mode http
+	// - Enables on-demand relationship discovery via API
+	// - RESTful endpoints for prompt generation and search
+	// - Semantic similarity search without background processing
+	// - Keeps infrastructure lightweight while providing API access
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		// Initialize logger
 		logger = log.GetLogger()
