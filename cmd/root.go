@@ -228,7 +228,7 @@ func initConfig() {
 	viper.SetEnvPrefix("PROMPT_ALCHEMY")
 	viper.AutomaticEnv()
 	logger.Debug("Checking for environment variables with prefix PROMPT_ALCHEMY")
-	
+
 	// Explicitly bind provider API key environment variables
 	viper.BindEnv("providers.openai.api_key", "PROMPT_ALCHEMY_PROVIDERS_OPENAI_API_KEY")
 	viper.BindEnv("providers.anthropic.api_key", "PROMPT_ALCHEMY_PROVIDERS_ANTHROPIC_API_KEY")

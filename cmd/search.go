@@ -81,7 +81,7 @@ func init() {
 	searchCmd.Flags().BoolVar(&searchSemantic, "semantic", false, "Use semantic search with embeddings")
 	searchCmd.Flags().Float64Var(&searchSimilarity, "similarity", 0.5, "Minimum similarity threshold for semantic search (0.0-1.0)")
 	searchCmd.Flags().StringVar(&searchOutput, "output", "text", "Output format (text, json)")
-	
+
 	// Client mode flag (overrides config)
 	searchCmd.Flags().String("server", "", "Server URL for client mode (overrides config and enables client mode)")
 }
@@ -95,7 +95,7 @@ func runSearch(cmd *cobra.Command, args []string) error {
 	// Check execution mode
 	mode := viper.GetString("client.mode")
 	serverFlag, _ := cmd.Flags().GetString("server")
-	
+
 	// Use client mode if explicitly set or if --server flag is provided
 	if mode == "client" || client.IsServerMode() || serverFlag != "" {
 		return runSearchClient(cmd, query)
@@ -127,7 +127,7 @@ func runSearchClient(cmd *cobra.Command, query string) error {
 	if searchPhase != "" {
 		phaseList = []string{searchPhase}
 	}
-	
+
 	var providerList []string
 	if searchProvider != "" {
 		providerList = []string{searchProvider}
