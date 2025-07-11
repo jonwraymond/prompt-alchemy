@@ -98,7 +98,7 @@ func runMCPServer(cmd *cobra.Command, args []string) error {
 	eng := engine.NewEngine(registry, logger)
 
 	// Initialize ranking
-	ranker := ranking.NewRanker(store, logger)
+	ranker := ranking.NewRanker(store, registry, logger)
 
 	// Create MCP server
 	server := &MCPServer{

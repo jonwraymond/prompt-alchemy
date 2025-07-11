@@ -181,7 +181,7 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 
 	// Rank prompts
 	logger.Info("Ranking prompts...")
-	ranker := ranking.NewRanker(store, logger)
+	ranker := ranking.NewRanker(store, registry, logger)
 	rankings, err := ranker.RankPrompts(ctx, result.Prompts, input)
 	if err != nil {
 		logger.WithError(err).Warn("Failed to rank prompts")

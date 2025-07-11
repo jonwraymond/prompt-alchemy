@@ -7,20 +7,25 @@ import (
 	log "github.com/jonwraymond/prompt-alchemy/internal/log"
 	"github.com/jonwraymond/prompt-alchemy/internal/storage"
 	"github.com/jonwraymond/prompt-alchemy/pkg/models"
+	"github.com/jonwraymond/prompt-alchemy/internal/providers"
 	"github.com/sirupsen/logrus"
 )
 
 // Ranker handles prompt ranking
 type Ranker struct {
-	storage *storage.Storage
-	logger  *logrus.Logger
+	storage  *storage.Storage
+	registry *providers.Registry
+	logger   *logrus.Logger
 }
 
 // NewRanker creates a new ranker instance
-func NewRanker(storage *storage.Storage, logger *logrus.Logger) *Ranker {
+// registry is required so we can obtain an embedding-capable provider for
+// semantic similarity calculations.
+func NewRanker(storage *storage.Storage, registry *providers.Registry, logger *logrus.Logger) *Ranker {
 	return &Ranker{
-		storage: storage,
-		logger:  log.GetLogger(),
+		storage:  storage,
+		registry: registry,
+		logger:   log.GetLogger(),
 	}
 }
 
@@ -30,7 +35,7 @@ func (r *Ranker) RankPrompts(ctx context.Context, prompts []models.Prompt, origi
 	rankings := make([]models.PromptRanking, 0, len(prompts))
 
 	for i := range prompts {
-		ranking := r.calculateRanking(&prompts[i], originalInput)
+		ranking := r.calculateRanking(ctx, &prompts[i], originalInput)
 		rankings = append(rankings, ranking)
 	}
 
@@ -48,7 +53,7 @@ func (r *Ranker) RankPrompts(ctx context.Context, prompts []models.Prompt, origi
 }
 
 // calculateRanking calculates ranking scores for a prompt
-func (r *Ranker) calculateRanking(prompt *models.Prompt, originalInput string) models.PromptRanking {
+func (r *Ranker) calculateRanking(ctx context.Context, prompt *models.Prompt, originalInput string) models.PromptRanking {
 	// Temperature score (0.7 is optimal)
 	tempScore := 1.0 - math.Abs(prompt.Temperature-0.7)/0.7
 
@@ -61,8 +66,8 @@ func (r *Ranker) calculateRanking(prompt *models.Prompt, originalInput string) m
 		tokenScore = 2000.0 / float64(contentLength)
 	}
 
-	// Context score (similarity to input)
-	contextScore := calculateSimilarity(prompt.Content, originalInput)
+	// Context score (semantic similarity to input)
+	contextScore := r.calculateSimilarity(ctx, prompt.Content, originalInput)
 
 	// Historical score (placeholder for now)
 	historicalScore := 0.5
@@ -85,21 +90,63 @@ func (r *Ranker) calculateRanking(prompt *models.Prompt, originalInput string) m
 	}
 }
 
-// calculateSimilarity calculates basic text similarity
-func calculateSimilarity(text1, text2 string) float64 {
-	// Simple length-based similarity for now
-	// Can be enhanced with proper NLP techniques
-	len1 := float64(len(text1))
-	len2 := float64(len(text2))
+// calculateSimilarity computes cosine similarity between the embeddings of two
+// texts. It falls back to 0 when embeddings cannot be generated.
+func (r *Ranker) calculateSimilarity(ctx context.Context, text1, text2 string) float64 {
+	// Get an embedding-capable provider. Prefer OpenAI for consistency but fall
+	// back to the first available provider that supports embeddings.
+	provider, err := r.registry.Get(providers.ProviderOpenAI)
+	if err != nil || !provider.IsAvailable() || !provider.SupportsEmbeddings() {
+		// Fallback
+		capable := r.registry.ListEmbeddingCapableProviders()
+		if len(capable) == 0 {
+			r.logger.Warn("No embedding-capable provider available – reverting to zero similarity")
+			return 0
+		}
+		provider, _ = r.registry.Get(capable[0])
+	}
 
-	if len1 == 0 || len2 == 0 {
+	emb1, err1 := provider.GetEmbedding(ctx, text1, r.registry)
+	if err1 != nil {
+		r.logger.WithError(err1).Warn("Failed to create embedding for prompt content")
 		return 0
 	}
 
-	ratio := len1 / len2
-	if ratio > 1 {
-		ratio = 1 / ratio
+	emb2, err2 := provider.GetEmbedding(ctx, text2, r.registry)
+	if err2 != nil {
+		r.logger.WithError(err2).Warn("Failed to create embedding for original input")
+		return 0
 	}
 
-	return ratio
+	sim := cosineSimilarity(emb1, emb2)
+
+	// Map cosine similarity (-1 … 1) to [0,1] for scoring consistency.
+	return (sim + 1) / 2
+}
+
+// cosineSimilarity returns the cosine similarity between two float32 vectors.
+func cosineSimilarity(a, b []float32) float64 {
+	if len(a) == 0 || len(b) == 0 {
+		return 0
+	}
+
+	n := len(a)
+	if len(b) < n {
+		n = len(b)
+	}
+
+	var dot, normA, normB float64
+	for i := 0; i < n; i++ {
+		va := float64(a[i])
+		vb := float64(b[i])
+		dot += va * vb
+		normA += va * va
+		normB += vb * vb
+	}
+
+	if normA == 0 || normB == 0 {
+		return 0
+	}
+
+	return dot / (math.Sqrt(normA) * math.Sqrt(normB))
 }
