@@ -3,6 +3,9 @@ package ranking
 import (
 	"context"
 	"math"
+	"sort"
+
+	"github.com/spf13/viper"
 
 	log "github.com/jonwraymond/prompt-alchemy/internal/log"
 	"github.com/jonwraymond/prompt-alchemy/internal/storage"
@@ -16,16 +19,44 @@ type Ranker struct {
 	storage  *storage.Storage
 	registry *providers.Registry
 	logger   *logrus.Logger
+
+	// configurable weights (must sum ~1.0; will be normalised)
+	tempWeight       float64
+	tokenWeight      float64
+	contextWeight    float64
+	historicalWeight float64
 }
 
 // NewRanker creates a new ranker instance
 // registry is required so we can obtain an embedding-capable provider for
 // semantic similarity calculations.
 func NewRanker(storage *storage.Storage, registry *providers.Registry, logger *logrus.Logger) *Ranker {
+	// Load weights from config / env with sane defaults.
+	viper.SetDefault("ranking.weights.temperature", 0.2)
+	viper.SetDefault("ranking.weights.token", 0.2)
+	viper.SetDefault("ranking.weights.context", 0.4)
+	viper.SetDefault("ranking.weights.historical", 0.2)
+
+	weights := []float64{
+		viper.GetFloat64("ranking.weights.temperature"),
+		viper.GetFloat64("ranking.weights.token"),
+		viper.GetFloat64("ranking.weights.context"),
+		viper.GetFloat64("ranking.weights.historical"),
+	}
+	// Normalise to sum to 1 for safety
+	var sum float64
+	for _, w := range weights { sum += w }
+	if sum == 0 {
+		sum = 1
+	}
 	return &Ranker{
-		storage:  storage,
-		registry: registry,
-		logger:   log.GetLogger(),
+		storage:          storage,
+		registry:         registry,
+		logger:           log.GetLogger(),
+		tempWeight:       weights[0] / sum,
+		tokenWeight:      weights[1] / sum,
+		contextWeight:    weights[2] / sum,
+		historicalWeight: weights[3] / sum,
 	}
 }
 
@@ -39,14 +70,10 @@ func (r *Ranker) RankPrompts(ctx context.Context, prompts []models.Prompt, origi
 		rankings = append(rankings, ranking)
 	}
 
-	// Sort by score (highest first)
-	for i := 0; i < len(rankings)-1; i++ {
-		for j := i + 1; j < len(rankings); j++ {
-			if rankings[j].Score > rankings[i].Score {
-				rankings[i], rankings[j] = rankings[j], rankings[i]
-			}
-		}
-	}
+	// Sort by score (highest first) using efficient O(n log n) sort
+	sort.Slice(rankings, func(i, j int) bool {
+		return rankings[i].Score > rankings[j].Score
+	})
 
 	r.logger.Info("Finished ranking prompts")
 	return rankings, nil
@@ -72,13 +99,21 @@ func (r *Ranker) calculateRanking(ctx context.Context, prompt *models.Prompt, or
 	// Historical score (placeholder for now)
 	historicalScore := 0.5
 
-	// Calculate weighted total score
-	totalScore := (tempScore * 0.2) + (tokenScore * 0.2) +
-		(contextScore * 0.4) + (historicalScore * 0.2)
+	// Calculate weighted total score using configurable weights
+	totalScore := (tempScore * r.tempWeight) + (tokenScore * r.tokenWeight) +
+		(contextScore * r.contextWeight) + (historicalScore * r.historicalWeight)
 
 	r.logger.WithFields(logrus.Fields{
-		"prompt_id": prompt.ID,
-		"score":     totalScore,
+		"prompt_id":        prompt.ID,
+		"score":            totalScore,
+		"temp_score":       tempScore,
+		"token_score":      tokenScore,
+		"context_score":    contextScore,
+		"historical_score": historicalScore,
+		"w_temp":           r.tempWeight,
+		"w_token":          r.tokenWeight,
+		"w_context":        r.contextWeight,
+		"w_hist":           r.historicalWeight,
 	}).Debug("Calculated prompt ranking")
 	return models.PromptRanking{
 		Prompt:           prompt,
