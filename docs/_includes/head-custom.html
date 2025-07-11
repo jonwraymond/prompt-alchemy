@@ -1,9 +1,29 @@
 <!-- start custom head snippets, you can add custom favicons, fonts, analytics etc. here -->
 
-<!-- You can add a favicon like this:
-<link rel="shortcut icon" type="image/x-icon" href="{{ '/favicon.ico' | relative_url }}">
--->
+<!-- Preload important fonts for better performance -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-<!-- Google Analytics can be added here if needed -->
+<!-- Theme color for mobile browsers -->
+<meta name="theme-color" content="#C9A96E">
+
+<!-- Additional meta tags for the alchemical theme -->
+<meta name="keywords" content="prompt alchemy, linguistic transformation, golden prompts, alchemical process">
+<meta name="author" content="Prompt Alchemy">
+
+<!-- Favicon - you can add a favicon.ico file to the docs directory -->
+<link rel="shortcut icon" type="image/x-icon" href="{{ '/favicon.ico' | relative_url }}">
+
+<!-- Custom CSS for print media -->
+<style>
+  @media print {
+    .no-print { display: none !important; }
+  }
+</style>
+
+<!-- Smooth scroll behavior -->
+<style>
+  html { scroll-behavior: smooth; }
+</style>
 
 <!-- end custom head snippets -->
