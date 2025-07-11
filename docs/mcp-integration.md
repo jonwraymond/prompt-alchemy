@@ -81,222 +81,300 @@ External programs that expose three main capabilities:
 - **Resources**: Data sources that LLMs can access (similar to REST API endpoints)
 - **Prompts**: Pre-defined templates for optimal tool/resource usage
 
-## Prompt Alchemy MCP Server Implementation
+## Creating a Prompt Alchemy MCP Server
 
-Prompt Alchemy includes a built-in MCP server that exposes 17 tools for AI agents to interact with the system. The server uses the JSON-RPC 2.0 protocol over stdio transport.
+### Python Implementation
 
-### Starting the MCP Server
+```python
+import asyncio
+import json
+from typing import List, Dict, Any
+import mcp.types as types
+from mcp.server import Server
+from mcp.server.stdio import stdio_server
 
-```bash
-# Start the MCP server
-prompt-alchemy serve
-```
+# Initialize the MCP server
+app = Server("prompt-alchemy-server")
 
-The server listens on stdin/stdout for JSON-RPC messages from MCP clients.
+@app.list_tools()
+async def list_tools() -> List[types.Tool]:
+    """List available Prompt Alchemy tools."""
+    return [
+        types.Tool(
+            name="generate_prompt",
+            description="Generate a multi-phase prompt using Prompt Alchemy",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "prima_materia": {"type": "string", "description": "The initial raw material for the prompt"},
+                    "provider": {"type": "string", "description": "LLM provider (openai, anthropic, google, openrouter, ollama)"},
+                    "persona": {"type": "string", "description": "Persona to use (code, creative, analytical)"},
+                    "temperature": {"type": "number", "description": "Temperature for generation (0.0-1.0)"},
+                    "max_tokens": {"type": "integer", "description": "Maximum tokens for generation"}
+                },
+                "required": ["prima_materia"]
+            }
+        ),
+        types.Tool(
+            name="search_prompts",
+            description="Search existing prompts in the database",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "Search query"},
+                    "semantic": {"type": "boolean", "description": "Use semantic search"},
+                    "limit": {"type": "integer", "description": "Maximum results to return"}
+                },
+                "required": ["query"]
+            }
+        ),
+        types.Tool(
+            name="optimize_prompt",
+            description="Optimize an existing prompt using meta-prompting",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "prompt_id": {"type": "string", "description": "ID of prompt to optimize"},
+                    "criteria": {"type": "string", "description": "Optimization criteria"},
+                    "target_model": {"type": "string", "description": "Target model for optimization"}
+                },
+                "required": ["prompt_id"]
+            }
+        )
+    ]
 
-### Available Tools
+@app.list_resources()
+async def list_resources() -> List[types.Resource]:
+    """List available Prompt Alchemy resources."""
+    return [
+        types.Resource(
+            uri="prompt-alchemy://prompts",
+            name="Prompt Database",
+            description="Access to stored prompts and their metadata"
+        ),
+        types.Resource(
+            uri="prompt-alchemy://metrics",
+            name="Usage Metrics",
+            description="Analytics and performance data"
+        ),
+        types.Resource(
+            uri="prompt-alchemy://providers",
+            name="Provider Status",
+            description="Status and configuration of LLM providers"
+        )
+    ]
 
-The MCP server provides 17 comprehensive tools:
+@app.call_tool()
+async def call_tool(name: str, arguments: Dict[str, Any]) -> List[types.TextContent]:
+    """Handle tool calls from MCP clients."""
+    if name == "generate_prompt":
+        # Execute prompt generation
+        result = await generate_prompt_handler(arguments)
+        return [types.TextContent(type="text", text=json.dumps(result, indent=2))]
+    
+    elif name == "search_prompts":
+        # Execute prompt search
+        result = await search_prompts_handler(arguments)
+        return [types.TextContent(type="text", text=json.dumps(result, indent=2))]
+    
+    elif name == "optimize_prompt":
+        # Execute prompt optimization
+        result = await optimize_prompt_handler(arguments)
+        return [types.TextContent(type="text", text=json.dumps(result, indent=2))]
+    
+    else:
+        raise ValueError(f"Unknown tool: {name}")
 
-#### 1. **generate_prompts**
-Generate AI prompts using a phased approach with multiple providers and personas.
-
-**Parameters:**
-- `input` (string, required): The input text or idea to generate prompts for
-- `phases` (string): Comma-separated phases to use (default: "idea,human,precision")
-- `count` (integer): Number of prompt variants to generate (default: 3)
-- `persona` (string): AI persona to use (code, writing, analysis, generic) (default: "code")
-- `provider` (string): Override provider for all phases
-- `temperature` (number): Temperature for generation 0.0-1.0 (default: 0.7)
-- `max_tokens` (integer): Maximum tokens for generation (default: 2000)
-- `tags` (string): Comma-separated tags for organization
-- `target_model` (string): Target model family for optimization
-- `save` (boolean): Save generated prompts to database (default: true)
-- `output_format` (string): Output format - console, json, markdown (default: "console")
-
-#### 2. **batch_generate_prompts**
-Generate multiple prompts efficiently from various input formats.
-
-**Parameters:**
-- `inputs` (array, required): Array of input objects for batch processing
-- `workers` (integer): Number of concurrent workers 1-20 (default: 3)
-- `skip_errors` (boolean): Continue processing despite failures (default: false)
-- `timeout` (integer): Per-job timeout in seconds (default: 300)
-- `output_format` (string): Output format - json, summary (default: "json")
-
-#### 3. **search_prompts**
-Search existing prompts using text or semantic search.
-
-**Parameters:**
-- `query` (string): Search query (optional for filtered searches)
-- `semantic` (boolean): Use semantic search with embeddings (default: false)
-- `similarity` (number): Minimum similarity threshold 0.0-1.0 (default: 0.5)
-- `phase` (string): Filter by phase (idea, human, precision)
-- `provider` (string): Filter by provider
-- `tags` (string): Filter by tags (comma-separated)
-- `since` (string): Filter by creation date (YYYY-MM-DD)
-- `limit` (integer): Maximum number of results (default: 10)
-- `output_format` (string): Output format - table, json, markdown (default: "table")
-
-#### 4. **get_prompt_by_id**
-Get detailed information about a specific prompt.
-
-**Parameters:**
-- `prompt_id` (string, required): UUID of the prompt to retrieve
-- `include_metrics` (boolean): Include performance metrics (default: true)
-- `include_context` (boolean): Include context information (default: true)
-
-#### 5. **optimize_prompt**
-Optimize prompts using AI-powered meta-prompting and self-improvement.
-
-**Parameters:**
-- `prompt` (string, required): Prompt to optimize
-- `task` (string, required): Task description for optimization context
-- `persona` (string): AI persona to use (default: "code")
-- `target_model` (string): Target model family for optimization
-- `judge_provider` (string): Provider to use for evaluation (default: "openai")
-- `max_iterations` (integer): Maximum optimization iterations (default: 3)
-- `target_score` (number): Target quality score 0.0-1.0 (default: 0.8)
-- `save` (boolean): Save optimization results (default: true)
-- `output_format` (string): Output format - console, json, markdown (default: "console")
-
-#### 6. **update_prompt**
-Update an existing prompt's content, tags, or parameters.
-
-**Parameters:**
-- `prompt_id` (string, required): UUID of the prompt to update
-- `content` (string): New content for the prompt
-- `tags` (string): New tags (comma-separated)
-- `temperature` (number): New temperature 0.0-1.0
-- `max_tokens` (integer): New max tokens
-
-#### 7. **delete_prompt**
-Delete an existing prompt and its associated data.
-
-**Parameters:**
-- `prompt_id` (string, required): UUID of the prompt to delete
-
-#### 8. **track_prompt_relationship**
-Track relationships between prompts for enhanced discovery.
-
-**Parameters:**
-- `source_prompt_id` (string, required): UUID of the source prompt
-- `target_prompt_id` (string, required): UUID of the target prompt
-- `relationship_type` (string, required): Type of relationship (derived_from, similar_to, inspired_by, merged_with)
-- `strength` (number): Relationship strength 0.0-1.0 (default: 0.5)
-- `context` (string): Context explaining the relationship
-
-#### 9. **get_metrics**
-Get prompt performance metrics and analytics.
-
-**Parameters:**
-- `phase` (string): Filter by phase
-- `provider` (string): Filter by provider
-- `since` (string): Filter by creation date (YYYY-MM-DD)
-- `limit` (integer): Maximum number of prompts to analyze (default: 100)
-- `report` (string): Generate report (daily, weekly, monthly)
-- `output_format` (string): Output format - table, json, markdown (default: "table")
-- `export` (string): Export to file (csv, json, excel)
-
-#### 10. **get_database_stats**
-Get comprehensive database statistics including lifecycle information.
-
-**Parameters:**
-- `include_relationships` (boolean): Include prompt relationship statistics (default: true)
-- `include_enhancements` (boolean): Include enhancement history statistics (default: true)
-- `include_usage` (boolean): Include usage analytics (default: true)
-
-#### 11. **run_lifecycle_maintenance**
-Run database lifecycle maintenance including relevance scoring and cleanup.
-
-**Parameters:**
-- `update_relevance` (boolean): Update relevance scores with decay (default: true)
-- `cleanup_old` (boolean): Remove old and low-relevance prompts (default: true)
-- `dry_run` (boolean): Show what would be cleaned up without doing it (default: false)
-
-#### 12. **get_providers**
-List available providers and their capabilities.
-
-**Parameters:** None
-
-#### 13. **test_providers**
-Test provider connectivity and functionality.
-
-**Parameters:**
-- `providers` (array): Specific providers to test (empty for all)
-- `test_generation` (boolean): Test generation capabilities (default: true)
-- `test_embeddings` (boolean): Test embedding capabilities (default: true)
-- `output_format` (string): Output format - json, table (default: "table")
-
-#### 14. **get_config**
-View current configuration settings and system status.
-
-**Parameters:**
-- `show_providers` (boolean): Include provider configurations (default: true)
-- `show_phases` (boolean): Include phase assignments (default: true)
-- `show_generation` (boolean): Include generation settings (default: true)
-
-#### 15. **validate_config**
-Validate configuration settings and provide optimization suggestions.
-
-**Parameters:**
-- `categories` (array): Validation categories to check (default: ["all"])
-- `fix` (boolean): Apply automatic fixes where possible (default: false)
-- `output_format` (string): Output format - json, report (default: "report")
-
-#### 16. **get_version**
-Get version and build information.
-
-**Parameters:**
-- `detailed` (boolean): Include detailed build information (default: false)
-
-### Protocol Details
-
-#### Request Format
-```json
-{
-  "jsonrpc": "2.0",
-  "id": "unique-request-id",
-  "method": "tools/call",
-  "params": {
-    "name": "generate_prompts",
-    "arguments": {
-      "input": "Create a REST API for user management",
-      "phases": "idea,human,precision",
-      "count": 3
+async def generate_prompt_handler(args: Dict[str, Any]) -> Dict[str, Any]:
+    """Handle prompt generation requests."""
+    # This would integrate with the actual Prompt Alchemy engine
+    return {
+        "status": "success",
+        "phases": {
+            "prima-materia": "Generated prima materia phase prompt",
+            "solutio": "Generated solutio phase prompt", 
+            "coagulatio": "Generated coagulatio phase prompt"
+        },
+        "best_prompt": "Final optimized prompt",
+        "ranking_score": 0.95
     }
-  }
-}
+
+async def search_prompts_handler(args: Dict[str, Any]) -> Dict[str, Any]:
+    """Handle prompt search requests."""
+    # This would integrate with the database search functionality
+    return {
+        "status": "success",
+        "results": [
+            {
+                "id": "prompt_123",
+                "content": "Example prompt content",
+                "score": 0.92,
+                "created_at": "2024-01-01T00:00:00Z"
+            }
+        ]
+    }
+
+async def optimize_prompt_handler(args: Dict[str, Any]) -> Dict[str, Any]:
+    """Handle prompt optimization requests."""
+    # This would integrate with the optimization engine
+    return {
+        "status": "success",
+        "original_prompt": "Original prompt content",
+        "optimized_prompt": "Optimized prompt content",
+        "improvement_score": 0.15
+    }
+
+async def main():
+    """Main MCP server entry point."""
+    async with stdio_server() as streams:
+        await app.run(
+            streams[0],
+            streams[1],
+            app.create_initialization_options()
+        )
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
-#### Response Format
-```json
-{
-  "jsonrpc": "2.0",
-  "id": "unique-request-id",
-  "result": {
-    "content": [
+### TypeScript Implementation
+
+```typescript
+import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+  ListResourcesRequestSchema,
+} from "@modelcontextprotocol/sdk/types.js";
+
+const server = new Server({
+  name: "prompt-alchemy-server",
+  version: "1.0.0"
+}, {
+  capabilities: {
+    tools: {},
+    resources: {}
+  }
+});
+
+// List available tools
+server.setRequestHandler(ListToolsRequestSchema, async () => {
+  return {
+    tools: [
       {
-        "type": "text",
-        "text": "Generated 3 prompts using persona 'code'..."
+        name: "generate_prompt",
+        description: "Generate a multi-phase prompt using Prompt Alchemy",
+        inputSchema: {
+          type: "object",
+          properties: {
+            prima_materia: { type: "string", description: "The initial raw material for the prompt" },
+            provider: { type: "string", description: "LLM provider" },
+            persona: { type: "string", description: "Persona to use" }
+          },
+          required: ["prima_materia"]
+        }
+      },
+      {
+        name: "search_prompts",
+        description: "Search existing prompts in the database",
+        inputSchema: {
+          type: "object",
+          properties: {
+            query: { type: "string", description: "Search query" },
+            semantic: { type: "boolean", description: "Use semantic search" }
+          },
+          required: ["query"]
+        }
       }
-    ],
-    "isError": false
-  }
-}
-```
+    ]
+  };
+});
 
-#### Error Response
-```json
-{
-  "jsonrpc": "2.0",
-  "id": "unique-request-id",
-  "error": {
-    "code": -32602,
-    "message": "Invalid params",
-    "data": "input is required"
+// List available resources
+server.setRequestHandler(ListResourcesRequestSchema, async () => {
+  return {
+    resources: [
+      {
+        uri: "prompt-alchemy://prompts",
+        name: "Prompt Database",
+        description: "Access to stored prompts and their metadata"
+      },
+      {
+        uri: "prompt-alchemy://metrics",
+        name: "Usage Metrics", 
+        description: "Analytics and performance data"
+      }
+    ]
+  };
+});
+
+// Handle tool calls
+server.setRequestHandler(CallToolRequestSchema, async (request) => {
+  const { name, arguments: args } = request.params;
+  
+  switch (name) {
+    case "generate_prompt":
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(await generatePrompt(args), null, 2)
+          }
+        ]
+      };
+    
+    case "search_prompts":
+      return {
+        content: [
+          {
+            type: "text", 
+            text: JSON.stringify(await searchPrompts(args), null, 2)
+          }
+        ]
+      };
+    
+    default:
+      throw new Error(`Unknown tool: ${name}`);
   }
+});
+
+async function generatePrompt(args: any) {
+  // Implementation would integrate with Prompt Alchemy
+  return {
+    status: "success",
+    phases: {
+      "prima-materia": "Generated prima materia phase prompt",
+      solutio: "Generated solutio phase prompt",
+      coagulatio: "Generated coagulatio phase prompt"
+    },
+    best_prompt: "Final optimized prompt",
+    ranking_score: 0.95
+  };
 }
+
+async function searchPrompts(args: any) {
+  // Implementation would integrate with database
+  return {
+    status: "success",
+    results: [
+      {
+        id: "prompt_123",
+        content: "Example prompt content",
+        score: 0.92,
+        created_at: new Date().toISOString()
+      }
+    ]
+  };
+}
+
+// Start the server
+async function main() {
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+}
+
+main().catch(console.error);
 ```
 
 ## Integration with AI Assistants
@@ -305,18 +383,16 @@ Get version and build information.
 
 1. **Install Claude Desktop**: Download from [claude.ai](https://claude.ai)
 
-2. **Configure MCP Server**: Edit Claude Desktop configuration file:
-   - On macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
-   - On Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+2. **Configure MCP Server**: Edit Claude Desktop configuration:
 
 ```json
 {
   "mcpServers": {
     "prompt-alchemy": {
-      "command": "prompt-alchemy",
-      "args": ["serve"],
+      "command": "python",
+      "args": ["path/to/prompt-alchemy-mcp-server.py"],
       "env": {
-        "PROMPT_ALCHEMY_DATA_DIR": "~/.prompt-alchemy"
+        "PROMPT_ALCHEMY_CONFIG": "~/.prompt-alchemy/config.yaml"
       }
     }
   }
@@ -324,12 +400,10 @@ Get version and build information.
 ```
 
 3. **Usage**: Once configured, Claude Desktop will automatically:
-   - Connect to the Prompt Alchemy MCP server
-   - Load all 17 available tools
+   - Load available tools and resources
    - Allow you to generate prompts through natural language
    - Search existing prompts semantically
    - Optimize prompts based on criteria
-   - Access database statistics and maintenance functions
 
 ### Claude Code Integration
 
@@ -339,36 +413,29 @@ Get version and build information.
 
 ```bash
 # Add MCP server to Claude Code
-claude config set mcp.servers.prompt-alchemy.command "prompt-alchemy"
-claude config set mcp.servers.prompt-alchemy.args '["serve"]'
-claude config set mcp.servers.prompt-alchemy.env.PROMPT_ALCHEMY_DATA_DIR "~/.prompt-alchemy"
+claude config set mcp.servers.prompt-alchemy.command "python"
+claude config set mcp.servers.prompt-alchemy.args '["path/to/prompt-alchemy-mcp-server.py"]'
 ```
 
 3. **Usage**: Use Claude Code with MCP integration:
    - Generate prompts directly in terminal
    - Search and optimize prompts in context
    - Access prompt analytics and metrics
-   - Run batch operations
-   - Manage database lifecycle
-   - Test provider connectivity
 
 ### IDE Integration
 
 #### VS Code
 
-1. **Install MCP Extension**: Install an MCP-compatible extension from the marketplace
+1. **Install MCP Extension**: Install an MCP-compatible extension
 
-2. **Configure Server**: Add to VS Code settings.json:
+2. **Configure Server**: Add to VS Code settings:
 
 ```json
 {
   "mcp.servers": {
     "prompt-alchemy": {
-      "command": "prompt-alchemy",
-      "args": ["serve"],
-      "env": {
-        "PROMPT_ALCHEMY_DATA_DIR": "~/.prompt-alchemy"
-      }
+      "command": "python",
+      "args": ["path/to/prompt-alchemy-mcp-server.py"]
     }
   }
 }
@@ -385,11 +452,8 @@ claude config set mcp.servers.prompt-alchemy.env.PROMPT_ALCHEMY_DATA_DIR "~/.pro
   "mcp": {
     "servers": {
       "prompt-alchemy": {
-        "command": "prompt-alchemy",
-        "args": ["serve"],
-        "env": {
-          "PROMPT_ALCHEMY_DATA_DIR": "~/.prompt-alchemy"
-        }
+        "command": "python",
+        "args": ["path/to/prompt-alchemy-mcp-server.py"]
       }
     }
   }
@@ -407,11 +471,8 @@ claude config set mcp.servers.prompt-alchemy.env.PROMPT_ALCHEMY_DATA_DIR "~/.pro
   "assistant": {
     "mcp_servers": {
       "prompt-alchemy": {
-        "command": "prompt-alchemy",
-        "args": ["serve"],
-        "env": {
-          "PROMPT_ALCHEMY_DATA_DIR": "~/.prompt-alchemy"
-        }
+        "command": "python",
+        "args": ["path/to/prompt-alchemy-mcp-server.py"]
       }
     }
   }
@@ -420,107 +481,67 @@ claude config set mcp.servers.prompt-alchemy.env.PROMPT_ALCHEMY_DATA_DIR "~/.pro
 
 ### Other AI Assistants
 
-#### Custom MCP Clients
+#### Gemini Integration
 
-For AI assistants that don't natively support MCP, you can create a client that connects to the Prompt Alchemy MCP server:
+While Gemini doesn't natively support MCP, you can create a bridge:
 
-```javascript
-// Example Node.js MCP client
-const { spawn } = require('child_process');
-const readline = require('readline');
+1. **Create HTTP Bridge**: Convert MCP server to HTTP API
 
-class PromptAlchemyClient {
-  constructor() {
-    this.server = spawn('prompt-alchemy', ['serve']);
-    this.rl = readline.createInterface({
-      input: this.server.stdout,
-      output: this.server.stdin
-    });
-    this.requestId = 0;
-  }
+```python
+from flask import Flask, request, jsonify
+import asyncio
 
-  async callTool(toolName, args) {
-    const request = {
-      jsonrpc: "2.0",
-      id: ++this.requestId,
-      method: "tools/call",
-      params: {
-        name: toolName,
-        arguments: args
-      }
-    };
-    
-    this.server.stdin.write(JSON.stringify(request) + '\n');
-    
-    return new Promise((resolve, reject) => {
-      this.rl.once('line', (line) => {
-        const response = JSON.parse(line);
-        if (response.error) {
-          reject(new Error(response.error.message));
-        } else {
-          resolve(response.result);
-        }
-      });
-    });
-  }
+app = Flask(__name__)
 
-  async generatePrompts(input, options = {}) {
-    return this.callTool('generate_prompts', {
-      input,
-      ...options
-    });
-  }
+@app.route('/generate', methods=['POST'])
+async def generate_prompt():
+    data = request.json
+    # Bridge to MCP server
+    result = await call_mcp_tool("generate_prompt", data)
+    return jsonify(result)
 
-  async searchPrompts(query, options = {}) {
-    return this.callTool('search_prompts', {
-      query,
-      ...options
-    });
-  }
-}
-
-// Usage
-const client = new PromptAlchemyClient();
-const result = await client.generatePrompts('Create a REST API');
-console.log(result);
+@app.route('/search', methods=['POST'])
+async def search_prompts():
+    data = request.json
+    result = await call_mcp_tool("search_prompts", data)
+    return jsonify(result)
 ```
 
-#### HTTP Bridge for Non-MCP Systems
+2. **Gemini Integration**: Use the HTTP API with Gemini's function calling
 
-For systems that can't directly use stdio communication, create an HTTP bridge:
+#### ChatGPT Integration
 
-```javascript
-// Express.js HTTP bridge server
-const express = require('express');
-const { PromptAlchemyClient } = require('./client');
+Similar to Gemini, create custom GPT actions:
 
-const app = express();
-const client = new PromptAlchemyClient();
-
-app.use(express.json());
-
-// Expose MCP tools as HTTP endpoints
-app.post('/api/generate', async (req, res) => {
-  try {
-    const result = await client.generatePrompts(req.body.input, req.body.options);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+```json
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Prompt Alchemy API",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/generate": {
+      "post": {
+        "summary": "Generate prompt",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "prima_materia": {"type": "string"},
+                  "provider": {"type": "string"}
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   }
-});
-
-app.post('/api/search', async (req, res) => {
-  try {
-    const result = await client.searchPrompts(req.body.query, req.body.options);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.listen(3000, () => {
-  console.log('HTTP Bridge running on port 3000');
-});
+}
 ```
 
 ## Transport Options
@@ -563,94 +584,44 @@ app.listen(3000, () => {
 ### Common Issues
 
 1. **Connection Failures**
-   - Ensure `prompt-alchemy` is in your PATH
-   - Check that the binary has execute permissions
-   - Verify database initialization: `prompt-alchemy migrate`
-   - Check log output: `prompt-alchemy --log-level debug serve`
+   - Check transport configuration
+   - Verify server is running
+   - Check firewall settings
 
 2. **Tool Execution Errors**
-   - Check provider configuration: `prompt-alchemy providers`
-   - Validate API keys are set correctly
-   - Review error messages in MCP client logs
-   - Ensure database is not locked by another process
+   - Validate input schemas
+   - Check error logs
+   - Verify dependencies
 
 3. **Performance Issues**
-   - Run database maintenance: Use `run_lifecycle_maintenance` tool
-   - Check database size and consider cleanup
-   - Monitor provider response times with `test_providers` tool
-   - Review embedding coverage with `get_database_stats` tool
+   - Monitor resource usage
+   - Optimize database queries
+   - Consider caching strategies
 
 ### Debug Mode
 
-Enable debug logging when starting the server:
+Enable debug logging:
 
-```bash
-prompt-alchemy --log-level debug serve
+```python
+import logging
+logging.basicConfig(level=logging.DEBUG)
 ```
 
-Or set environment variable:
-```bash
-export PROMPT_ALCHEMY_LOG_LEVEL=debug
-prompt-alchemy serve
+### Health Checks
+
+Implement health check endpoints:
+
+```python
+@app.list_resources()
+async def health_check():
+    return [
+        types.Resource(
+            uri="prompt-alchemy://health",
+            name="Health Check",
+            description="Server health status"
+        )
+    ]
 ```
-
-### Testing the MCP Server
-
-Test the server directly using JSON-RPC:
-
-```bash
-# Initialize the server
-echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}' | prompt-alchemy serve
-
-# List available tools
-echo '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' | prompt-alchemy serve
-
-# Call a tool
-echo '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"get_version","arguments":{"detailed":true}}}' | prompt-alchemy serve
-```
-
-### Provider Issues
-
-If providers are not working:
-
-1. Test provider connectivity:
-   ```json
-   {
-     "jsonrpc": "2.0",
-     "id": 1,
-     "method": "tools/call",
-     "params": {
-       "name": "test_providers",
-       "arguments": {}
-     }
-   }
-   ```
-
-2. Check configuration:
-   ```json
-   {
-     "jsonrpc": "2.0",
-     "id": 2,
-     "method": "tools/call",
-     "params": {
-       "name": "get_config",
-       "arguments": {}
-     }
-   }
-   ```
-
-3. Validate configuration:
-   ```json
-   {
-     "jsonrpc": "2.0",
-     "id": 3,
-     "method": "tools/call",
-     "params": {
-       "name": "validate_config",
-       "arguments": {"fix": true}
-     }
-   }
-   ```
 
 ## Future Enhancements
 

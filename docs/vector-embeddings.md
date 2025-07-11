@@ -296,8 +296,8 @@ embeddings:
   # Provider preference order
   provider_priority:
     - "openai"
-    - "claude"     # Will use OpenAI for embeddings
-    - "gemini"     # Will use OpenAI for embeddings
+    - "anthropic"  # Will use OpenAI for embeddings
+    - "google"     # Will use OpenAI for embeddings
   
   # Migration settings
   auto_migrate_legacy: true
@@ -337,7 +337,7 @@ PROMPT_ALCHEMY_DATABASE_ENABLE_VECTOR_SEARCH=true
 prompt-alchemy search --semantic "user authentication"
 
 # Semantic search with filters
-prompt-alchemy search --semantic --phase human --provider claude "natural language processing"
+prompt-alchemy search --semantic --phase solutio --provider anthropic "natural language processing"
 
 # Semantic search with custom threshold
 prompt-alchemy search --semantic --similarity 0.8 "API design patterns"
@@ -355,7 +355,7 @@ criteria := SemanticSearchCriteria{
     Limit:         10,
     MinSimilarity: 0.7,
     Phase:         "human",
-    Provider:      "claude",
+    Provider:      "anthropic",
 }
 
 // Perform search

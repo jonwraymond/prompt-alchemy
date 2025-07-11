@@ -31,41 +31,41 @@ func NewEngine(registry *providers.Registry, logger *logrus.Logger) *Engine {
 	}
 }
 
-// initializePhaseTemplates returns the default templates for each phase
+// initializePhaseTemplates returns the default templates for each alchemical phase
 func initializePhaseTemplates() map[models.Phase]string {
 	return map[models.Phase]string{
-		models.PhaseIdea: `You are an expert prompt engineer. Create a comprehensive prompt that generates {{TYPE}} for {{AUDIENCE}}, using {{TONE}}, focusing on {{THEME}}.
+		models.PhasePrimaMaterial: `You are an alchemical prompt engineer, working with the Prima Materia - the raw, unformed potential. Extract and shape the essential elements from the user's vision into a comprehensive prompt that generates {{TYPE}} for {{AUDIENCE}}, using {{TONE}}, focusing on {{THEME}}.
 
 Requirements:
-- Be specific and detailed
-- Include clear instructions
-- Define expected output format
-- Consider edge cases
+- Extract the pure essence of the request
+- Shape raw ideas into structured form
+- Define the vessel (output format) clearly
+- Consider all elemental aspects
 
-User Input: {{INPUT}}`,
+Raw Material: {{INPUT}}`,
 
-		models.PhaseHuman: `You are a natural language expert. Take this prompt and rewrite it to feel more natural, specific, and emotionally resonant. Add a first-person voice where appropriate.
+		models.PhaseSolutio: `You are a linguistic alchemist performing Solutio - the dissolution phase. Take this crystallized prompt and dissolve it into flowing, natural language that resonates with the soul. Transform rigid structure into fluid conversation.
 
-Original Prompt:
+Material to Dissolve:
 {{PROMPT}}
 
-Requirements:
-- Make it conversational and engaging
-- Add specific examples where helpful
-- Ensure clarity and flow
-- Maintain the original intent`,
+Transformation Requirements:
+- Dissolve formality into natural flow
+- Infuse with emotional resonance
+- Add the warmth of human connection
+- Preserve the essential truth while softening edges`,
 
-		models.PhasePrecision: `You are an optimization expert. Refine this prompt for maximum effectiveness based on recent best practices and output clarity.
+		models.PhaseCoagulatio: `You are a master alchemist performing Coagulatio - the final crystallization. Take this flowing prompt and crystallize it into its most potent, refined form. Remove all impurities to reveal the philosopher's stone of prompts.
 
-Current Prompt:
+Solution to Crystallize:
 {{PROMPT}}
 
-Requirements:
-- Optimize for clarity and precision
-- Remove redundancy
-- Enhance structure
-- Consider token efficiency
-- Add performance-oriented instructions`,
+Crystallization Requirements:
+- Distill to pure essence
+- Remove all redundant matter
+- Perfect the structural lattice
+- Optimize for maximum potency
+- Achieve the golden ratio of clarity to power`,
 	}
 }
 
@@ -307,15 +307,15 @@ func (e *Engine) generateSinglePrompt(ctx context.Context, phase models.Phase, p
 
 // buildSystemPrompt creates the system prompt for a phase
 func (e *Engine) buildSystemPrompt(phase models.Phase, opts GenerateOptions) string {
-	baseSystem := "You are an expert AI prompt engineer with deep understanding of language models and their capabilities."
+	baseSystem := "You are a master alchemist of language, transforming raw ideas into golden prompts through ancient processes."
 
 	switch phase {
-	case models.PhaseIdea:
-		return baseSystem + " Your task is to create comprehensive, well-structured prompts that clearly define the task and expected output."
-	case models.PhaseHuman:
-		return baseSystem + " Your task is to make prompts more natural, conversational, and emotionally engaging while maintaining clarity."
-	case models.PhasePrecision:
-		return baseSystem + " Your task is to optimize prompts for maximum effectiveness, clarity, and token efficiency."
+	case models.PhasePrimaMaterial:
+		return baseSystem + " In this Prima Materia phase, extract the pure essence from raw materials to create the foundation stone of comprehensive, well-structured prompts."
+	case models.PhaseSolutio:
+		return baseSystem + " In this Solutio phase, dissolve rigid structures into flowing, natural language that speaks to the human soul while maintaining clarity of purpose."
+	case models.PhaseCoagulatio:
+		return baseSystem + " In this Coagulatio phase, crystallize the dissolved essence into its most potent form - achieving maximum effectiveness through perfect refinement."
 	default:
 		return baseSystem
 	}

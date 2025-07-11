@@ -5,644 +5,684 @@ title: MCP Tools Reference
 
 # MCP Tools Reference
 
-Complete reference for all 17 MCP tools available in the Prompt Alchemy MCP server.
+This comprehensive reference covers all 17 MCP tools available in the Prompt Alchemy MCP server, providing detailed information about parameters, responses, and usage examples for AI assistant integration.
 
 ## Table of Contents
 
 1. [Overview](#overview)
-2. [Tool Reference](#tool-reference)
-   - [Generation Tools](#generation-tools)
-   - [Search & Retrieval Tools](#search--retrieval-tools)
-   - [Management Tools](#management-tools)
-   - [Analytics Tools](#analytics-tools)
-   - [System Tools](#system-tools)
-3. [Usage Examples](#usage-examples)
-4. [Error Handling](#error-handling)
-5. [Best Practices](#best-practices)
+2. [Core Generation Tools](#core-generation-tools)
+3. [Search & Discovery Tools](#search--discovery-tools)
+4. [Management Tools](#management-tools)
+5. [Analytics & Optimization Tools](#analytics--optimization-tools)
+6. [Configuration & System Tools](#configuration--system-tools)
+7. [Error Handling](#error-handling)
+8. [Best Practices](#best-practices)
 
 ## Overview
 
-The Prompt Alchemy MCP server provides 17 tools accessible via JSON-RPC 2.0 protocol over stdio. These tools enable AI agents to:
+The Prompt Alchemy MCP server provides **17 specialized tools** for AI assistants to interact with the prompt generation and management system. Each tool is designed for specific use cases in the alchemical prompt transformation process.
 
-- Generate and optimize prompts
-- Search and manage prompt databases
-- Track relationships and analytics
-- Manage system configuration
-- Test provider connectivity
-
-### Protocol Format
-
-All tool calls use the standard MCP protocol:
+### Connection Information
 
 ```json
 {
-  "jsonrpc": "2.0",
-  "id": "unique-request-id",
-  "method": "tools/call",
-  "params": {
-    "name": "tool_name",
-    "arguments": {
-      // tool-specific arguments
+  "name": "prompt-alchemy",
+  "command": "prompt-alchemy",
+  "args": ["serve"],
+  "description": "Prompt Alchemy MCP server with 17 tools for AI prompt generation and management"
+}
+```
+
+## Core Generation Tools
+
+### 1. generate_prompts
+
+Generate AI prompts using the three-phase alchemical approach with multiple providers and personas.
+
+#### Parameters
+
+```json
+{
+  "idea": {
+    "type": "string",
+    "description": "The raw material for alchemical transformation",
+    "required": true,
+    "example": "Create a REST API for user authentication"
+  },
+  "provider": {
+    "type": "string",
+    "description": "LLM provider to use for generation",
+    "required": false,
+    "enum": ["openai", "anthropic", "google", "openrouter", "ollama"],
+    "default": "openai"
+  },
+  "model": {
+    "type": "string",
+    "description": "Specific model to use",
+    "required": false,
+    "enum": ["o4-mini", "claude-3-5-sonnet-20241022", "gemini-2.5-flash", "openrouter/auto"],
+    "default": "claude-3-5-sonnet-20241022"
+  },
+  "phases": {
+    "type": "array",
+    "description": "Alchemical phases to execute",
+    "required": false,
+    "items": {
+      "type": "string",
+      "enum": ["prima-materia", "solutio", "coagulatio"]
+    },
+    "default": ["prima-materia", "solutio", "coagulatio"]
+  },
+  "count": {
+    "type": "integer",
+    "description": "Number of prompt variations to generate",
+    "required": false,
+    "minimum": 1,
+    "maximum": 10,
+    "default": 3
+  },
+  "persona": {
+    "type": "string",
+    "description": "Persona for specialized generation",
+    "required": false,
+    "enum": ["technical", "creative", "analytical", "conversational"]
+  },
+  "context": {
+    "type": "string",
+    "description": "Additional context for generation",
+    "required": false
+  }
+}
+```
+
+#### Response
+
+```json
+{
+  "prompts": {
+    "prima-materia": ["Raw essence prompt 1", "Raw essence prompt 2"],
+    "solutio": ["Dissolved natural prompt 1", "Dissolved natural prompt 2"],
+    "coagulatio": ["Crystallized precise prompt 1", "Crystallized precise prompt 2"]
+  },
+  "best_prompt": {
+    "content": "Final optimized prompt selected by ranking system",
+    "phase": "coagulatio",
+    "score": 0.95,
+    "criteria": {
+      "clarity": 0.94,
+      "precision": 0.96,
+      "completeness": 0.95
+    }
+  },
+  "metadata": {
+    "total_tokens": 1247,
+    "generation_time": 3.2,
+    "provider_distribution": {
+      "openai": 2,
+      "anthropic": 1
     }
   }
 }
 ```
 
-## Tool Reference
+### 2. batch_generate_prompts
 
-### Generation Tools
+Generate multiple prompts efficiently from various input formats including JSON, CSV, and text files.
 
-#### 1. generate_prompts
+#### Parameters
 
-Generate AI prompts using a phased approach with multiple providers and personas.
-
-**Arguments:**
-- `input` (string, required): The input text or idea to generate prompts for
-- `phases` (string): Comma-separated phases to use (default: "idea,human,precision")
-- `count` (integer): Number of prompt variants to generate (default: 3)
-- `persona` (string): AI persona to use - code, writing, analysis, generic (default: "code")
-- `provider` (string): Override provider for all phases
-- `temperature` (number): Temperature for generation 0.0-1.0 (default: 0.7)
-- `max_tokens` (integer): Maximum tokens for generation (default: 2000)
-- `tags` (string): Comma-separated tags for organization
-- `target_model` (string): Target model family for optimization
-- `save` (boolean): Save generated prompts to database (default: true)
-- `output_format` (string): Output format - console, json, markdown (default: "console")
-
-**Example:**
 ```json
 {
-  "name": "generate_prompts",
-  "arguments": {
-    "input": "Create a REST API for user management",
-    "phases": "idea,human,precision",
-    "count": 3,
-    "persona": "code",
-    "temperature": 0.7,
-    "tags": "api,backend"
-  }
-}
-```
-
-#### 2. batch_generate_prompts
-
-Generate multiple prompts efficiently from various input formats.
-
-**Arguments:**
-- `inputs` (array, required): Array of input objects for batch processing
-  - Each input object contains:
-    - `id` (string, required): Unique identifier
-    - `input` (string, required): The prompt text
-    - `phases` (string): Phases to use
-    - `count` (integer): Number of variants
-    - `persona` (string): AI persona
-    - `provider` (string): Override provider
-    - `temperature` (number): Generation temperature
-    - `max_tokens` (integer): Token limit
-    - `tags` (string): Comma-separated tags
-- `workers` (integer): Number of concurrent workers 1-20 (default: 3)
-- `skip_errors` (boolean): Continue processing despite failures (default: false)
-- `timeout` (integer): Per-job timeout in seconds (default: 300)
-- `output_format` (string): Output format - json, summary (default: "json")
-
-**Example:**
-```json
-{
-  "name": "batch_generate_prompts",
-  "arguments": {
-    "inputs": [
-      {
-        "id": "job1",
-        "input": "Create user authentication",
-        "persona": "code"
-      },
-      {
-        "id": "job2",
-        "input": "Write API documentation",
-        "persona": "writing"
+  "input_data": {
+    "type": "array",
+    "description": "Array of prompt generation requests",
+    "required": true,
+    "items": {
+      "type": "object",
+      "properties": {
+        "idea": {"type": "string"},
+        "provider": {"type": "string"},
+        "phases": {"type": "array"}
       }
-    ],
-    "workers": 5
+    }
+  },
+  "parallel_count": {
+    "type": "integer",
+    "description": "Number of parallel processes",
+    "required": false,
+    "default": 3,
+    "minimum": 1,
+    "maximum": 10
+  },
+  "save_results": {
+    "type": "boolean",
+    "description": "Whether to save results to database",
+    "required": false,
+    "default": true
   }
 }
 ```
 
-#### 3. optimize_prompt
+### 3. optimize_prompt
 
-Optimize prompts using AI-powered meta-prompting and self-improvement.
+Optimize existing prompts using AI-powered meta-prompting and self-improvement techniques.
 
-**Arguments:**
-- `prompt` (string, required): Prompt to optimize
-- `task` (string, required): Task description for optimization context
-- `persona` (string): AI persona to use (default: "code")
-- `target_model` (string): Target model family for optimization
-- `judge_provider` (string): Provider to use for evaluation (default: "openai")
-- `max_iterations` (integer): Maximum optimization iterations (default: 3)
-- `target_score` (number): Target quality score 0.0-1.0 (default: 0.8)
-- `save` (boolean): Save optimization results (default: true)
-- `output_format` (string): Output format - console, json, markdown (default: "console")
+#### Parameters
 
-**Example:**
 ```json
 {
-  "name": "optimize_prompt",
-  "arguments": {
-    "prompt": "Write a function to validate email",
-    "task": "Create robust email validation in Python",
-    "persona": "code",
-    "max_iterations": 5,
-    "target_score": 0.9
+  "prompt_id": {
+    "type": "string",
+    "description": "UUID of the prompt to optimize",
+    "required": true
+  },
+  "optimization_type": {
+    "type": "string",
+    "description": "Type of optimization to apply",
+    "required": false,
+    "enum": ["clarity", "precision", "creativity", "completeness"],
+    "default": "precision"
+  },
+  "target_criteria": {
+    "type": "object",
+    "description": "Target optimization criteria",
+    "required": false,
+    "properties": {
+      "clarity": {"type": "number", "minimum": 0, "maximum": 1},
+      "precision": {"type": "number", "minimum": 0, "maximum": 1},
+      "creativity": {"type": "number", "minimum": 0, "maximum": 1}
+    }
   }
 }
 ```
 
-### Search & Retrieval Tools
+## Search & Discovery Tools
 
-#### 4. search_prompts
+### 4. search_prompts
 
-Search existing prompts using text or semantic search.
+Search existing prompts using text search, semantic search, or advanced filtering.
 
-**Arguments:**
-- `query` (string): Search query (optional for filtered searches)
-- `semantic` (boolean): Use semantic search with embeddings (default: false)
-- `similarity` (number): Minimum similarity threshold 0.0-1.0 (default: 0.5)
-- `phase` (string): Filter by phase (idea, human, precision)
-- `provider` (string): Filter by provider
-- `tags` (string): Filter by tags (comma-separated)
-- `since` (string): Filter by creation date (YYYY-MM-DD)
-- `limit` (integer): Maximum number of results (default: 10)
-- `output_format` (string): Output format - table, json, markdown (default: "table")
+#### Parameters
 
-**Example:**
 ```json
 {
-  "name": "search_prompts",
-  "arguments": {
-    "query": "authentication",
-    "semantic": true,
-    "similarity": 0.7,
-    "phase": "precision",
-    "limit": 5
+  "query": {
+    "type": "string",
+    "description": "Search query text",
+    "required": true
+  },
+  "search_type": {
+    "type": "string",
+    "description": "Type of search to perform",
+    "required": false,
+    "enum": ["text", "semantic", "hybrid"],
+    "default": "hybrid"
+  },
+  "phase": {
+    "type": "string",
+    "description": "Filter by alchemical phase",
+    "required": false,
+    "enum": ["prima-materia", "solutio", "coagulatio"]
+  },
+  "provider": {
+    "type": "string",
+    "description": "Filter by provider",
+    "required": false,
+    "enum": ["openai", "anthropic", "google", "openrouter", "ollama"]
+  },
+  "tags": {
+    "type": "array",
+    "description": "Filter by tags",
+    "required": false,
+    "items": {"type": "string"}
+  },
+  "limit": {
+    "type": "integer",
+    "description": "Maximum number of results",
+    "required": false,
+    "default": 10,
+    "minimum": 1,
+    "maximum": 100
+  },
+  "similarity_threshold": {
+    "type": "number",
+    "description": "Minimum similarity score for semantic search",
+    "required": false,
+    "default": 0.7,
+    "minimum": 0,
+    "maximum": 1
   }
 }
 ```
 
-#### 5. get_prompt_by_id
+### 5. get_prompt_by_id
 
-Get detailed information about a specific prompt.
+Get detailed information about a specific prompt by its UUID.
 
-**Arguments:**
-- `prompt_id` (string, required): UUID of the prompt to retrieve
-- `include_metrics` (boolean): Include performance metrics (default: true)
-- `include_context` (boolean): Include context information (default: true)
+#### Parameters
 
-**Example:**
 ```json
 {
-  "name": "get_prompt_by_id",
-  "arguments": {
-    "prompt_id": "123e4567-e89b-12d3-a456-426614174000",
-    "include_metrics": true
+  "prompt_id": {
+    "type": "string",
+    "description": "UUID of the prompt to retrieve",
+    "required": true
+  },
+  "include_relationships": {
+    "type": "boolean",
+    "description": "Include related prompts and relationships",
+    "required": false,
+    "default": false
+  },
+  "include_analytics": {
+    "type": "boolean",
+    "description": "Include usage analytics and performance metrics",
+    "required": false,
+    "default": false
   }
 }
 ```
 
-### Management Tools
+### 6. track_prompt_relationship
 
-#### 6. update_prompt
+Track relationships between prompts for enhanced discovery and organization.
 
-Update an existing prompt's content, tags, or parameters.
+#### Parameters
 
-**Arguments:**
-- `prompt_id` (string, required): UUID of the prompt to update
-- `content` (string): New content for the prompt
-- `tags` (string): New tags (comma-separated)
-- `temperature` (number): New temperature 0.0-1.0
-- `max_tokens` (integer): New max tokens
-
-**Example:**
 ```json
 {
-  "name": "update_prompt",
-  "arguments": {
-    "prompt_id": "123e4567-e89b-12d3-a456-426614174000",
-    "tags": "api,authentication,updated",
-    "temperature": 0.8
+  "source_prompt_id": {
+    "type": "string",
+    "description": "UUID of the source prompt",
+    "required": true
+  },
+  "target_prompt_id": {
+    "type": "string",
+    "description": "UUID of the target prompt",
+    "required": true
+  },
+  "relationship_type": {
+    "type": "string",
+    "description": "Type of relationship",
+    "required": true,
+    "enum": ["derived_from", "similar_to", "improved_by", "variant_of"]
+  },
+  "strength": {
+    "type": "number",
+    "description": "Strength of the relationship",
+    "required": false,
+    "default": 0.5,
+    "minimum": 0,
+    "maximum": 1
   }
 }
 ```
 
-#### 7. delete_prompt
+## Management Tools
+
+### 7. update_prompt
+
+Update an existing prompt's content, tags, or metadata.
+
+#### Parameters
+
+```json
+{
+  "prompt_id": {
+    "type": "string",
+    "description": "UUID of the prompt to update",
+    "required": true
+  },
+  "updates": {
+    "type": "object",
+    "description": "Fields to update",
+    "required": true,
+    "properties": {
+      "content": {"type": "string"},
+      "tags": {"type": "array", "items": {"type": "string"}},
+      "persona": {"type": "string"},
+      "context": {"type": "string"}
+    }
+  }
+}
+```
+
+### 8. delete_prompt
 
 Delete an existing prompt and its associated data.
 
-**Arguments:**
-- `prompt_id` (string, required): UUID of the prompt to delete
+#### Parameters
 
-**Example:**
 ```json
 {
-  "name": "delete_prompt",
-  "arguments": {
-    "prompt_id": "123e4567-e89b-12d3-a456-426614174000"
+  "prompt_id": {
+    "type": "string",
+    "description": "UUID of the prompt to delete",
+    "required": true
+  },
+  "cascade": {
+    "type": "boolean",
+    "description": "Whether to delete related data",
+    "required": false,
+    "default": false
   }
 }
 ```
 
-#### 8. track_prompt_relationship
-
-Track relationships between prompts for enhanced discovery.
-
-**Arguments:**
-- `source_prompt_id` (string, required): UUID of the source prompt
-- `target_prompt_id` (string, required): UUID of the target prompt
-- `relationship_type` (string, required): Type of relationship (derived_from, similar_to, inspired_by, merged_with)
-- `strength` (number): Relationship strength 0.0-1.0 (default: 0.5)
-- `context` (string): Context explaining the relationship
-
-**Example:**
-```json
-{
-  "name": "track_prompt_relationship",
-  "arguments": {
-    "source_prompt_id": "123e4567-e89b-12d3-a456-426614174000",
-    "target_prompt_id": "987e6543-e21b-12d3-a456-426614174000",
-    "relationship_type": "derived_from",
-    "strength": 0.8,
-    "context": "Enhanced version with better error handling"
-  }
-}
-```
-
-### Analytics Tools
-
-#### 9. get_metrics
-
-Get prompt performance metrics and analytics.
-
-**Arguments:**
-- `phase` (string): Filter by phase
-- `provider` (string): Filter by provider
-- `since` (string): Filter by creation date (YYYY-MM-DD)
-- `limit` (integer): Maximum number of prompts to analyze (default: 100)
-- `report` (string): Generate report (daily, weekly, monthly)
-- `output_format` (string): Output format - table, json, markdown (default: "table")
-- `export` (string): Export to file (csv, json, excel)
-
-**Example:**
-```json
-{
-  "name": "get_metrics",
-  "arguments": {
-    "report": "weekly",
-    "provider": "openai",
-    "output_format": "json"
-  }
-}
-```
-
-#### 10. get_database_stats
-
-Get comprehensive database statistics including lifecycle information.
-
-**Arguments:**
-- `include_relationships` (boolean): Include prompt relationship statistics (default: true)
-- `include_enhancements` (boolean): Include enhancement history statistics (default: true)
-- `include_usage` (boolean): Include usage analytics (default: true)
-
-**Example:**
-```json
-{
-  "name": "get_database_stats",
-  "arguments": {
-    "include_relationships": true,
-    "include_enhancements": true,
-    "include_usage": true
-  }
-}
-```
-
-#### 11. run_lifecycle_maintenance
+### 9. run_lifecycle_maintenance
 
 Run database lifecycle maintenance including relevance scoring and cleanup.
 
-**Arguments:**
-- `update_relevance` (boolean): Update relevance scores with decay (default: true)
-- `cleanup_old` (boolean): Remove old and low-relevance prompts (default: true)
-- `dry_run` (boolean): Show what would be cleaned up without doing it (default: false)
+#### Parameters
 
-**Example:**
 ```json
 {
-  "name": "run_lifecycle_maintenance",
-  "arguments": {
-    "update_relevance": true,
-    "cleanup_old": true,
-    "dry_run": false
+  "maintenance_type": {
+    "type": "string",
+    "description": "Type of maintenance to perform",
+    "required": false,
+    "enum": ["relevance_scoring", "cleanup", "optimization", "full"],
+    "default": "relevance_scoring"
+  },
+  "dry_run": {
+    "type": "boolean",
+    "description": "Preview changes without applying them",
+    "required": false,
+    "default": false
   }
 }
 ```
 
-### System Tools
+## Analytics & Optimization Tools
 
-#### 12. get_providers
+### 10. get_metrics
 
-List available providers and their capabilities.
+Get prompt performance metrics and analytics.
 
-**Arguments:** None
+#### Parameters
 
-**Example:**
 ```json
 {
-  "name": "get_providers",
-  "arguments": {}
-}
-```
-
-#### 13. test_providers
-
-Test provider connectivity and functionality.
-
-**Arguments:**
-- `providers` (array): Specific providers to test (empty for all)
-- `test_generation` (boolean): Test generation capabilities (default: true)
-- `test_embeddings` (boolean): Test embedding capabilities (default: true)
-- `output_format` (string): Output format - json, table (default: "table")
-
-**Example:**
-```json
-{
-  "name": "test_providers",
-  "arguments": {
-    "providers": ["openai", "claude"],
-    "test_generation": true,
-    "test_embeddings": true
+  "metric_type": {
+    "type": "string",
+    "description": "Type of metrics to retrieve",
+    "required": false,
+    "enum": ["performance", "usage", "provider", "phase"],
+    "default": "performance"
+  },
+  "time_range": {
+    "type": "string",
+    "description": "Time range for metrics",
+    "required": false,
+    "enum": ["24h", "7d", "30d", "90d", "all"],
+    "default": "7d"
+  },
+  "phase": {
+    "type": "string",
+    "description": "Filter by alchemical phase",
+    "required": false,
+    "enum": ["prima-materia", "solutio", "coagulatio"]
+  },
+  "provider": {
+    "type": "string",
+    "description": "Filter by provider",
+    "required": false,
+    "enum": ["openai", "anthropic", "google", "openrouter", "ollama"]
   }
 }
 ```
 
-#### 14. get_config
+### 11. get_database_stats
+
+Get comprehensive database statistics including lifecycle information.
+
+#### Parameters
+
+```json
+{
+  "include_distribution": {
+    "type": "boolean",
+    "description": "Include data distribution statistics",
+    "required": false,
+    "default": true
+  },
+  "include_performance": {
+    "type": "boolean",
+    "description": "Include performance metrics",
+    "required": false,
+    "default": true
+  }
+}
+```
+
+## Configuration & System Tools
+
+### 12. get_config
 
 View current configuration settings and system status.
 
-**Arguments:**
-- `show_providers` (boolean): Include provider configurations (default: true)
-- `show_phases` (boolean): Include phase assignments (default: true)
-- `show_generation` (boolean): Include generation settings (default: true)
+#### Parameters
 
-**Example:**
 ```json
 {
-  "name": "get_config",
-  "arguments": {
-    "show_providers": true,
-    "show_phases": true,
-    "show_generation": true
+  "section": {
+    "type": "string",
+    "description": "Configuration section to retrieve",
+    "required": false,
+    "enum": ["providers", "generation", "database", "all"],
+    "default": "all"
+  },
+  "include_sensitive": {
+    "type": "boolean",
+    "description": "Include sensitive configuration (API keys masked)",
+    "required": false,
+    "default": false
   }
 }
 ```
 
-#### 15. validate_config
+### 13. get_providers
+
+List available providers and their capabilities.
+
+#### Parameters
+
+```json
+{
+  "include_status": {
+    "type": "boolean",
+    "description": "Include provider status and health checks",
+    "required": false,
+    "default": true
+  },
+  "test_connectivity": {
+    "type": "boolean",
+    "description": "Test connectivity to providers",
+    "required": false,
+    "default": false
+  }
+}
+```
+
+### 14. test_providers
+
+Test provider connectivity and functionality.
+
+#### Parameters
+
+```json
+{
+  "provider": {
+    "type": "string",
+    "description": "Specific provider to test",
+    "required": false,
+    "enum": ["openai", "anthropic", "google", "openrouter", "ollama"]
+  },
+  "test_type": {
+    "type": "string",
+    "description": "Type of test to perform",
+    "required": false,
+    "enum": ["connectivity", "generation", "full"],
+    "default": "connectivity"
+  }
+}
+```
+
+### 15. validate_config
 
 Validate configuration settings and provide optimization suggestions.
 
-**Arguments:**
-- `categories` (array): Validation categories to check (default: ["all"])
-  - Options: providers, phases, embeddings, generation, security, storage, all
-- `fix` (boolean): Apply automatic fixes where possible (default: false)
-- `output_format` (string): Output format - json, report (default: "report")
+#### Parameters
 
-**Example:**
 ```json
 {
-  "name": "validate_config",
-  "arguments": {
-    "categories": ["providers", "embeddings"],
-    "fix": true
+  "fix_issues": {
+    "type": "boolean",
+    "description": "Attempt to fix validation issues",
+    "required": false,
+    "default": false
+  },
+  "include_recommendations": {
+    "type": "boolean",
+    "description": "Include optimization recommendations",
+    "required": false,
+    "default": true
   }
 }
 ```
 
-#### 16. get_version
+### 16. get_version
 
 Get version and build information.
 
-**Arguments:**
-- `detailed` (boolean): Include detailed build information (default: false)
-
-**Example:**
-```json
-{
-  "name": "get_version",
-  "arguments": {
-    "detailed": true
-  }
-}
-```
-
-## Usage Examples
-
-### Basic Prompt Generation
+#### Parameters
 
 ```json
-// Generate a simple prompt
 {
-  "jsonrpc": "2.0",
-  "id": 1,
-  "method": "tools/call",
-  "params": {
-    "name": "generate_prompts",
-    "arguments": {
-      "input": "Create a Python function to sort a list"
-    }
-  }
-}
-```
-
-### Advanced Workflow
-
-```json
-// 1. Generate initial prompt
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "method": "tools/call",
-  "params": {
-    "name": "generate_prompts",
-    "arguments": {
-      "input": "Build a secure authentication system",
-      "persona": "code",
-      "tags": "auth,security"
-    }
-  }
-}
-
-// 2. Search for similar prompts
-{
-  "jsonrpc": "2.0",
-  "id": 2,
-  "method": "tools/call",
-  "params": {
-    "name": "search_prompts",
-    "arguments": {
-      "query": "authentication security",
-      "semantic": true,
-      "limit": 3
-    }
-  }
-}
-
-// 3. Optimize the best prompt
-{
-  "jsonrpc": "2.0",
-  "id": 3,
-  "method": "tools/call",
-  "params": {
-    "name": "optimize_prompt",
-    "arguments": {
-      "prompt": "Create secure authentication...",
-      "task": "Build production-ready auth system",
-      "target_score": 0.9
-    }
-  }
-}
-```
-
-### Batch Processing
-
-```json
-// Process multiple prompts concurrently
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "method": "tools/call",
-  "params": {
-    "name": "batch_generate_prompts",
-    "arguments": {
-      "inputs": [
-        {"id": "1", "input": "User registration API"},
-        {"id": "2", "input": "Password reset flow"},
-        {"id": "3", "input": "OAuth integration"}
-      ],
-      "workers": 3,
-      "output_format": "json"
-    }
-  }
-}
-```
-
-### System Maintenance
-
-```json
-// Check system health
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "method": "tools/call",
-  "params": {
-    "name": "test_providers",
-    "arguments": {}
-  }
-}
-
-// Run maintenance
-{
-  "jsonrpc": "2.0",
-  "id": 2,
-  "method": "tools/call",
-  "params": {
-    "name": "run_lifecycle_maintenance",
-    "arguments": {
-      "dry_run": true
-    }
-  }
-}
-
-// Get statistics
-{
-  "jsonrpc": "2.0",
-  "id": 3,
-  "method": "tools/call",
-  "params": {
-    "name": "get_database_stats",
-    "arguments": {}
+  "format": {
+    "type": "string",
+    "description": "Output format",
+    "required": false,
+    "enum": ["json", "text"],
+    "default": "json"
+  },
+  "include_build_info": {
+    "type": "boolean",
+    "description": "Include detailed build information",
+    "required": false,
+    "default": true
   }
 }
 ```
 
 ## Error Handling
 
-### Error Response Format
+### Common Error Responses
 
 ```json
 {
-  "jsonrpc": "2.0",
-  "id": "request-id",
-  "result": {
-    "content": [
-      {
-        "type": "text",
-        "text": "Error: error message"
-      }
-    ],
-    "isError": true
+  "error": {
+    "code": "INVALID_PROMPT_ID",
+    "message": "Prompt with ID 'xyz' not found",
+    "details": {
+      "prompt_id": "xyz",
+      "suggestions": ["Check prompt ID format", "Use search_prompts to find valid IDs"]
+    }
   }
 }
 ```
 
-### Common Error Types
+### Error Codes
 
-1. **Missing Required Arguments**
-   - Error: "input is required"
-   - Solution: Provide all required arguments
-
-2. **Invalid UUID Format**
-   - Error: "invalid prompt ID format"
-   - Solution: Use valid UUID format
-
-3. **Provider Not Found**
-   - Error: "provider not found"
-   - Solution: Check available providers with `get_providers`
-
-4. **Invalid Argument Values**
-   - Error: "temperature must be between 0.0 and 1.0"
-   - Solution: Use valid parameter ranges
+- `INVALID_PROMPT_ID`: Prompt not found
+- `PROVIDER_UNAVAILABLE`: Provider service unavailable
+- `INVALID_PARAMETERS`: Invalid or missing parameters
+- `GENERATION_FAILED`: Prompt generation failed
+- `DATABASE_ERROR`: Database operation failed
+- `QUOTA_EXCEEDED`: API quota exceeded
+- `VALIDATION_ERROR`: Data validation failed
 
 ## Best Practices
 
-### 1. Tool Selection
+### 1. Efficient Prompt Generation
 
-- Use `generate_prompts` for new prompt creation
-- Use `search_prompts` before generating to avoid duplicates
-- Use `optimize_prompt` to improve existing prompts
-- Use `batch_generate_prompts` for multiple prompts
+```javascript
+// Generate with specific phases for targeted output
+const result = await tools.generate_prompts({
+  idea: "Design a microservices architecture",
+  phases: ["prima-materia", "coagulatio"],
+  provider: "anthropic",
+  count: 2
+});
+```
 
-### 2. Performance Optimization
+### 2. Semantic Search for Discovery
 
-- Set appropriate `limit` values for searches
-- Use `semantic` search for meaning-based queries
-- Enable `save: false` for testing
-- Use batch operations for multiple items
+```javascript
+// Use semantic search for better discovery
+const prompts = await tools.search_prompts({
+  query: "API authentication patterns",
+  search_type: "semantic",
+  similarity_threshold: 0.8,
+  limit: 5
+});
+```
 
-### 3. System Management
+### 3. Batch Processing for Efficiency
 
-- Run `test_providers` regularly
-- Use `validate_config` after configuration changes
-- Schedule `run_lifecycle_maintenance` periodically
-- Monitor with `get_database_stats`
+```javascript
+// Process multiple prompts efficiently
+const batch_result = await tools.batch_generate_prompts({
+  input_data: [
+    {idea: "User authentication system", provider: "openai"},
+    {idea: "Database migration tool", provider: "anthropic"},
+    {idea: "REST API documentation", provider: "google"}
+  ],
+  parallel_count: 3
+});
+```
 
-### 4. Error Handling
+### 4. Relationship Tracking for Organization
 
-- Always check `isError` in responses
-- Implement retry logic for transient failures
-- Validate UUIDs before using them
-- Check provider availability before operations
+```javascript
+// Track relationships between prompts
+await tools.track_prompt_relationship({
+  source_prompt_id: "original-prompt-id",
+  target_prompt_id: "improved-prompt-id",
+  relationship_type: "improved_by",
+  strength: 0.8
+});
+```
 
-### 5. Workflow Design
+### 5. Performance Monitoring
 
-- Chain tools for complex operations
-- Use relationships to track prompt evolution
-- Tag prompts for better organization
-- Export metrics for analysis
+```javascript
+// Monitor system performance
+const metrics = await tools.get_metrics({
+  metric_type: "performance",
+  time_range: "7d",
+  provider: "openai"
+});
 
-This reference provides complete documentation for all 17 MCP tools available in Prompt Alchemy, enabling effective integration with AI assistants and automation workflows.
+const stats = await tools.get_database_stats({
+  include_distribution: true,
+  include_performance: true
+});
+```
+
+### 6. Configuration Management
+
+```javascript
+// Validate and optimize configuration
+const validation = await tools.validate_config({
+  fix_issues: false,
+  include_recommendations: true
+});
+
+// Test provider connectivity
+const provider_status = await tools.test_providers({
+  test_type: "full"
+});
+```
+
+This comprehensive MCP tools reference provides everything needed to effectively integrate with the Prompt Alchemy system through the Model Context Protocol.

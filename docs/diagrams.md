@@ -3,125 +3,175 @@ layout: default
 title: Architecture Diagrams
 ---
 
-# Architecture Diagrams
+# Architectural Diagrams
 
-This page contains detailed diagrams illustrating the key concepts and architecture of Prompt Alchemy.
+This page contains detailed diagrams illustrating the alchemical architecture and processes of Prompt Alchemy.
 
-> **Note**: These diagrams are rendered as static images for GitHub Pages compatibility. To regenerate them from the source Mermaid diagrams, run `scripts/render-diagrams.sh`.
+## Core Architecture Diagrams
 
-## 1. Multi-Phase Prompt Generation Flow
+### 🏛️ [System Architecture](./assets/diagrams/system-architecture)
+Comprehensive overview of the entire Prompt Alchemy system, showing how the CLI interface, alchemical engine, provider layer, and storage components work together.
 
-The core workflow of Prompt Alchemy follows a three-phase approach where each phase refines the prompt for different qualities:
+### ⚗️ [Alchemical Process Flow](./assets/diagrams/alchemical-process)
+Detailed flow of the three sacred phases of transformation: Prima Materia → Solutio → Coagulatio, including parallel processing and quality evaluation.
 
-![Multi-Phase Prompt Generation Flow](assets/diagrams/multi-phase-flow.svg)
+### 🔄 [Data Flow Architecture](./assets/diagrams/data-flow)
+How data moves through the system, from user input through processing, storage, and output, including feedback loops and optimization paths.
 
-The diagram shows:
-- **Phase 1 (Idea)**: Initial generation using multiple LLM providers (OpenAI GPT-4, Anthropic Claude, Google Gemini)
-- **Phase 2 (Human)**: Human-centric refinement focusing on context enhancement and clarity optimization
-- **Phase 3 (Precision)**: Technical precision with parameter optimization and format standardization
-- **Storage & Ranking**: Final prompts are stored in SQLite with vector embeddings and ranked by multiple criteria
+### 🤖 [Provider Architecture](./assets/diagrams/provider-architecture)
+The provider abstraction layer that enables seamless integration with multiple LLM services (OpenAI, Anthropic, Google, OpenRouter, Ollama).
 
-## 2. Provider Architecture
+### 💾 [Database Schema](./assets/diagrams/database-schema)
+Complete database design with tables, relationships, and indexes that power the intelligent storage and retrieval system.
 
-The provider system abstracts different LLM services through a common interface:
+## Quick Visual Overview
 
-![Provider Architecture](assets/diagrams/provider-architecture.svg)
+### The Alchemical Transformation Process
 
-Key components:
-- **Provider Interface**: Common abstraction for all LLM providers
-- **Provider Implementations**: OpenAI, Anthropic, Google, OpenRouter, and Ollama
-- **Provider Capabilities**: Different providers support different features (generation, embeddings)
-- **Provider Registry**: Manages provider discovery, health checks, and failover logic
+```mermaid
+flowchart LR
+    subgraph "🌱 Prima Materia"
+        PM["`**Raw Idea**
+        Brainstorming
+        Core Extraction`"]
+    end
+    
+    subgraph "💧 Solutio" 
+        SO["`**Natural Flow**
+        Conversational
+        Human-Readable`"]
+    end
+    
+    subgraph "💎 Coagulatio"
+        CO["`**Crystallized Form**
+        Precise
+        Production-Ready`"]
+    end
+    
+    Input["`📝 **User Input**
+    Raw Concept`"] --> PM
+    PM --> SO
+    SO --> CO
+    CO --> Output["`✨ **Golden Prompt**
+    Refined Result`"]
+    
+    style Input fill:#FFD700,stroke:#333,stroke-width:2px,color:#000
+    style PM fill:#8BC34A,stroke:#333,stroke-width:2px,color:#fff
+    style SO fill:#03A9F4,stroke:#333,stroke-width:2px,color:#fff
+    style CO fill:#9C27B0,stroke:#333,stroke-width:2px,color:#fff
+    style Output fill:#FF6B35,stroke:#333,stroke-width:2px,color:#fff
+```
 
-## 3. Database Schema and Storage Architecture
+### System Components Overview
 
-The storage layer uses SQLite with vector embeddings for semantic search:
+```mermaid
+graph TB
+    subgraph "User Interface"
+        CLI["`🖥️ **CLI Commands**
+        generate, search, metrics`"]
+    end
+    
+    subgraph "Alchemical Engine"
+        Engine["`⚗️ **Prompt Engine**
+        Transformation Orchestrator`"]
+        Phases["`🔄 **Phase Manager**
+        Sacred Transformation`"]
+        Ranking["`🏆 **Quality Assessor**
+        Result Evaluation`"]
+    end
+    
+    subgraph "Provider Network"
+        OpenAI["`🤖 **OpenAI**`"]
+        Anthropic["`🧠 **Anthropic**`"]
+        Google["`🌟 **Google**`"]
+        Others["`🔗 **Others**`"]
+    end
+    
+    subgraph "Intelligent Storage"
+        Database["`💾 **SQLite**
+        Core Data`"]
+        Vectors["`🧮 **Embeddings**
+        Semantic Search`"]
+        Analytics["`📊 **Metrics**
+        Performance Data`"]
+    end
+    
+    CLI --> Engine
+    Engine --> Phases
+    Engine --> OpenAI
+    Engine --> Anthropic
+    Engine --> Google
+    Engine --> Others
+    Engine --> Ranking
+    Ranking --> Database
+    Database --> Vectors
+    Database --> Analytics
+    
+    style CLI fill:#4CAF50,stroke:#333,stroke-width:2px,color:#fff
+    style Engine fill:#FF6B35,stroke:#333,stroke-width:3px,color:#fff
+    style Database fill:#2196F3,stroke:#333,stroke-width:2px,color:#fff
+```
 
-![Database Schema](assets/diagrams/database-schema.svg)
+## Alchemical Principles
 
-The schema includes:
-- **PROMPTS**: Core prompt storage with embeddings and metadata
-- **MODEL_METADATA**: Tracks model performance and costs
-- **ENHANCEMENT_HISTORY**: Records prompt improvements
-- **PROMPT_RELATIONSHIPS**: Maps relationships between prompts
-- **USAGE_ANALYTICS**: Tracks effectiveness and usage patterns
-- **METRICS**: Performance and engagement metrics
-- **CONTEXT**: Additional contextual information
-- **DATABASE_CONFIG**: System configuration storage
+### Phase Characteristics
 
-## 4. CLI Command Flow
+| Phase | Symbol | Purpose | Provider Strength | Output Quality |
+|-------|--------|---------|------------------|----------------|
+| **Prima Materia** | 🌱 | Raw essence extraction, brainstorming | Creative exploration (GPT excels) | Foundational ideas |
+| **Solutio** | 💧 | Natural language flow, accessibility | Conversational AI (Claude excels) | Human-readable prompts |
+| **Coagulatio** | 💎 | Precision crystallization, refinement | Technical accuracy (Gemini excels) | Production-ready prompts |
 
-The command-line interface provides various commands for prompt management:
+### Quality Transmutation
 
-![CLI Command Flow](assets/diagrams/cli-command-flow.svg)
+```mermaid
+graph LR
+    subgraph "Input Quality"
+        Raw["`❓ **Raw Idea**
+        Uncertain
+        Unstructured`"]
+    end
+    
+    subgraph "Transformation Process"
+        T1["`⚗️ **Extract**`"] 
+        T2["`🌊 **Dissolve**`"]
+        T3["`💎 **Crystallize**`"]
+    end
+    
+    subgraph "Output Quality" 
+        Gold["`✨ **Golden Prompt**
+        Clear
+        Effective
+        Ready-to-Use`"]
+    end
+    
+    Raw --> T1
+    T1 --> T2  
+    T2 --> T3
+    T3 --> Gold
+    
+    style Raw fill:#B0BEC5,stroke:#333,stroke-width:2px,color:#000
+    style Gold fill:#FFD700,stroke:#333,stroke-width:2px,color:#000
+```
 
-Commands include:
-- **generate**: Multi-phase prompt generation
-- **search**: Text, semantic, and hybrid search
-- **optimize**: Meta-prompt enhancement
-- **evaluate**: LLM-as-Judge evaluation
-- **export**: Multiple export formats (JSON, CSV, Markdown)
-- **config**: Configuration management
-- **providers**: Provider health and capabilities
-- **metrics**: Analytics and performance stats
+## Technical Implementation
 
-## 5. Data Flow and Lifecycle Management
+The diagrams linked above provide detailed technical specifications for:
 
-The system implements sophisticated lifecycle management for prompts:
+- **Scalability**: How the system handles multiple concurrent requests
+- **Reliability**: Fallback mechanisms and error handling
+- **Performance**: Optimization strategies and caching layers  
+- **Extensibility**: Plugin architecture and provider interfaces
+- **Security**: API key management and data protection
 
-![Data Flow and Lifecycle](assets/diagrams/data-lifecycle.svg)
+## Navigation
 
-Lifecycle stages:
-- **Initial Processing**: Content hashing and deduplication
-- **Storage**: Embedding generation and database storage
-- **Monitoring**: Usage tracking and relevance scoring
-- **Optimization**: Performance-based enhancement candidates
-- **Cleanup**: Removal of low-relevance prompts
-- **Archival**: Long-term storage for inactive prompts
+- 📚 **[Getting Started](./getting-started)** - Begin your alchemical journey
+- 🛠️ **[Installation](./installation)** - Set up your laboratory
+- 📖 **[Usage Guide](./usage)** - Master the art of prompt alchemy
+- 🏗️ **[Architecture](./architecture)** - Deep technical understanding
+- 🔌 **[MCP Integration](./mcp-integration)** - AI assistant connectivity
 
-## 6. Vector Embedding and Semantic Search
+---
 
-The system uses vector embeddings for semantic search capabilities:
-
-![Vector Embedding System](assets/diagrams/vector-embedding.svg)
-
-Process flow:
-- **Embedding Generation**: Text converted to 1536-dimensional vectors
-- **Storage**: Binary storage in SQLite BLOBs
-- **Search**: Cosine similarity for semantic matching
-- **Optimization**: Indexed storage and query optimization
-
-## 7. Ranking and Evaluation System
-
-The ranking system evaluates prompts across multiple dimensions:
-
-![Ranking System](assets/diagrams/ranking-system.svg)
-
-Evaluation criteria:
-- **Temperature Analysis**: Creativity vs. consistency scoring
-- **Token Efficiency**: Cost-effectiveness measurement
-- **Context Relevance**: Semantic quality assessment
-- **Historical Performance**: Past usage success rates
-- **LLM-as-Judge**: Detailed qualitative evaluation
-
-## Key Features Illustrated
-
-1. **Multi-Phase Generation**: Three distinct phases (Idea, Human, Precision) each optimizing for different qualities
-2. **Provider Abstraction**: Unified interface supporting multiple LLM providers with different capabilities
-3. **Vector-Enabled Storage**: SQLite with BLOB embeddings for semantic search and relationship tracking
-4. **Lifecycle Management**: Automated relevance scoring, usage tracking, and cleanup processes
-5. **Comprehensive Analytics**: Usage metrics, performance tracking, and cost analysis
-6. **Flexible Command Interface**: Multiple CLI commands for different use cases
-7. **Intelligent Ranking**: Multi-dimensional scoring with optional LLM-as-Judge evaluation
-
-These diagrams provide a comprehensive view of how Prompt Alchemy orchestrates complex prompt engineering workflows while maintaining flexibility and extensibility.
-
-## Diagram Sources
-
-The original Mermaid diagram sources are maintained in the project repository. To update these diagrams:
-
-1. Edit the Mermaid source in `docs/diagrams-mermaid.md`
-2. Run `scripts/render-diagrams.sh` to regenerate the SVG files
-3. Commit both the source and generated files
-
-This ensures the diagrams stay up-to-date with the project architecture while remaining viewable on GitHub Pages.
+*These diagrams illustrate the sophisticated engineering behind the seemingly magical process of transforming raw ideas into golden prompts through the ancient art of linguistic alchemy.*

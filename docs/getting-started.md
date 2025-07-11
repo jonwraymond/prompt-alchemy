@@ -30,7 +30,7 @@ make build
 make setup
 
 # Edit configuration with your API keys
-nano ~/.github.com/jonwraymond/prompt-alchemy/config.yaml
+nano ~/.prompt-alchemy/config.yaml
 ```
 
 ## Your First Prompt
@@ -42,7 +42,10 @@ Once configured, generate your first prompt:
 ```
 
 This will:
-1. Process your request through three phases (idea, human, precision)
+1. Process your request through three alchemical phases:
+   - **prima-materia**: Brainstorm and extract the core idea
+   - **solutio**: Transform into natural, conversational language
+   - **coagulatio**: Refine for precision and technical accuracy
 2. Store the results in a local database
 3. Display the generated prompts with rankings
 
@@ -91,11 +94,11 @@ For complete command documentation, see the [CLI Reference](./cli-reference).
 
 ## Configuration Basics
 
-Your configuration file (`~/.github.com/jonwraymond/prompt-alchemy/config.yaml`) controls:
+Your configuration file (`~/.prompt-alchemy/config.yaml`) controls:
 
 - **API Keys**: For each provider
 - **Default Models**: Which models to use
-- **Phases**: Which provider handles each phase
+- **Alchemical Phases**: Which provider handles each transformation phase
 - **Generation Settings**: Temperature, max tokens, etc.
 
 Example configuration:
@@ -103,21 +106,18 @@ Example configuration:
 providers:
   openai:
     api_key: "sk-..."
-    model: "gpt-4o-mini"
-  claude:
+    model: "o4-mini"
+  anthropic:
     api_key: "sk-ant-..."
     model: "claude-3-5-sonnet-20241022"
-  gemini:
-    api_key: "..."
-    model: "gemini-2.5-flash"
 
 phases:
-  idea:
-    provider: "openai"
-  human:
-    provider: "claude"
-  precision:
-    provider: "gemini"
+  prima-materia:
+    provider: openai      # Extract raw essence
+  solutio:
+    provider: anthropic   # Dissolve into natural form
+  coagulatio:
+    provider: google      # Crystallize to perfection
 
 generation:
   default_temperature: 0.7
@@ -146,7 +146,7 @@ If you run into issues:
 
 1. Check the configuration: `./prompt-alchemy config`
 2. Verify providers: `./prompt-alchemy providers`
-3. Enable debug logging: `./prompt-alchemy --log-level debug`
+3. See logs in `~/.prompt-alchemy/logs/`
 4. Open an issue on GitHub
 
 Happy prompting! 🚀

@@ -62,13 +62,18 @@ type ModelMetadata struct {
 	CreatedAt          time.Time `json:"created_at" db:"created_at"`
 }
 
-// Phase represents the generation phase
+// Phase represents the alchemical transformation stage
 type Phase string
 
 const (
-	PhaseIdea      Phase = "idea"
-	PhaseHuman     Phase = "human"
-	PhasePrecision Phase = "precision"
+	PhasePrimaMaterial Phase = "prima-materia" // Raw, unrefined starting material
+	PhaseSolutio       Phase = "solutio"       // Dissolution into natural form
+	PhaseCoagulatio    Phase = "coagulatio"    // Crystallization into final form
+
+	// Legacy phase names for backward compatibility
+	PhaseIdea      Phase = PhasePrimaMaterial // Deprecated: use PhasePrimaMaterial
+	PhaseHuman     Phase = PhaseSolutio       // Deprecated: use PhaseSolutio
+	PhasePrecision Phase = PhaseCoagulatio    // Deprecated: use PhaseCoagulatio
 )
 
 // PromptRequest represents a request to generate prompts

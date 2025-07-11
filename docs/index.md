@@ -5,20 +5,26 @@ title: Home
 
 # Prompt Alchemy
 
-> Advanced AI Prompt Generation and Optimization CLI Tool
+<div style="text-align: center; margin: 30px 0;">
+  <img src="/assets/prompt_alchemy2.png" alt="Prompt Alchemy Logo" style="max-width: 400px; border-radius: 15px; box-shadow: 0 8px 20px rgba(218, 165, 32, 0.4);">
+</div>
 
-Prompt Alchemy is a sophisticated command-line tool designed for AI prompt engineering. It provides a multi-phased approach to prompt generation, supports multiple LLM providers, and includes advanced features like automated evaluation and optimization.
+> Transform raw ideas into golden prompts through the ancient art of linguistic alchemy
+
+<div class="alchemical-process">
+Prompt Alchemy is a sophisticated AI system that transmutes concepts through three sacred phases of refinement. Like the ancient alchemists who sought to transform base metals into gold, we transform raw ideas into potent, precisely-crafted prompts ready for any AI system.
+</div>
 
 ## Key Features
 
-- 🚀 **Multi-Phase Prompt Generation**: Idea → Human → Precision phases
-- 🤖 **Multiple LLM Providers**: OpenAI, Anthropic, Google, OpenRouter, Ollama
-- 💾 **Smart Storage**: SQLite-based with vector embeddings for semantic search
-- 📊 **Advanced Ranking**: Automated prompt evaluation and scoring
-- 🔄 **Meta-Prompt Optimization**: Iterative prompt improvement
-- 🎯 **Persona-Based Generation**: Tailored prompts for different use cases
-- 🔍 **Semantic Search**: Find similar prompts using embeddings
-- 📈 **Analytics & Metrics**: Track usage, costs, and performance
+- ⚗️ **Three-Phase Alchemical Transformation**: Prima Materia → Solutio → Coagulatio
+- 🤖 **Multiple Provider Support**: OpenAI, Anthropic, Google, OpenRouter, Ollama
+- 💾 **Intelligent Grimoire**: SQLite-based storage with vector embeddings
+- 📊 **Alchemical Ranking**: Automated prompt evaluation and transmutation scoring
+- 🔄 **Iterative Refinement**: Meta-prompt optimization through successive iterations
+- 🎭 **Persona-Based Transmutation**: Specialized alchemical processes for different domains
+- 🔍 **Semantic Scrying**: Discover similar prompts through embedding-based search
+- 📈 **Performance Tracking**: Monitor costs, usage patterns, and transmutation success rates
 
 ## Quick Start
 
@@ -35,14 +41,35 @@ make setup
 ./prompt-alchemy generate "Write a function to calculate fibonacci numbers"
 ```
 
-## Why Prompt Alchemy?
+## The Alchemical Process
 
-Traditional prompt engineering is often ad-hoc and inconsistent. Prompt Alchemy brings structure and science to the process:
+<div class="alchemical-process">
+Transform your ideas through three sacred phases of refinement:
 
-1. **Phased Approach**: Each phase refines the prompt for specific qualities
-2. **Provider Flexibility**: Use the best LLM for each phase
-3. **Data-Driven**: Track what works with built-in analytics
-4. **Automated Optimization**: Let AI improve your prompts
+### 1. <span class="phase-badge">Prima Materia</span> (First Matter)
+*The raw, unformed potential of your ideas*
+
+Extract the essential essence from your concept. Like gathering the prima materia - the first matter from which all things are made - we capture the raw potential of your request and begin the process of refinement.
+
+### 2. <span class="phase-badge">Solutio</span> (Dissolution)
+*The breakdown and purification of ideas*
+
+Dissolve the rigid structures of conventional thinking. Your idea is broken down into its fundamental components and reconstituted in a more fluid, natural form. This phase embodies the flow of human conversation and intuitive understanding.
+
+### 3. <span class="phase-badge">Coagulatio</span> (Crystallization)
+*The final form of perfected expression*
+
+Crystallize the refined essence into its most precise and powerful form. Like the philosopher's stone, this final prompt represents the perfect synthesis of clarity, precision, and purpose.
+</div>
+
+## The Alchemical Advantage
+
+Traditional prompt engineering is like working with raw metals - unpredictable and inconsistent. Prompt Alchemy brings the ancient wisdom of transformation to modern AI:
+
+1. **Sacred Phases**: Each alchemical phase refines specific qualities - from raw potential to crystallized perfection
+2. **Multi-Provider Mastery**: Harness different AI providers' unique strengths for each transformation phase
+3. **Empirical Wisdom**: Track successful transmutations with comprehensive analytics and metrics
+4. **Self-Improving System**: Let the system learn and optimize its own alchemical processes
 
 ## Documentation
 
