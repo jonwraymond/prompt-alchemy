@@ -2,8 +2,8 @@
 theme: jekyll-theme-minimal
 title: Prompt Alchemy
 description: Transform raw ideas into golden prompts through the ancient art of linguistic alchemy
-logo: /assets/prompt_alchemy.png
-logo2: /assets/prompt_alchemy2.png
+logo: /prompt-alchemy/assets/prompt_alchemy.png
+logo2: /prompt-alchemy/assets/prompt_alchemy2.png
 baseurl: "/prompt-alchemy" # The repository name
 url: "https://jonwraymond.github.io" # GitHub username from git URL
 
@@ -18,45 +18,45 @@ brand:
 # Navigation
 navigation:
   - title: Home
-    url: /
+    url: /prompt-alchemy/
   - title: Getting Started
-    url: /getting-started
+    url: /prompt-alchemy/getting-started
   - title: Installation
-    url: /installation
+    url: /prompt-alchemy/installation
   - title: Usage Guide
-    url: /usage
+    url: /prompt-alchemy/usage
   - title: Deployment
-    url: /deployment-guide
+    url: /prompt-alchemy/deployment-guide
   - title: "On-Demand vs. Server Mode"
-    url: /on-demand-vs-server-mode
+    url: /prompt-alchemy/on-demand-vs-server-mode
   - title: Learning Mode
-    url: /learning-mode
+    url: /prompt-alchemy/learning-mode
   - title: Scheduling
-    url: /scheduling
+    url: /prompt-alchemy/scheduling
   - title: Testing
-    url: /testing
+    url: /prompt-alchemy/testing
   - title: CLI Reference
-    url: /cli-reference
+    url: /prompt-alchemy/cli-reference
   - title: MCP API Reference
-    url: /mcp-api-reference
+    url: /prompt-alchemy/mcp-api-reference
   - title: HTTP API Reference
-    url: /http-api-reference
+    url: /prompt-alchemy/http-api-reference
   - title: Client Interaction Modes
-    url: /client-interaction-modes
+    url: /prompt-alchemy/client-interaction-modes
   - title: Architecture
-    url: /architecture
+    url: /prompt-alchemy/architecture
   - title: Vector Embeddings
-    url: /vector-embeddings
+    url: /prompt-alchemy/vector-embeddings
   - title: Database
-    url: /database
+    url: /prompt-alchemy/database
   - title: Diagrams
-    url: /diagrams
+    url: /prompt-alchemy/diagrams
   - title: Renovate Setup
-    url: /renovate-setup
+    url: /prompt-alchemy/renovate-setup
   - title: Release Automation
-    url: /release-automation
+    url: /prompt-alchemy/release-automation
   - title: Multi-Arch Builds
-    url: /multi-arch-builds
+    url: /prompt-alchemy/multi-arch-builds
 
 # Jekyll Settings
 markdown: kramdown

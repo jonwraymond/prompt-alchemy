@@ -20,7 +20,7 @@
 
           {% if site.logo %}
             <div class="logo-container">
-              <img src="{{site.logo | relative_url}}" alt="Logo" />
+              <img src="{{site.logo | relative_url}}" alt="Prompt Alchemy Logo - Alchemical flask with golden glow" />
               <div class="logo-glow"></div>
             </div>
           {% endif %}
@@ -50,12 +50,13 @@
         </div>
 
         {% if site.navigation %}
-        <nav class="main-navigation" role="navigation">
-          <ul>
+        <nav class="main-navigation" role="navigation" aria-label="Main navigation">
+          <ul role="menubar">
             {% for item in site.navigation %}
-            <li>
+            <li role="none">
               <a href="{{ item.url | relative_url }}" 
-                 {% if page.url == item.url %}class="active"{% endif %}>
+                 role="menuitem"
+                 {% if page.url == item.url %}class="active" aria-current="page"{% endif %}>
                 {{ item.title }}
               </a>
             </li>

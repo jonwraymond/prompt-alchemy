@@ -24,9 +24,9 @@
 /* Base Styling */
 body {
   background: 
-    radial-gradient(ellipse at top left, rgba(201, 169, 110, 0.1) 0%, transparent 50%),
-    radial-gradient(ellipse at bottom right, rgba(218, 165, 32, 0.1) 0%, transparent 50%),
-    linear-gradient(135deg, var(--ancient-parchment) 0%, var(--background-light) 50%, #F5F5DC 100%);
+    radial-gradient(ellipse at top left, rgba(201, 169, 110, 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at bottom right, rgba(218, 165, 32, 0.15) 0%, transparent 50%),
+    linear-gradient(135deg, #C9A96E08 0%, var(--background-light) 50%, #C9A96E05 100%);
   color: var(--text-dark);
   font-family: 'Crimson Text', 'Georgia', serif;
   line-height: 1.7;
