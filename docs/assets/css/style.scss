@@ -16,6 +16,8 @@
   --text-dark: #2C1810;
   --text-ancient: #3D2914;
   --background-light: #FFF8DC;
+  --background-dark: #1a2332; /* Dark background like the logo */
+  --text-light: #E8D5B7; /* Light text for dark backgrounds */
   --shadow-gold: rgba(218, 165, 32, 0.3);
   --shadow-mystic: rgba(255, 215, 0, 0.4);
   --border-ornate: #B8860B;
@@ -24,10 +26,10 @@
 /* Base Styling */
 body {
   background: 
-    radial-gradient(ellipse at top left, rgba(201, 169, 110, 0.15) 0%, transparent 50%),
-    radial-gradient(ellipse at bottom right, rgba(218, 165, 32, 0.15) 0%, transparent 50%),
-    linear-gradient(135deg, #C9A96E08 0%, var(--background-light) 50%, #C9A96E05 100%);
-  color: var(--text-dark);
+    radial-gradient(ellipse at top left, rgba(201, 169, 110, 0.2) 0%, transparent 50%),
+    radial-gradient(ellipse at bottom right, rgba(218, 165, 32, 0.2) 0%, transparent 50%),
+    linear-gradient(135deg, var(--background-dark) 0%, #243142 50%, var(--background-dark) 100%);
+  color: var(--text-light);
   font-family: 'Crimson Text', 'Georgia', serif;
   line-height: 1.7;
   position: relative;
@@ -72,13 +74,13 @@ body::before {
 
 /* Header Styling */
 header {
-  background: linear-gradient(180deg, rgba(244, 232, 208, 0.9) 0%, rgba(255, 248, 220, 0.8) 100%);
-  border: 2px solid var(--border-ornate);
+  background: linear-gradient(180deg, rgba(26, 35, 50, 0.9) 0%, rgba(36, 49, 66, 0.8) 100%);
+  border: 2px solid var(--primary-gold);
   border-radius: 12px;
   padding: 30px;
   box-shadow: 
-    0 4px 20px rgba(0,0,0,0.1),
-    inset 0 2px 4px rgba(255,255,255,0.8);
+    0 4px 20px rgba(201, 169, 110, 0.3),
+    inset 0 2px 4px rgba(201, 169, 110, 0.1);
   position: relative;
   overflow: hidden;
 }
@@ -124,10 +126,10 @@ header img:hover {
 /* Typography */
 h1, h2, h3, h4, h5, h6 {
   font-family: 'Cinzel', 'Georgia', serif;
-  color: var(--secondary-brown);
+  color: var(--primary-gold);
   text-shadow: 
-    1px 1px 2px rgba(0,0,0,0.1),
-    0 0 20px rgba(201, 169, 110, 0.2);
+    1px 1px 2px rgba(0,0,0,0.5),
+    0 0 20px rgba(201, 169, 110, 0.4);
   margin-top: 1.5em;
   position: relative;
 }
@@ -160,7 +162,7 @@ h1::before {
   transform: translateX(-50%);
   color: var(--primary-gold);
   font-size: 0.5em;
-  background: var(--background-light);
+  background: var(--background-dark);
   padding: 0 10px;
 }
 
@@ -200,17 +202,18 @@ section > p:first-of-type:first-letter {
 /* Code Blocks */
 pre {
   background: 
-    linear-gradient(135deg, #FAFAF5 0%, #F8F8FF 100%);
+    linear-gradient(135deg, #0d1117 0%, #161b22 100%);
   border: 1px solid var(--border-ornate);
   border-left: 4px solid var(--primary-gold);
   box-shadow: 
-    0 2px 8px rgba(0,0,0,0.1),
-    inset 0 1px 2px rgba(255,255,255,0.8);
+    0 2px 8px rgba(201, 169, 110, 0.2),
+    inset 0 1px 2px rgba(201, 169, 110, 0.1);
   border-radius: 8px;
   padding: 20px;
   margin: 2em 0;
   position: relative;
   overflow: hidden;
+  color: #e6edf3;
 }
 
 pre::before {
@@ -225,17 +228,17 @@ pre::before {
 }
 
 code {
-  background: linear-gradient(135deg, rgba(201, 169, 110, 0.15) 0%, rgba(218, 165, 32, 0.1) 100%);
-  color: var(--text-ancient);
+  background: linear-gradient(135deg, rgba(201, 169, 110, 0.2) 0%, rgba(218, 165, 32, 0.15) 100%);
+  color: var(--primary-gold);
   padding: 3px 6px;
   border-radius: 4px;
   font-size: 0.9em;
-  border: 1px solid rgba(201, 169, 110, 0.2);
+  border: 1px solid rgba(201, 169, 110, 0.3);
 }
 
 /* Links */
 a {
-  color: var(--secondary-brown);
+  color: var(--accent-gold);
   text-decoration: none;
   position: relative;
   transition: all 0.3s ease;
@@ -306,7 +309,7 @@ nav li {
 }
 
 nav a {
-  color: var(--text-dark);
+  color: var(--background-dark);
   padding: 8px 16px;
   border-radius: 20px;
   background: rgba(255,255,255,0.2);
@@ -315,7 +318,7 @@ nav a {
   font-family: 'Cinzel', serif;
   font-size: 0.9em;
   font-weight: 600;
-  text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
   transition: all 0.3s ease;
   position: relative;
 }
@@ -333,17 +336,18 @@ nav a::after {
 /* Tables */
 table {
   box-shadow: 
-    0 4px 15px rgba(0,0,0,0.1),
+    0 4px 15px rgba(201, 169, 110, 0.2),
     0 0 30px rgba(201, 169, 110, 0.1);
   border-radius: 10px;
   overflow: hidden;
   border: 2px solid var(--border-ornate);
   margin: 2em 0;
+  background: rgba(26, 35, 50, 0.5);
 }
 
 th {
   background: linear-gradient(135deg, var(--primary-gold) 0%, var(--accent-gold) 100%);
-  color: var(--text-dark);
+  color: var(--background-dark);
   text-shadow: 1px 1px 2px rgba(255,255,255,0.4);
   font-family: 'Cinzel', serif;
   font-weight: 600;
@@ -353,29 +357,31 @@ th {
 td {
   padding: 10px;
   border-bottom: 1px solid rgba(201, 169, 110, 0.2);
+  color: var(--text-light);
 }
 
 tr:nth-child(even) {
-  background: linear-gradient(90deg, rgba(201, 169, 110, 0.05) 0%, rgba(218, 165, 32, 0.05) 100%);
+  background: linear-gradient(90deg, rgba(201, 169, 110, 0.1) 0%, rgba(218, 165, 32, 0.1) 100%);
 }
 
 tr:hover {
-  background: rgba(201, 169, 110, 0.1);
+  background: rgba(201, 169, 110, 0.15);
 }
 
 /* Blockquotes */
 blockquote {
   border-left: 4px solid var(--primary-gold);
   background: 
-    linear-gradient(135deg, rgba(244, 232, 208, 0.3) 0%, rgba(201, 169, 110, 0.1) 100%);
+    linear-gradient(135deg, rgba(26, 35, 50, 0.6) 0%, rgba(36, 49, 66, 0.4) 100%);
   padding: 20px 20px 20px 30px;
   margin: 2em 0;
   border-radius: 0 10px 10px 0;
   box-shadow: 
-    0 4px 10px rgba(0,0,0,0.1),
-    inset 0 1px 3px rgba(255,255,255,0.5);
+    0 4px 10px rgba(201, 169, 110, 0.2),
+    inset 0 1px 3px rgba(201, 169, 110, 0.1);
   position: relative;
   font-style: italic;
+  color: var(--text-light);
 }
 
 blockquote::before {
@@ -393,15 +399,16 @@ blockquote::before {
 .alchemical-process {
   background: 
     radial-gradient(ellipse at center, rgba(255, 215, 0, 0.1) 0%, transparent 70%),
-    linear-gradient(135deg, var(--ancient-parchment) 0%, #F0E68C 100%);
+    linear-gradient(135deg, rgba(26, 35, 50, 0.8) 0%, rgba(36, 49, 66, 0.6) 100%);
   border: 3px double var(--primary-gold);
   border-radius: 15px;
   padding: 30px;
   margin: 30px 0;
   box-shadow: 
     0 6px 20px var(--shadow-gold),
-    inset 0 2px 5px rgba(255,255,255,0.6);
+    inset 0 2px 5px rgba(201, 169, 110, 0.2);
   position: relative;
+  color: var(--text-light);
 }
 
 .alchemical-process::before {
@@ -410,7 +417,7 @@ blockquote::before {
   top: -15px;
   left: 50%;
   transform: translateX(-50%);
-  background: var(--background-light);
+  background: var(--background-dark);
   padding: 0 20px;
   color: var(--primary-gold);
   font-size: 1.5em;
@@ -419,14 +426,14 @@ blockquote::before {
 .phase-badge {
   display: inline-block;
   background: linear-gradient(135deg, var(--primary-gold) 0%, var(--mystic-gold) 100%);
-  color: var(--text-dark);
+  color: var(--background-dark);
   padding: 6px 16px;
   border-radius: 25px;
   font-size: 0.85em;
   font-weight: bold;
   margin: 4px;
   box-shadow: 
-    0 2px 6px rgba(0,0,0,0.2),
+    0 2px 6px rgba(0,0,0,0.4),
     inset 0 1px 2px rgba(255,255,255,0.4);
   font-family: 'Cinzel', serif;
   text-transform: uppercase;
@@ -462,7 +469,7 @@ footer::before {
   top: -12px;
   left: 50%;
   transform: translateX(-50%);
-  background: var(--background-light);
+  background: var(--background-dark);
   padding: 0 20px;
   color: var(--primary-gold);
 }
@@ -473,8 +480,8 @@ footer::before {
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--ancient-parchment);
-  border: 1px solid var(--border-ornate);
+  background: var(--background-dark);
+  border: 1px solid var(--primary-gold);
 }
 
 ::-webkit-scrollbar-thumb {
@@ -547,7 +554,7 @@ footer::before {
 /* Site Description */
 .site-description {
   font-style: italic;
-  color: var(--text-ancient);
+  color: var(--text-light);
   font-size: 1.1em;
   margin: 1em 0;
   text-align: center;
@@ -659,7 +666,7 @@ nav a.active {
 .main-content {
   position: relative;
   background: 
-    radial-gradient(ellipse at center top, rgba(255, 248, 220, 0.8) 0%, transparent 60%);
+    radial-gradient(ellipse at center top, rgba(201, 169, 110, 0.1) 0%, transparent 60%);
   padding: 20px;
   min-height: 400px;
 }
@@ -683,11 +690,11 @@ nav a.active {
   display: inline-block;
   padding: 8px 16px;
   background: linear-gradient(135deg, var(--primary-gold), var(--accent-gold));
-  color: var(--text-dark);
+  color: var(--background-dark);
   border-radius: 20px;
   font-size: 0.9em;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
 }
 
 .downloads a:hover {

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/prompt_alchemy.png" alt="Prompt Alchemy" width="300"/>
+  <img src="docs/assets/prompt_alchemy2.png" alt="Prompt Alchemy" width="300"/>
 </p>
 
 <h1 align="center">Prompt Alchemy</h1>
