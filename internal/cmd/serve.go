@@ -12,6 +12,7 @@ import (
 	"sort"
 
 	"github.com/jonwraymond/prompt-alchemy/internal/engine"
+	"github.com/jonwraymond/prompt-alchemy/internal/learning"
 	log "github.com/jonwraymond/prompt-alchemy/internal/log"
 	"github.com/jonwraymond/prompt-alchemy/internal/providers"
 	"github.com/jonwraymond/prompt-alchemy/internal/ranking"
@@ -70,8 +71,17 @@ type MCPContent struct {
 var serveCmd = &cobra.Command{
 	Use:   "serve",
 	Short: "Start MCP server for AI agents",
-	Long:  `Start the Model Context Protocol server to allow AI agents to use Prompt Alchemy.`,
-	RunE:  runMCPServer,
+	Long: `Start the Model Context Protocol server to allow AI agents to use Prompt Alchemy.
+
+The server runs continuously and provides AI agents with access to prompt generation,
+search, optimization, and learning capabilities through the MCP protocol.
+
+For automated nightly training, use the 'schedule' command to set up cron or launchd jobs:
+  prompt-alchemy schedule --time "0 2 * * *"  # Run nightly at 2 AM
+
+This keeps the server lightweight and focused on serving requests while running
+training jobs separately as scheduled tasks.`,
+	RunE: runMCPServer,
 }
 
 func runMCPServer(cmd *cobra.Command, args []string) error {
@@ -105,13 +115,26 @@ func runMCPServer(cmd *cobra.Command, args []string) error {
 		}
 	}()
 
+	// Initialize learning engine if enabled
+	var learner *learning.LearningEngine
+	learningEnabled := viper.GetBool("learning.enabled")
+	if learningEnabled {
+		learner = learning.NewLearningEngine(store, logger)
+		// Start background learning processes
+		ctx := context.Background()
+		learner.StartBackgroundLearning(ctx)
+		logger.Info("Learning engine initialized and background processes started")
+	}
+
 	// Create MCP server
 	server := &MCPServer{
-		store:    store,
-		registry: registry,
-		engine:   eng,
-		ranker:   ranker,
-		logger:   logger,
+		store:           store,
+		registry:        registry,
+		engine:          eng,
+		ranker:          ranker,
+		learner:         learner,
+		logger:          logger,
+		learningEnabled: learningEnabled,
 	}
 
 	// Start server
@@ -123,7 +146,11 @@ type MCPServer struct {
 	registry *providers.Registry
 	engine   *engine.Engine
 	ranker   *ranking.Ranker
+	learner  *learning.LearningEngine
 	logger   *logrus.Logger
+
+	// Learning mode flag
+	learningEnabled bool
 }
 
 func (s *MCPServer) Start() error {
@@ -742,6 +769,84 @@ func (s *MCPServer) handleToolsList(req *MCPRequest) *MCPResponse {
 		},
 	}
 
+	// Add learning tools if enabled
+	if s.learningEnabled {
+		learningTools := []MCPTool{
+			{
+				Name:        "record_feedback",
+				Description: "Record user feedback for prompt effectiveness (enables learning)",
+				InputSchema: map[string]interface{}{
+					"type": "object",
+					"properties": map[string]interface{}{
+						"prompt_id": map[string]interface{}{
+							"type":        "string",
+							"description": "ID of the prompt to provide feedback for",
+						},
+						"session_id": map[string]interface{}{
+							"type":        "string",
+							"description": "Session ID for tracking context",
+						},
+						"rating": map[string]interface{}{
+							"type":        "integer",
+							"description": "Rating from 1-5",
+							"minimum":     1,
+							"maximum":     5,
+						},
+						"effectiveness": map[string]interface{}{
+							"type":        "number",
+							"description": "Effectiveness score (0.0-1.0)",
+							"minimum":     0.0,
+							"maximum":     1.0,
+						},
+						"helpful": map[string]interface{}{
+							"type":        "boolean",
+							"description": "Was the prompt helpful?",
+						},
+						"context": map[string]interface{}{
+							"type":        "string",
+							"description": "Additional context about usage",
+						},
+					},
+					"required": []string{"prompt_id", "effectiveness"},
+				},
+			},
+			{
+				Name:        "get_recommendations",
+				Description: "Get AI-powered prompt recommendations based on learning",
+				InputSchema: map[string]interface{}{
+					"type": "object",
+					"properties": map[string]interface{}{
+						"input": map[string]interface{}{
+							"type":        "string",
+							"description": "Input text to get recommendations for",
+						},
+						"limit": map[string]interface{}{
+							"type":        "integer",
+							"description": "Maximum number of recommendations",
+							"default":     5,
+						},
+					},
+					"required": []string{"input"},
+				},
+			},
+			{
+				Name:        "get_learning_stats",
+				Description: "Get current learning statistics and patterns",
+				InputSchema: map[string]interface{}{
+					"type": "object",
+					"properties": map[string]interface{}{
+						"include_patterns": map[string]interface{}{
+							"type":        "boolean",
+							"description": "Include pattern details",
+							"default":     false,
+						},
+					},
+				},
+			},
+		}
+		tools = append(tools, learningTools...)
+	}
+
 	return &MCPResponse{
 		JSONRPC: "2.0",
 		ID:      req.ID,
@@ -837,6 +942,13 @@ func (s *MCPServer) executeTool(toolName string, args map[string]interface{}) (M
 		return s.executeTestProviders(args)
 	case "get_version":
 		return s.executeGetVersion(args)
+	// Learning tools
+	case "record_feedback":
+		return s.executeRecordFeedback(args)
+	case "get_recommendations":
+		return s.executeGetRecommendations(args)
+	case "get_learning_stats":
+		return s.executeGetLearningStats(args)
 	default:
 		return MCPToolResult{}, fmt.Errorf("unknown tool: %s", toolName)
 	}
@@ -2462,4 +2574,167 @@ func (s *MCPServer) runProviderTests(providers []string, testGeneration, testEmb
 
 func (s *MCPServer) formatProviderTestResults(results map[string]interface{}) string {
 	return "✅ All providers tested successfully"
+}
+
+// Learning tool handlers
+
+func (s *MCPServer) executeRecordFeedback(args map[string]interface{}) (MCPToolResult, error) {
+	if !s.learningEnabled {
+		return MCPToolResult{}, fmt.Errorf("learning is not enabled")
+	}
+
+	// Parse arguments
+	promptIDStr, ok := args["prompt_id"].(string)
+	if !ok {
+		return MCPToolResult{}, fmt.Errorf("prompt_id is required")
+	}
+
+	promptID, err := uuid.Parse(promptIDStr)
+	if err != nil {
+		return MCPToolResult{}, fmt.Errorf("invalid prompt ID: %w", err)
+	}
+
+	effectiveness, ok := args["effectiveness"].(float64)
+	if !ok {
+		return MCPToolResult{}, fmt.Errorf("effectiveness is required")
+	}
+
+	// Create usage analytics record
+	usage := models.UsageAnalytics{
+		ID:                 uuid.New(),
+		PromptID:           promptID,
+		UsedInGeneration:   true,
+		EffectivenessScore: effectiveness,
+		CreatedAt:          time.Now(),
+		GeneratedAt:        time.Now(),
+	}
+
+	// Optional fields
+	if sessionID, ok := args["session_id"].(string); ok {
+		usage.SessionID = sessionID
+	}
+	if rating, ok := args["rating"].(float64); ok {
+		r := int(rating)
+		usage.UserFeedback = &r
+	}
+	if context, ok := args["context"].(string); ok {
+		usage.UsageContext = context
+	}
+
+	// Record in learning engine
+	ctx := context.Background()
+	if err := s.learner.RecordUsage(ctx, usage); err != nil {
+		return MCPToolResult{}, fmt.Errorf("failed to record feedback: %w", err)
+	}
+
+	return MCPToolResult{
+		Content: []MCPContent{
+			{
+				Type: "text",
+				Text: fmt.Sprintf("✅ Feedback recorded successfully for prompt %s", promptID),
+			},
+		},
+	}, nil
+}
+
+func (s *MCPServer) executeGetRecommendations(args map[string]interface{}) (MCPToolResult, error) {
+	if !s.learningEnabled {
+		return MCPToolResult{}, fmt.Errorf("learning is not enabled")
+	}
+
+	// Parse arguments
+	input, ok := args["input"].(string)
+	if !ok {
+		return MCPToolResult{}, fmt.Errorf("input is required")
+	}
+
+	limit := 5
+	if l, ok := args["limit"].(float64); ok {
+		limit = int(l)
+	}
+
+	// Get recommendations from learning engine
+	ctx := context.Background()
+	prompts, err := s.learner.GetRecommendations(ctx, input, limit)
+	if err != nil {
+		return MCPToolResult{}, fmt.Errorf("failed to get recommendations: %w", err)
+	}
+
+	// Format results
+	var output strings.Builder
+	output.WriteString(fmt.Sprintf("🤖 AI-Powered Recommendations for: %s\n\n", input))
+
+	if len(prompts) == 0 {
+		output.WriteString("No recommendations available yet. The system needs more usage data to learn.\n")
+	} else {
+		for i, prompt := range prompts {
+			output.WriteString(fmt.Sprintf("%d. Phase: %s | Provider: %s\n", i+1, prompt.Phase, prompt.Provider))
+			output.WriteString(fmt.Sprintf("   Relevance: %.2f | Usage: %d\n", prompt.RelevanceScore, prompt.UsageCount))
+			output.WriteString(fmt.Sprintf("   %s\n\n", truncateString(prompt.Content, 200)))
+		}
+	}
+
+	return MCPToolResult{
+		Content: []MCPContent{
+			{
+				Type: "text",
+				Text: output.String(),
+			},
+		},
+	}, nil
+}
+
+func (s *MCPServer) executeGetLearningStats(args map[string]interface{}) (MCPToolResult, error) {
+	if !s.learningEnabled {
+		return MCPToolResult{}, fmt.Errorf("learning is not enabled")
+	}
+
+	// Get stats from learning engine
+	stats := s.learner.GetLearningStats()
+
+	// Format output
+	var output strings.Builder
+	output.WriteString("📊 Learning Engine Statistics\n\n")
+
+	output.WriteString("**Configuration:**\n")
+	output.WriteString(fmt.Sprintf("- Learning Rate: %.2f\n", stats["learning_rate"]))
+	output.WriteString(fmt.Sprintf("- Decay Rate: %.2f\n", stats["decay_rate"]))
+	output.WriteString(fmt.Sprintf("- Min Confidence: %.2f\n", stats["min_confidence"]))
+	output.WriteString("\n")
+
+	output.WriteString("**Metrics:**\n")
+	output.WriteString(fmt.Sprintf("- Total Patterns: %v\n", stats["total_patterns"]))
+	output.WriteString(fmt.Sprintf("- Tracked Prompts: %v\n", stats["total_prompts"]))
+	output.WriteString(fmt.Sprintf("- Active Sessions: %v\n", stats["active_sessions"]))
+
+	if avgSuccess, ok := stats["average_success_rate"].(float64); ok {
+		output.WriteString(fmt.Sprintf("- Avg Success Rate: %.2f%%\n", avgSuccess*100))
+	}
+	if avgSatisfaction, ok := stats["average_satisfaction"].(float64); ok {
+		output.WriteString(fmt.Sprintf("- Avg Satisfaction: %.1f/5\n", avgSatisfaction*5))
+	}
+
+	// Include pattern breakdown if requested
+	includePatterns := false
+	if ip, ok := args["include_patterns"].(bool); ok {
+		includePatterns = ip
+	}
+
+	if includePatterns {
+		output.WriteString("\n**Pattern Types:**\n")
+		if patterns, ok := stats["pattern_types"].(map[string]int); ok {
+			for pType, count := range patterns {
+				output.WriteString(fmt.Sprintf("- %s: %d\n", pType, count))
+			}
+		}
+	}
+
+	return MCPToolResult{
+		Content: []MCPContent{
+			{
+				Type: "text",
+				Text: output.String(),
+			},
+		},
+	}, nil
 }

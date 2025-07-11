@@ -40,45 +40,58 @@ type Ranker struct {
 	watcher      *fsnotify.Watcher
 }
 
+// Constants for configuration keys
+const (
+	WeightTemperatureKey = "ranking.weights.temperature"
+	WeightTokenKey       = "ranking.weights.token"
+	WeightSemanticKey    = "ranking.weights.semantic"
+	WeightLengthKey      = "ranking.weights.length"
+	WeightHistoricalKey  = "ranking.weights.historical"
+	EmbeddingModelKey    = "ranking.embedding_model"
+	EmbeddingProviderKey = "ranking.embedding_provider"
+
+	// Default weight values
+	DefaultWeightTemperature = 0.2
+	DefaultWeightToken       = 0.2
+	DefaultWeightSemantic    = 0.3
+	DefaultWeightLength      = 0.1
+	DefaultWeightHistorical  = 0.2
+
+	// Optimal temperature for scoring
+	OptimalTemperature = 0.7
+
+	// Token length boundaries
+	MinTokenLength       = 100
+	MaxPreferredTokenLen = 2000
+)
+
 // NewRanker creates a new ranker instance
 // registry is required so we can obtain an embedding-capable provider for
 // semantic similarity calculations.
 func NewRanker(storage *storage.Storage, registry providers.RegistryInterface, logger *logrus.Logger) *Ranker {
 	// Load weights from config / env with sane defaults.
-	viper.SetDefault("ranking.weights.temperature", 0.2)
-	viper.SetDefault("ranking.weights.token", 0.2)
-	viper.SetDefault("ranking.weights.semantic", 0.3)
-	viper.SetDefault("ranking.weights.length", 0.1)
-	viper.SetDefault("ranking.weights.historical", 0.2)
-	viper.SetDefault("ranking.embedding_model", "text-embedding-3-small")
-	viper.SetDefault("ranking.embedding_provider", "openai")
+	viper.SetDefault(WeightTemperatureKey, DefaultWeightTemperature)
+	viper.SetDefault(WeightTokenKey, DefaultWeightToken)
+	viper.SetDefault(WeightSemanticKey, DefaultWeightSemantic)
+	viper.SetDefault(WeightLengthKey, DefaultWeightLength)
+	viper.SetDefault(WeightHistoricalKey, DefaultWeightHistorical)
+	viper.SetDefault(EmbeddingModelKey, "text-embedding-3-small")
+	viper.SetDefault(EmbeddingProviderKey, "openai")
 
-	weights := []float64{
-		viper.GetFloat64("ranking.weights.temperature"),
-		viper.GetFloat64("ranking.weights.token"),
-		viper.GetFloat64("ranking.weights.semantic"),
-		viper.GetFloat64("ranking.weights.length"),
-		viper.GetFloat64("ranking.weights.historical"),
-	}
-	// Normalise to sum to 1 for safety
-	var sum float64
-	for _, w := range weights {
-		sum += w
-	}
-	if sum == 0 {
-		sum = 1
-	}
+	weights := loadWeights()
+	normalizedWeights := normalizeWeights(weights)
+
 	ranker := &Ranker{
 		storage:          storage,
 		registry:         registry,
 		logger:           log.GetLogger(),
-		tempWeight:       weights[0] / sum,
-		tokenWeight:      weights[1] / sum,
-		semanticWeight:   weights[2] / sum,
-		lengthWeight:     weights[3] / sum,
-		historicalWeight: weights[4] / sum,
-		embedModel:       viper.GetString("ranking.embedding_model"),
-		embedProvider:    viper.GetString("ranking.embedding_provider"),
+		tempWeight:       normalizedWeights[0],
+		tokenWeight:      normalizedWeights[1],
+		semanticWeight:   normalizedWeights[2],
+		lengthWeight:     normalizedWeights[3],
+		historicalWeight: normalizedWeights[4],
+		embedModel:       viper.GetString(EmbeddingModelKey),
+		embedProvider:    viper.GetString(EmbeddingProviderKey),
 	}
 
 	// Setup config file watcher for hot-reload
@@ -89,20 +102,19 @@ func NewRanker(storage *storage.Storage, registry providers.RegistryInterface, l
 	return ranker
 }
 
-// ReloadWeights re-reads weights from config and updates the ranker
-func (r *Ranker) ReloadWeights() error {
-	r.weightsMutex.Lock()
-	defer r.weightsMutex.Unlock()
-
-	weights := []float64{
-		viper.GetFloat64("ranking.weights.temperature"),
-		viper.GetFloat64("ranking.weights.token"),
-		viper.GetFloat64("ranking.weights.semantic"),
-		viper.GetFloat64("ranking.weights.length"),
-		viper.GetFloat64("ranking.weights.historical"),
+// loadWeights reads weight values from configuration
+func loadWeights() []float64 {
+	return []float64{
+		viper.GetFloat64(WeightTemperatureKey),
+		viper.GetFloat64(WeightTokenKey),
+		viper.GetFloat64(WeightSemanticKey),
+		viper.GetFloat64(WeightLengthKey),
+		viper.GetFloat64(WeightHistoricalKey),
 	}
+}
 
-	// Normalise to sum to 1 for safety
+// normalizeWeights normalizes weights to sum to 1.0
+func normalizeWeights(weights []float64) []float64 {
 	var sum float64
 	for _, w := range weights {
 		sum += w
@@ -111,11 +123,26 @@ func (r *Ranker) ReloadWeights() error {
 		sum = 1
 	}
 
-	r.tempWeight = weights[0] / sum
-	r.tokenWeight = weights[1] / sum
-	r.semanticWeight = weights[2] / sum
-	r.lengthWeight = weights[3] / sum
-	r.historicalWeight = weights[4] / sum
+	normalized := make([]float64, len(weights))
+	for i, w := range weights {
+		normalized[i] = w / sum
+	}
+	return normalized
+}
+
+// ReloadWeights re-reads weights from config and updates the ranker
+func (r *Ranker) ReloadWeights() error {
+	r.weightsMutex.Lock()
+	defer r.weightsMutex.Unlock()
+
+	weights := loadWeights()
+	normalizedWeights := normalizeWeights(weights)
+
+	r.tempWeight = normalizedWeights[0]
+	r.tokenWeight = normalizedWeights[1]
+	r.semanticWeight = normalizedWeights[2]
+	r.lengthWeight = normalizedWeights[3]
+	r.historicalWeight = normalizedWeights[4]
 
 	r.logger.WithFields(logrus.Fields{
 		"temp_weight":       r.tempWeight,
@@ -145,7 +172,9 @@ func (r *Ranker) setupConfigWatcher() error {
 	// Watch the config file directory (not the file itself, as it may be replaced)
 	configDir := filepath.Dir(configFile)
 	if err := watcher.Add(configDir); err != nil {
-		watcher.Close()
+		if closeErr := watcher.Close(); closeErr != nil {
+			r.logger.WithError(closeErr).Warn("Failed to close watcher during cleanup")
+		}
 		return err
 	}
 
@@ -162,21 +191,7 @@ func (r *Ranker) watchConfigChanges(configFile string) {
 			if !ok {
 				return
 			}
-			// Check if it's our config file and it was written/created
-			if event.Name == configFile && (event.Op&fsnotify.Write == fsnotify.Write || event.Op&fsnotify.Create == fsnotify.Create) {
-				r.logger.WithField("event", event.String()).Debug("Config file changed, reloading weights")
-
-				// Re-read the config file
-				if err := viper.ReadInConfig(); err != nil {
-					r.logger.WithError(err).Error("Failed to re-read config file")
-					continue
-				}
-
-				// Reload weights
-				if err := r.ReloadWeights(); err != nil {
-					r.logger.WithError(err).Error("Failed to reload weights")
-				}
-			}
+			r.handleConfigFileEvent(event, configFile)
 		case err, ok := <-r.watcher.Errors:
 			if !ok {
 				return
@@ -184,6 +199,30 @@ func (r *Ranker) watchConfigChanges(configFile string) {
 			r.logger.WithError(err).Error("Config watcher error")
 		}
 	}
+}
+
+// handleConfigFileEvent processes a single file system event
+func (r *Ranker) handleConfigFileEvent(event fsnotify.Event, configFile string) {
+	if !r.isConfigFileModified(event, configFile) {
+		return
+	}
+
+	r.logger.WithField("event", event.String()).Debug("Config file changed, reloading weights")
+
+	if err := viper.ReadInConfig(); err != nil {
+		r.logger.WithError(err).Error("Failed to re-read config file")
+		return
+	}
+
+	if err := r.ReloadWeights(); err != nil {
+		r.logger.WithError(err).Error("Failed to reload weights")
+	}
+}
+
+// isConfigFileModified checks if the event represents a modification to our config file
+func (r *Ranker) isConfigFileModified(event fsnotify.Event, configFile string) bool {
+	return event.Name == configFile &&
+		(event.Op&fsnotify.Write == fsnotify.Write || event.Op&fsnotify.Create == fsnotify.Create)
 }
 
 // Close cleans up the ranker resources
@@ -219,16 +258,10 @@ func (r *Ranker) calculateRanking(ctx context.Context, prompt *models.Prompt, or
 	defer r.weightsMutex.RUnlock()
 
 	// Temperature score (0.7 is optimal)
-	tempScore := 1.0 - math.Abs(prompt.Temperature-0.7)/0.7
+	tempScore := 1.0 - math.Abs(prompt.Temperature-OptimalTemperature)/OptimalTemperature
 
 	// Token efficiency score (prefer moderate length)
-	tokenScore := 1.0
-	contentLength := len(prompt.Content)
-	if contentLength < 100 {
-		tokenScore = float64(contentLength) / 100.0
-	} else if contentLength > 2000 {
-		tokenScore = 2000.0 / float64(contentLength)
-	}
+	tokenScore := calculateTokenScore(len(prompt.Content))
 
 	// Semantic score (embedding-based similarity to input)
 	semanticScore := r.calculateSemanticSimilarity(ctx, prompt.Content, originalInput)
@@ -237,7 +270,7 @@ func (r *Ranker) calculateRanking(ctx context.Context, prompt *models.Prompt, or
 	lengthScore := r.calculateLengthRatio(prompt.Content, originalInput)
 
 	// Historical score (placeholder for now)
-	historicalScore := 0.5
+	historicalScore := 0.5 // TODO: Implement actual historical scoring
 
 	// Calculate weighted total score using configurable weights
 	totalScore := (tempScore * r.tempWeight) + (tokenScore * r.tokenWeight) +
@@ -334,6 +367,17 @@ func (r *Ranker) calculateSemanticSimilarity(ctx context.Context, text1, text2 s
 
 	sim := cosineSimilarity(emb1, emb2)
 	return (sim + 1) / 2 // Map to [0,1]
+}
+
+// calculateTokenScore computes a score based on content length
+func calculateTokenScore(contentLength int) float64 {
+	if contentLength < MinTokenLength {
+		return float64(contentLength) / float64(MinTokenLength)
+	}
+	if contentLength > MaxPreferredTokenLen {
+		return float64(MaxPreferredTokenLen) / float64(contentLength)
+	}
+	return 1.0
 }
 
 // cosineSimilarity returns the cosine similarity between two float32 vectors.

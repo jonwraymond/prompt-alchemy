@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestOllamaProvider_NewOllamaProvider(t *testing.T) {
+func TestNewOllamaProvider(t *testing.T) {
 	tests := []struct {
 		name   string
 		config Config
