@@ -1,9 +1,8 @@
 ---
 ---
 
-@import "{{ site.theme }}";
-
 html {
+  @import "{{ site.theme }}";
   /* Alchemical Theme Styling */
   :root {
     --primary-gold: #F6A53C;
