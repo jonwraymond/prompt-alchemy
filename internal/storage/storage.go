@@ -1060,6 +1060,15 @@ func (s *Storage) TrackPromptUsage(promptID uuid.UUID, context string) error {
 }
 
 // TrackPromptRelationship records relationships between prompts
+// TODO: Server Mode Enhancement - Relationship Discovery Service
+// When implementing server mode, add these methods:
+// - DiscoverRelationships(threshold float64) - Find all relationships above similarity threshold
+// - DiscoverRelationshipsForPrompt(promptID uuid.UUID) - Find relationships for a specific prompt
+// - SearchBySemantic(query string, limit int) - Search prompts by semantic similarity
+// - GetRelationshipGraph(promptID uuid.UUID, depth int) - Get relationship graph for visualization
+//
+// These would enable on-demand relationship discovery without background processing,
+// keeping the infrastructure lightweight while providing powerful semantic search capabilities.
 func (s *Storage) TrackPromptRelationship(sourceID, targetID uuid.UUID, relationshipType string, strength float64, context string) error {
 	_, err := s.db.NamedExec(`
 		INSERT OR REPLACE INTO prompt_relationships 
@@ -1915,4 +1924,75 @@ func (s *Storage) GetMetrics(criteria MetricsCriteria) ([]models.PromptMetrics, 
 	}
 
 	return metrics, nil
+}
+
+// SaveInteraction persists a user interaction to the database.
+func (s *Storage) SaveInteraction(inter *models.UserInteraction) error {
+	if inter.ID == uuid.Nil {
+		inter.ID = uuid.New()
+	}
+	if inter.Timestamp.IsZero() {
+		inter.Timestamp = time.Now()
+	}
+
+	query := `
+	INSERT INTO user_interactions (id, prompt_id, session_id, action, score, timestamp)
+	VALUES (?, ?, ?, ?, ?, ?)
+	`
+	_, err := s.db.Exec(query, inter.ID, inter.PromptID, inter.SessionID, inter.Action, inter.Score, inter.Timestamp)
+	if err != nil {
+		s.logger.WithError(err).Error("Failed to save interaction")
+		return err
+	}
+	return nil
+}
+
+// ListInteractions retrieves interactions matching the filter.
+// Filter keys: prompt_id, session_id, action, min_score, since (timestamp).
+func (s *Storage) ListInteractions(filter map[string]interface{}) ([]*models.UserInteraction, error) {
+	query := "SELECT id, prompt_id, session_id, action, score, timestamp FROM user_interactions WHERE 1=1"
+	args := []interface{}{}
+
+	if pid, ok := filter["prompt_id"]; ok {
+		query += " AND prompt_id = ?"
+		args = append(args, pid)
+	}
+	if sid, ok := filter["session_id"]; ok {
+		query += " AND session_id = ?"
+		args = append(args, sid)
+	}
+	if act, ok := filter["action"]; ok {
+		query += " AND action = ?"
+		args = append(args, act)
+	}
+	if ms, ok := filter["min_score"]; ok {
+		query += " AND score >= ?"
+		args = append(args, ms)
+	}
+	if since, ok := filter["since"]; ok {
+		query += " AND timestamp >= ?"
+		args = append(args, since)
+	}
+
+	query += " ORDER BY timestamp DESC"
+
+	rows, err := s.db.Query(query, args...)
+	if err != nil {
+		s.logger.WithError(err).Error("Failed to query interactions")
+		return nil, err
+	}
+	defer rows.Close()
+
+	var interactions []*models.UserInteraction
+	for rows.Next() {
+		inter := &models.UserInteraction{}
+		err := rows.Scan(&inter.ID, &inter.PromptID, &inter.SessionID, &inter.Action, &inter.Score, &inter.Timestamp)
+		if err != nil {
+			s.logger.WithError(err).Warn("Failed to scan interaction")
+			continue
+		}
+		interactions = append(interactions, inter)
+	}
+
+	return interactions, nil
 }

@@ -115,7 +115,7 @@ func (p *AnthropicProvider) Generate(ctx context.Context, req GenerateRequest) (
 
 // GetEmbedding returns embeddings for the given text
 // Note: Anthropic doesn't provide embeddings, so we return an error
-func (p *AnthropicProvider) GetEmbedding(ctx context.Context, text string, registry *Registry) ([]float32, error) {
+func (p *AnthropicProvider) GetEmbedding(ctx context.Context, text string, registry RegistryInterface) ([]float32, error) {
 	return nil, fmt.Errorf("anthropic provider does not support embeddings - use OpenAI or OpenRouter for embeddings")
 }
 

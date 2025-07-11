@@ -98,7 +98,7 @@ func (p *OllamaProvider) Generate(ctx context.Context, req GenerateRequest) (*Ge
 }
 
 // GetEmbedding creates embeddings using Ollama's official API
-func (p *OllamaProvider) GetEmbedding(ctx context.Context, text string, registry *Registry) ([]float32, error) {
+func (p *OllamaProvider) GetEmbedding(ctx context.Context, text string, registry RegistryInterface) ([]float32, error) {
 	logger := log.GetLogger()
 	logger.Debug("OllamaProvider: Getting embedding")
 

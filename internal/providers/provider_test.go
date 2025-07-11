@@ -15,7 +15,7 @@ type TestProvider struct {
 	available          bool
 	supportsEmbeddings bool
 	generateFunc       func(ctx context.Context, req GenerateRequest) (*GenerateResponse, error)
-	embeddingFunc      func(ctx context.Context, text string, registry *Registry) ([]float32, error)
+	embeddingFunc      func(ctx context.Context, text string, registry RegistryInterface) ([]float32, error)
 }
 
 func (p *TestProvider) Name() string             { return p.name }
@@ -33,7 +33,7 @@ func (p *TestProvider) Generate(ctx context.Context, req GenerateRequest) (*Gene
 	}, nil
 }
 
-func (p *TestProvider) GetEmbedding(ctx context.Context, text string, registry *Registry) ([]float32, error) {
+func (p *TestProvider) GetEmbedding(ctx context.Context, text string, registry RegistryInterface) ([]float32, error) {
 	if p.embeddingFunc != nil {
 		return p.embeddingFunc(ctx, text, registry)
 	}

@@ -467,7 +467,8 @@ func (p *GoogleProvider) getTemperature(temp float64) float64 {
 }
 
 // GetEmbedding returns embeddings for the given text
-func (p *GoogleProvider) GetEmbedding(ctx context.Context, text string, registry *Registry) ([]float32, error) {
+// Google doesn't provide embeddings through Gemini API, so we delegate to standardized embedding
+func (p *GoogleProvider) GetEmbedding(ctx context.Context, text string, registry RegistryInterface) ([]float32, error) {
 	return getStandardizedEmbedding(ctx, text, registry)
 }
 

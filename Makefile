@@ -154,10 +154,17 @@ test-e2e:
 	@chmod +x scripts/run-e2e-tests.sh
 	@scripts/run-e2e-tests.sh --test-level full --mock-mode true
 
+# Run learning-to-rank end-to-end test
+.PHONY: test-ltr
+test-ltr:
+	@echo "Running Learning-to-Rank end-to-end test..."
+	@chmod +x scripts/test-learning-to-rank.sh
+	@scripts/test-learning-to-rank.sh
+
 # Run smoke tests (quick E2E validation)
 .PHONY: test-smoke
 test-smoke:
-	@echo "Running smoke tests..."
+	@echo "Running comprehensive E2E tests..."
 	@chmod +x scripts/run-e2e-tests.sh
 	@scripts/run-e2e-tests.sh --test-level smoke --mock-mode true
 

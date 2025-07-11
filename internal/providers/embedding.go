@@ -11,7 +11,7 @@ import (
 // This ensures all providers use the same embedding model for compatibility
 // All providers delegate embedding requests to OpenAI text-embedding-3-small (1536d)
 // for maximum search coverage and dimensional compatibility
-func getStandardizedEmbedding(ctx context.Context, text string, registry *Registry) ([]float32, error) {
+func getStandardizedEmbedding(ctx context.Context, text string, registry RegistryInterface) ([]float32, error) {
 	logger := log.GetLogger()
 
 	provider, err := registry.Get(ProviderOpenAI)

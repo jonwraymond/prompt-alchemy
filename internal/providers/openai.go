@@ -100,41 +100,38 @@ func (p *OpenAIProvider) Generate(ctx context.Context, req GenerateRequest) (*Ge
 	return genResponse, nil
 }
 
-// GetEmbedding creates embeddings using OpenAI's official SDK
-func (p *OpenAIProvider) GetEmbedding(ctx context.Context, text string, registry *Registry) ([]float32, error) {
+// GetEmbedding returns embeddings for the given text using OpenAI's embedding API
+func (p *OpenAIProvider) GetEmbedding(ctx context.Context, text string, registry RegistryInterface) ([]float32, error) {
 	logger := log.GetLogger()
 	logger.Debug("OpenAIProvider: Getting embedding")
 
-	// Create embedding parameters using the official SDK
-	params := openai.EmbeddingNewParams{
-		Model: openai.EmbeddingModelTextEmbedding3Small,
+	model := "text-embedding-3-small" // Standard model for all embeddings (1536 dimensions)
+	logger.Debugf("OpenAIProvider: Using embedding model: %s", model)
+
+	response, err := p.client.Embeddings.New(ctx, openai.EmbeddingNewParams{
 		Input: openai.EmbeddingNewParamsInputUnion{
 			OfString: openai.String(text),
 		},
-	}
-
-	// Call the embeddings API
-	response, err := p.client.Embeddings.New(ctx, params)
+		Model: openai.EmbeddingModelTextEmbedding3Small,
+	})
 	if err != nil {
 		logger.WithError(err).Error("OpenAIProvider: Failed to create embedding")
 		return nil, fmt.Errorf("failed to create embedding: %w", err)
 	}
 
-	// Extract embedding from response
 	if len(response.Data) == 0 {
-		logger.Warn("OpenAIProvider: No embedding returned from OpenAI")
-		return nil, fmt.Errorf("no embedding returned")
+		logger.Error("OpenAIProvider: No embedding data returned")
+		return nil, fmt.Errorf("no embedding data returned")
 	}
 
 	// Convert []float64 to []float32
-	embeddingF64 := response.Data[0].Embedding
-	embeddingF32 := make([]float32, len(embeddingF64))
-	for i, v := range embeddingF64 {
-		embeddingF32[i] = float32(v)
+	embedding := make([]float32, len(response.Data[0].Embedding))
+	for i, v := range response.Data[0].Embedding {
+		embedding[i] = float32(v)
 	}
-	logger.Debugf("OpenAIProvider: Successfully created embedding with length %d", len(embeddingF32))
+	logger.Debugf("OpenAIProvider: Successfully created embedding with length %d", len(embedding))
 
-	return embeddingF32, nil
+	return embedding, nil
 }
 
 // Name returns the provider name
