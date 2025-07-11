@@ -24,10 +24,15 @@ type Engine struct {
 
 // NewEngine creates a new prompt generation engine
 func NewEngine(registry *providers.Registry, logger *logrus.Logger) *Engine {
+	// Allow dependency injection of a logger; fall back to package default when nil
+	if logger == nil {
+		logger = log.GetLogger()
+	}
+
 	return &Engine{
 		registry:       registry,
 		phaseTemplates: initializePhaseTemplates(),
-		logger:         log.GetLogger(),
+		logger:         logger,
 	}
 }
 

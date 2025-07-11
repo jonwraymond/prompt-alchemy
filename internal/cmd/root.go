@@ -66,7 +66,7 @@ func init() {
 	viper.SetDefault("generation.default_max_tokens", 2000)
 	viper.SetDefault("generation.default_count", 3)
 	viper.SetDefault("generation.use_parallel", true)
-	viper.SetDefault("generation.default_target_model", "claude-3-5-sonnet-20241022")
+	viper.SetDefault("generation.default_target_model", "claude-sonnet-4-20250514")
 	viper.SetDefault("generation.default_embedding_model", "text-embedding-3-small")
 	viper.SetDefault("generation.default_embedding_dimensions", 1536)
 
