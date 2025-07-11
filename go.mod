@@ -8,7 +8,7 @@ require (
 	github.com/anthropics/anthropic-sdk-go v1.5.0
 	github.com/google/uuid v1.6.0
 	github.com/jmoiron/sqlx v1.4.0
-	github.com/mattn/go-sqlite3 v1.14.22
+	github.com/mattn/go-sqlite3 v1.14.28
 	github.com/ollama/ollama v0.9.6
 	github.com/openai/openai-go v1.10.0
 	github.com/sirupsen/logrus v1.9.3
