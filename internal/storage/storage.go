@@ -9,8 +9,6 @@ import (
 	"strconv"
 	"time"
 
-	"crypto/sha256"
-
 	"github.com/jonwraymond/prompt-alchemy/pkg/models"
 
 	"github.com/google/uuid"
