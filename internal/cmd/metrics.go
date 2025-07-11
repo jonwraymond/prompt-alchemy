@@ -92,7 +92,7 @@ Examples:
 }
 
 func init() {
-	metricsCmd.Flags().StringVar(&metricsPhase, "phase", "", "Filter by phase (idea, human, precision)")
+	metricsCmd.Flags().StringVar(&metricsPhase, "phase", "", "Filter by phase: prima-materia (brainstorming), solutio (natural flow), coagulatio (precision)")
 	metricsCmd.Flags().StringVar(&metricsProvider, "provider", "", "Filter by provider")
 	metricsCmd.Flags().StringVar(&metricsSince, "since", "", "Filter by creation date (YYYY-MM-DD)")
 	metricsCmd.Flags().IntVar(&metricsLimit, "limit", 100, "Maximum number of prompts to analyze")

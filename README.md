@@ -5,7 +5,7 @@
 <h1 align="center">Prompt Alchemy</h1>
 
 <p align="center">
-  <strong>A sophisticated AI prompt generation system that uses a phased approach to create, refine, and optimize prompts for maximum effectiveness.</strong>
+  <strong>Transform raw ideas into golden prompts through the ancient art of linguistic alchemy. A sophisticated AI system that transmutes concepts through three sacred phases of refinement.</strong>
 </p>
 
 <p align="center">
@@ -17,14 +17,17 @@
 
 ## Features
 
-- **🔄 Phased Generation**: Three-phase approach (Idea → Human → Precision)
+- **⚗️ Alchemical Transformation**: Three sacred phases of transmutation
+  - **Prima Materia**: Extract pure essence from raw materials
+  - **Solutio**: Dissolve into flowing, natural language
+  - **Coagulatio**: Crystallize into refined, potent form
 - **🤖 Multi-Provider Support**: OpenAI, Claude (via Anthropic), Gemini, and OpenRouter
-- **💾 Smart Storage**: SQLite-based prompt catalog with context accumulation
-- **🎯 Intelligent Ranking**: Advanced scoring based on temperature, tokens, and context
-- **📊 Performance Tracking**: A/B testing and metrics for continuous improvement
+- **💾 Smart Storage**: SQLite-based grimoire with context accumulation
+- **🎯 Intelligent Ranking**: Advanced scoring based on alchemical principles
+- **📊 Performance Tracking**: Track transmutation success rates
 - **🔌 MCP Integration**: AI agent-friendly interface for seamless integration
-- **⚡ Fast & Efficient**: Parallel processing and optimized for speed
-- **📈 Detailed Metadata**: Complete model usage tracking including costs and performance
+- **⚡ Fast & Efficient**: Parallel alchemical processing
+- **📈 Detailed Metadata**: Complete transmutation records including costs
 
 ## Installation
 
@@ -81,14 +84,14 @@ providers:
     embedding_timeout: 5     # Embedding timeout in seconds
     generation_timeout: 120  # Generation timeout in seconds
 
-# Phase configurations
+# Alchemical phase configurations
 phases:
-  idea:
-    provider: "openai"
-  human:
-    provider: "anthropic"
-  precision:
-    provider: "google"
+  prima-materia:
+    provider: "openai"     # Extract raw essence
+  solutio:
+    provider: "anthropic"  # Dissolve into natural form
+  coagulatio:
+    provider: "google"     # Crystallize to perfection
 
 # Generation settings
 generation:
@@ -150,11 +153,11 @@ prompt-alchemy generate "Create a prompt for writing technical documentation"
 
 Advanced options:
 ```bash
-# Specify phases
-prompt-alchemy generate --phases "idea,human" "Your prompt idea"
+# Specify alchemical phases
+prompt-alchemy generate --phases "prima-materia,solutio" "Your raw material"
 
-# Generate multiple variants
-prompt-alchemy generate --count 5 "Your prompt idea"
+# Generate multiple transmutations
+prompt-alchemy generate --count 5 "Your raw material"
 
 # Custom temperature and tokens
 prompt-alchemy generate --temperature 0.8 --max-tokens 3000 "Your prompt idea"
@@ -178,16 +181,34 @@ prompt-alchemy search "authentication flow"
 # Filter by tags
 prompt-alchemy search --tags "technical" "documentation"
 
-# Filter by phase
-prompt-alchemy search --phase human "natural language"
+# Filter by alchemical phase
+prompt-alchemy search --phase solutio "natural language"
 
 # Filter by model
 prompt-alchemy search --model "o4-mini"
 ```
 
+## The Alchemical Process
+
+Prompt Alchemy follows the ancient principles of transformation through three sacred phases:
+
+1. **Prima Materia (First Matter)** - The raw, unformed potential of your ideas
+   - *In practice*: Brainstorming and initial idea extraction
+   - *Purpose*: Captures the core concept and explores possibilities
+
+2. **Solutio (Dissolution)** - Breaking down rigid structures into fluid, natural expression  
+   - *In practice*: Converting ideas into conversational, human-readable language
+   - *Purpose*: Makes prompts natural and accessible
+
+3. **Coagulatio (Crystallization)** - Solidifying the essence into its most potent form
+   - *In practice*: Refining for technical accuracy, precision, and clarity
+   - *Purpose*: Creates the final, polished prompt ready for use
+
+Each phase can be powered by different AI providers, creating a unique alchemical blend optimized for different strengths.
+
 ## Architecture
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for a detailed overview of the system architecture.
+See [ARCHITECTURE.md](ARCHITECTURE.md) for a detailed overview of the alchemical laboratory.
 
 ## Contributing
 

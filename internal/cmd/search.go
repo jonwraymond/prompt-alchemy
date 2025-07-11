@@ -71,7 +71,7 @@ Examples:
 }
 
 func init() {
-	searchCmd.Flags().StringVar(&searchPhase, "phase", "", "Filter by phase (idea, human, precision)")
+	searchCmd.Flags().StringVar(&searchPhase, "phase", "", "Filter by phase: prima-materia (brainstorming), solutio (natural flow), coagulatio (precision)")
 	searchCmd.Flags().StringVar(&searchProvider, "provider", "", "Filter by provider (openai, anthropic, google, openrouter)")
 	searchCmd.Flags().StringVar(&searchModel, "model", "", "Filter by model")
 	searchCmd.Flags().StringVar(&searchTags, "tags", "", "Filter by tags (comma-separated)")

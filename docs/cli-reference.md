@@ -61,6 +61,10 @@ prompt-alchemy --log-level debug generate "test prompt"
 | `config` | Show current configuration |
 | `providers` | List configured providers and status |
 | `serve` | Start MCP server for IDE integration |
+| `batch` | Process multiple prompts from various input sources |
+| `test` | Test provider connectivity and configuration |
+| `validate` | Validate configuration and prompt data |
+| `version` | Show version and build information |
 
 ## generate
 
@@ -75,7 +79,7 @@ prompt-alchemy generate [flags] <input>
 
 | Flag | Short | Type | Default | Description |
 |------|-------|------|---------|-------------|
-| `--phases` | `-p` | string | `idea,human,precision` | Phases to use (comma-separated) |
+| `--phases` | `-p` | string | `prima-materia,solutio,coagulatio` | Alchemical phases to use (comma-separated) |
 | `--count` | `-c` | int | `3` | Number of prompt variants to generate |
 | `--temperature` | `-t` | float | `0.7` | Temperature for generation (0.0-1.0) |
 | `--max-tokens` | `-m` | int | `2000` | Maximum tokens for generation |
@@ -95,7 +99,7 @@ prompt-alchemy generate [flags] <input>
 prompt-alchemy generate "Create a REST API for user management"
 
 # Custom phases and count
-prompt-alchemy generate -p "idea,precision" -c 5 "Database schema design"
+prompt-alchemy generate -p "prima-materia,coagulatio" -c 5 "Database schema design"
 
 # With specific provider and tags
 prompt-alchemy generate --provider openai --tags "api,backend" "Authentication system"
@@ -126,7 +130,7 @@ prompt-alchemy search [flags] <query>
 
 | Flag | Short | Type | Default | Description |
 |------|-------|------|---------|-------------|
-| `--phase` | | string | | Filter by phase (idea, human, precision) |
+| `--phase` | | string | | Filter by phase (prima-materia, solutio, coagulatio) |
 | `--provider` | | string | | Filter by provider (openai, anthropic, google, openrouter) |
 | `--model` | | string | | Filter by model |
 | `--tags` | | string | | Filter by tags (comma-separated) |
@@ -145,7 +149,7 @@ prompt-alchemy search "API design"
 prompt-alchemy search --semantic "user authentication"
 
 # Filter by phase and provider
-prompt-alchemy search --phase human --provider anthropic "natural language"
+prompt-alchemy search --phase solutio --provider anthropic "natural language"
 
 # Filter by model
 prompt-alchemy search --model "o4-mini" "code generation"
@@ -160,7 +164,7 @@ prompt-alchemy search --since 2024-01-01 "recent prompts"
 prompt-alchemy search --limit 5 --output json "REST API"
 
 # Multiple filters combined
-prompt-alchemy search --phase precision --provider openai --tags "optimization" --limit 20 "performance"
+prompt-alchemy search --phase coagulatio --provider openai --tags "optimization" --limit 20 "performance"
 ```
 
 ## optimize
@@ -276,7 +280,7 @@ prompt-alchemy metrics [flags]
 
 | Flag | Short | Type | Default | Description |
 |------|-------|------|---------|-------------|
-| `--phase` | | string | | Filter by phase (idea, human, precision) |
+| `--phase` | | string | | Filter by phase (prima-materia, solutio, coagulatio) |
 | `--provider` | | string | | Filter by provider |
 | `--since` | | string | | Filter by creation date (YYYY-MM-DD) |
 | `--limit` | | int | `100` | Maximum number of prompts to analyze |
@@ -290,7 +294,7 @@ prompt-alchemy metrics [flags]
 prompt-alchemy metrics
 
 # Filter by phase and provider
-prompt-alchemy metrics --phase human --provider anthropic
+prompt-alchemy metrics --phase solutio --provider anthropic
 
 # Generate weekly report
 prompt-alchemy metrics --report weekly
@@ -431,23 +435,23 @@ providers:
     model: "o4-mini"
   anthropic:
     api_key: "sk-ant-..."
-    model: "claude-sonnet-4-20250514"
+    model: "claude-3-5-sonnet-20241022"
 
 generation:
   default_temperature: 0.7
   default_max_tokens: 2000
   default_count: 3
   use_parallel: true
-  default_target_model: "claude-sonnet-4-20250514"
+  default_target_model: "claude-3-5-sonnet-20241022"
   default_embedding_model: "text-embedding-3-small"
   default_embedding_dimensions: 1536
 
 phases:
-  idea:
+  prima-materia:
     provider: "openai"
-  human:
+  solutio:
     provider: "anthropic"
-  precision:
+  coagulatio:
     provider: "google"
 ```
 
@@ -490,3 +494,124 @@ phases:
 - Enable debug logging with `--log-level debug`
 - Use `--dry-run` flags where available
 - Check provider status with `providers` command
+
+## batch
+
+Process multiple prompts from various input sources including JSON files, CSV files, and text files.
+
+### Usage
+```bash
+prompt-alchemy batch [flags] <input-file>
+```
+
+### Flags
+
+| Flag | Short | Type | Default | Description |
+|------|-------|------|---------|-------------|
+| `--format` | `-f` | string | `auto` | Input format (json, csv, text, auto) |
+| `--output` | `-o` | string | `json` | Output format (json, yaml, text) |
+| `--phases` | `-p` | string | `prima-materia,solutio,coagulatio` | Alchemical phases to use |
+| `--parallel` | | int | `3` | Number of parallel processes |
+| `--save` | | bool | `true` | Save results to database |
+
+### Examples
+```bash
+# Process JSON file with multiple prompts
+prompt-alchemy batch --format json prompts.json
+
+# Process CSV with custom phases
+prompt-alchemy batch --phases prima-materia,coagulatio --format csv prompts.csv
+
+# Process text file with parallel execution
+prompt-alchemy batch --parallel 5 prompts.txt
+```
+
+## test
+
+Test provider connectivity and configuration to ensure all providers are working correctly.
+
+### Usage
+```bash
+prompt-alchemy test [flags]
+```
+
+### Flags
+
+| Flag | Short | Type | Default | Description |
+|------|-------|------|---------|-------------|
+| `--provider` | `-p` | string | | Test specific provider only |
+| `--timeout` | `-t` | int | `30` | Timeout in seconds for each test |
+| `--verbose` | `-v` | bool | `false` | Show detailed test results |
+
+### Examples
+```bash
+# Test all providers
+prompt-alchemy test
+
+# Test specific provider
+prompt-alchemy test --provider openai
+
+# Test with verbose output
+prompt-alchemy test --verbose --timeout 60
+```
+
+## validate
+
+Validate configuration settings and prompt data integrity.
+
+### Usage
+```bash
+prompt-alchemy validate [flags]
+```
+
+### Flags
+
+| Flag | Short | Type | Default | Description |
+|------|-------|------|---------|-------------|
+| `--config` | `-c` | bool | `true` | Validate configuration |
+| `--data` | `-d` | bool | `false` | Validate database data |
+| `--fix` | | bool | `false` | Attempt to fix validation issues |
+| `--phases` | `-p` | string | | Validate specific phases only |
+
+### Examples
+```bash
+# Validate configuration only
+prompt-alchemy validate --config
+
+# Validate database data
+prompt-alchemy validate --data
+
+# Validate and fix issues
+prompt-alchemy validate --data --fix
+
+# Validate specific phases
+prompt-alchemy validate --phases prima-materia,solutio
+```
+
+## version
+
+Show version and build information for the Prompt Alchemy CLI.
+
+### Usage
+```bash
+prompt-alchemy version [flags]
+```
+
+### Flags
+
+| Flag | Short | Type | Default | Description |
+|------|-------|------|---------|-------------|
+| `--format` | `-f` | string | `text` | Output format (text, json, yaml) |
+| `--short` | `-s` | bool | `false` | Show only version number |
+
+### Examples
+```bash
+# Show full version information
+prompt-alchemy version
+
+# Show version in JSON format
+prompt-alchemy version --format json
+
+# Show only version number
+prompt-alchemy version --short
+```

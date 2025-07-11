@@ -55,7 +55,7 @@ type Engine struct {
 ```
 
 Responsibilities:
-- Phase management (idea → human → precision)
+- Alchemical phase management (prima-materia → solutio → coagulatio)
 - Provider coordination
 - Parallel processing
 - Result aggregation

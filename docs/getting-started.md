@@ -11,7 +11,7 @@ Welcome to Prompt Alchemy! This guide will help you get up and running quickly.
 
 Before you begin, ensure you have:
 
-- Go 1.23 or higher installed
+- Go 1.24 or higher installed
 - Git for cloning the repository
 - At least one LLM provider API key (OpenAI, Anthropic, Google, OpenRouter, or Ollama setup)
 - SQLite (usually pre-installed on most systems)
@@ -42,7 +42,10 @@ Once configured, generate your first prompt:
 ```
 
 This will:
-1. Process your request through three phases (idea, human, precision)
+1. Process your request through three alchemical phases:
+   - **prima-materia**: Brainstorm and extract the core idea
+   - **solutio**: Transform into natural, conversational language
+   - **coagulatio**: Refine for precision and technical accuracy
 2. Store the results in a local database
 3. Display the generated prompts with rankings
 
@@ -95,7 +98,7 @@ Your configuration file (`~/.prompt-alchemy/config.yaml`) controls:
 
 - **API Keys**: For each provider
 - **Default Models**: Which models to use
-- **Phases**: Which provider handles each phase
+- **Alchemical Phases**: Which provider handles each transformation phase
 - **Generation Settings**: Temperature, max tokens, etc.
 
 Example configuration:
@@ -106,22 +109,22 @@ providers:
     model: "o4-mini"
   anthropic:
     api_key: "sk-ant-..."
-    model: "claude-sonnet-4-20250514"
+    model: "claude-3-5-sonnet-20241022"
 
 phases:
-  idea:
-    provider: openai
-  human:
-    provider: anthropic
-  precision:
-    provider: google
+  prima-materia:
+    provider: openai      # Extract raw essence
+  solutio:
+    provider: anthropic   # Dissolve into natural form
+  coagulatio:
+    provider: google      # Crystallize to perfection
 
 generation:
   default_temperature: 0.7
   default_max_tokens: 2000
   default_count: 3
   use_parallel: true
-  default_target_model: "claude-sonnet-4-20250514"
+  default_target_model: "claude-3-5-sonnet-20241022"
   default_embedding_model: "text-embedding-3-small"
   default_embedding_dimensions: 1536
 ```

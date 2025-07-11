@@ -1,6 +1,11 @@
+---
+layout: default
+title: Multi-Architecture Builds
+---
+
 # Multi-Architecture Builds
 
-PromGen (Prompt Alchemy) supports building binaries for multiple operating systems and architectures through our comprehensive CI/CD pipeline and local build system.
+Prompt Alchemy supports building binaries for multiple operating systems and architectures through our comprehensive CI/CD pipeline and local build system.
 
 ## Supported Platforms
 

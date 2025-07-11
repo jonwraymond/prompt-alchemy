@@ -35,17 +35,17 @@ var (
 // generateCmd represents the generate command
 var generateCmd = &cobra.Command{
 	Use:   "generate [input]",
-	Short: "Generate AI prompts using phased approach",
-	Long: `Generate AI prompts through a sophisticated phased approach:
-- Idea Phase: Creates comprehensive base prompts
-- Human Phase: Adds natural language and emotional resonance
-- Precision Phase: Optimizes for clarity and effectiveness`,
+	Short: "Transmute raw ideas into golden prompts through alchemical transformation",
+	Long: `Generate AI prompts through the ancient art of prompt alchemy:
+- Prima Materia: Extract pure essence from raw materials to create the foundation stone
+- Solutio: Dissolve rigid structures into flowing, natural language
+- Coagulatio: Crystallize the dissolved essence into its most potent, refined form`,
 	Args: cobra.MinimumNArgs(1),
 	RunE: runGenerate,
 }
 
 func init() {
-	generateCmd.Flags().StringVarP(&phases, "phases", "p", "idea,human,precision", "Phases to use (comma-separated)")
+	generateCmd.Flags().StringVarP(&phases, "phases", "p", "prima-materia,solutio,coagulatio", "Alchemical phases: prima-materia (brainstorming), solutio (natural flow), coagulatio (precision)")
 	generateCmd.Flags().IntVarP(&count, "count", "c", 3, "Number of prompt variants to generate")
 	generateCmd.Flags().Float64VarP(&temperature, "temperature", "t", 0.7, "Temperature for generation")
 	generateCmd.Flags().IntVarP(&maxTokens, "max-tokens", "m", 2000, "Maximum tokens for generation")
@@ -213,12 +213,12 @@ func parsePhases(phasesStr string) []models.Phase {
 	for _, part := range parts {
 		phase := strings.TrimSpace(part)
 		switch phase {
-		case "idea":
-			phases = append(phases, models.PhaseIdea)
-		case "human":
-			phases = append(phases, models.PhaseHuman)
-		case "precision":
-			phases = append(phases, models.PhasePrecision)
+		case "prima-materia", "prima_materia", "idea": // Support legacy name
+			phases = append(phases, models.PhasePrimaMaterial)
+		case "solutio", "human": // Support legacy name
+			phases = append(phases, models.PhaseSolutio)
+		case "coagulatio", "precision": // Support legacy name
+			phases = append(phases, models.PhaseCoagulatio)
 		}
 	}
 

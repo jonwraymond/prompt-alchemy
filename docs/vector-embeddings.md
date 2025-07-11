@@ -337,7 +337,7 @@ PROMPT_ALCHEMY_DATABASE_ENABLE_VECTOR_SEARCH=true
 prompt-alchemy search --semantic "user authentication"
 
 # Semantic search with filters
-prompt-alchemy search --semantic --phase human --provider anthropic "natural language processing"
+prompt-alchemy search --semantic --phase solutio --provider anthropic "natural language processing"
 
 # Semantic search with custom threshold
 prompt-alchemy search --semantic --similarity 0.8 "API design patterns"

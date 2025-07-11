@@ -297,17 +297,40 @@ func validatePhases() []ValidationIssue {
 	}
 
 	// Check required phases
-	requiredPhases := []string{"idea", "human", "precision"}
+	requiredPhases := []string{"prima-materia", "solutio", "coagulatio"}
+	legacyPhaseMap := map[string]string{"idea": "prima-materia", "human": "solutio", "precision": "coagulatio"}
+
 	for _, phase := range requiredPhases {
 		if _, exists := phases[phase]; !exists {
-			issues = append(issues, ValidationIssue{
-				Category:    "phases",
-				Severity:    "warning",
-				Field:       fmt.Sprintf("phases.%s", phase),
-				Message:     fmt.Sprintf("Missing configuration for %s phase", phase),
-				Fix:         fmt.Sprintf("Add provider mapping for %s phase", phase),
-				AutoFixable: true,
-			})
+			// Check if legacy name exists
+			legacyFound := false
+			for legacy, modern := range legacyPhaseMap {
+				if modern == phase {
+					if _, legacyExists := phases[legacy]; legacyExists {
+						legacyFound = true
+						issues = append(issues, ValidationIssue{
+							Category:    "phases",
+							Severity:    "info",
+							Field:       fmt.Sprintf("phases.%s", legacy),
+							Message:     fmt.Sprintf("Using legacy phase name '%s', consider updating to '%s'", legacy, modern),
+							Fix:         fmt.Sprintf("Rename phase from '%s' to '%s'", legacy, modern),
+							AutoFixable: true,
+						})
+						break
+					}
+				}
+			}
+
+			if !legacyFound {
+				issues = append(issues, ValidationIssue{
+					Category:    "phases",
+					Severity:    "warning",
+					Field:       fmt.Sprintf("phases.%s", phase),
+					Message:     fmt.Sprintf("Missing configuration for %s phase", phase),
+					Fix:         fmt.Sprintf("Add provider mapping for %s phase", phase),
+					AutoFixable: true,
+				})
+			}
 		}
 	}
 

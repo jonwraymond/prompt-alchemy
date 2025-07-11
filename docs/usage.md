@@ -35,7 +35,7 @@ prompt-alchemy generate "Your prompt idea"
 
 ### Flags
 - `--persona, -p` - Generation persona (code, writing, analysis, generic)
-- `--phases` - Phases to run (idea,human,precision)
+- `--phases` - Alchemical phases to run (prima-materia,solutio,coagulatio)
 - `--provider` - Override provider for all phases
 - `--count, -c` - Number of prompts to generate
 - `--temperature, -t` - Generation temperature (0.0-1.0)
@@ -50,7 +50,7 @@ prompt-alchemy generate "Your prompt idea"
 prompt-alchemy generate "Create a Python web scraper" --persona code
 
 # Use specific phases only
-prompt-alchemy generate "Essay outline" --phases idea,human
+prompt-alchemy generate "Essay outline" --phases prima-materia,solutio
 
 # Generate multiple variants
 prompt-alchemy generate "Product description" --count 5 --temperature 0.9
@@ -86,7 +86,7 @@ prompt-alchemy search "search query"
 prompt-alchemy search "authentication flow" --semantic
 
 # Filter by phase and provider
-prompt-alchemy search "API" --phase precision --provider openai
+prompt-alchemy search "API" --phase coagulatio --provider openai
 
 # Search with tags
 prompt-alchemy search "docs" --tags "api,reference"
@@ -214,13 +214,13 @@ Personas optimize generation for specific use cases:
 - **analysis** - Data analysis and research
 - **generic** - General-purpose (default)
 
-### Phases
+### Alchemical Phases
 
-Each phase serves a specific purpose:
+Each phase represents a transformation in the alchemical process:
 
-1. **idea** - Brainstorming and exploration
-2. **human** - Natural, conversational refinement
-3. **precision** - Technical accuracy and clarity
+1. **prima-materia** (First Matter) - Raw essence extraction and exploration - brainstorming and capturing the core idea
+2. **solutio** (Dissolution) - Dissolution into natural, flowing language - making it conversational and human-readable
+3. **coagulatio** (Crystallization) - Crystallization into precise, potent form - refining for technical accuracy and clarity
 
 ### Provider Selection
 
@@ -232,12 +232,12 @@ prompt-alchemy generate "Prompt" --provider openai
 
 # Per-phase configuration (in config.yaml)
 phases:
-  idea:
-    provider: openai
-  human:
-    provider: anthropic
-  precision:
-    provider: google
+  prima-materia:
+    provider: openai      # Extract raw essence
+  solutio:
+    provider: anthropic   # Dissolve into natural form
+  coagulatio:
+    provider: google      # Crystallize to perfection
 ```
 
 ### Embeddings

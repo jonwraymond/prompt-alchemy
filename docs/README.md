@@ -1,3 +1,8 @@
+---
+layout: default
+title: Documentation Development
+---
+
 # Prompt Alchemy Documentation
 
 This directory contains the documentation for Prompt Alchemy, hosted on GitHub Pages.

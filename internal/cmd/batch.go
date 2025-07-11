@@ -381,8 +381,9 @@ func runDryRun(inputs []BatchInput) error {
 			phases := strings.Split(input.Phases, ",")
 			for _, phaseStr := range phases {
 				phaseStr = strings.TrimSpace(phaseStr)
-				if phaseStr != "idea" && phaseStr != "human" && phaseStr != "precision" {
-					issues = append(issues, fmt.Sprintf("Input %d (%s): unknown phase '%s'", i+1, input.ID, phaseStr))
+				if phaseStr != "prima-materia" && phaseStr != "solutio" && phaseStr != "coagulatio" &&
+					phaseStr != "idea" && phaseStr != "human" && phaseStr != "precision" { // Support legacy names
+					issues = append(issues, fmt.Sprintf("Input %d (%s): unknown phase '%s'. Use: prima-materia (brainstorming), solutio (natural flow), coagulatio (precision)", i+1, input.ID, phaseStr))
 				}
 			}
 		}
@@ -536,7 +537,7 @@ func processBatchInput(workerID int, input BatchInput, promptEngine *engine.Engi
 	finalInput := applyBatchDefaults(input)
 
 	// Parse phases
-	phaseList := []models.Phase{models.PhaseIdea, models.PhaseHuman, models.PhasePrecision}
+	phaseList := []models.Phase{models.PhasePrimaMaterial, models.PhaseSolutio, models.PhaseCoagulatio}
 	if finalInput.Phases != "" {
 		phaseList = batchParsePhases(finalInput.Phases)
 	}
@@ -624,18 +625,18 @@ func batchParsePhases(phasesStr string) []models.Phase {
 
 	for _, part := range parts {
 		switch strings.TrimSpace(strings.ToLower(part)) {
-		case "idea":
-			phases = append(phases, models.PhaseIdea)
-		case "human":
-			phases = append(phases, models.PhaseHuman)
-		case "precision":
-			phases = append(phases, models.PhasePrecision)
+		case "prima-materia", "prima_materia", "idea": // Support legacy name
+			phases = append(phases, models.PhasePrimaMaterial)
+		case "solutio", "human": // Support legacy name
+			phases = append(phases, models.PhaseSolutio)
+		case "coagulatio", "precision": // Support legacy name
+			phases = append(phases, models.PhaseCoagulatio)
 		}
 	}
 
 	if len(phases) == 0 {
 		// Default to all phases
-		phases = []models.Phase{models.PhaseIdea, models.PhaseHuman, models.PhasePrecision}
+		phases = []models.Phase{models.PhasePrimaMaterial, models.PhaseSolutio, models.PhaseCoagulatio}
 	}
 
 	return phases

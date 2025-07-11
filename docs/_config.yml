@@ -1,9 +1,19 @@
 # GitHub Pages Configuration
 theme: jekyll-theme-minimal
 title: Prompt Alchemy
-description: Advanced AI Prompt Generation and Optimization CLI Tool
+description: Transform raw ideas into golden prompts through the ancient art of linguistic alchemy
+logo: /assets/prompt_alchemy.png
+logo2: /assets/prompt_alchemy2.png
 baseurl: "/prompt-alchemy" # The repository name
 url: "https://jonwraymond.github.io" # GitHub username from git URL
+
+# Branding
+brand:
+  primary_color: "#C9A96E"  # Alchemical gold
+  secondary_color: "#8B4513"  # Ancient brown
+  accent_color: "#DAA520"  # Goldenrod
+  text_color: "#2C1810"  # Dark brown
+  background_color: "#FFF8DC"  # Cornsilk
 
 # Navigation
 navigation:
@@ -33,6 +43,10 @@ navigation:
     url: /cli-reference
   - title: API Reference
     url: /api-reference
+  - title: Vector Embeddings
+    url: /vector-embeddings
+  - title: Multi-Arch Builds
+    url: /multi-arch-builds
 
 # Jekyll Settings
 markdown: kramdown

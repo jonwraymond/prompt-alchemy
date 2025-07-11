@@ -106,13 +106,13 @@ async def list_tools() -> List[types.Tool]:
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "idea": {"type": "string", "description": "The initial prompt idea"},
+                    "prima_materia": {"type": "string", "description": "The initial raw material for the prompt"},
                     "provider": {"type": "string", "description": "LLM provider (openai, anthropic, google, openrouter, ollama)"},
                     "persona": {"type": "string", "description": "Persona to use (code, creative, analytical)"},
                     "temperature": {"type": "number", "description": "Temperature for generation (0.0-1.0)"},
                     "max_tokens": {"type": "integer", "description": "Maximum tokens for generation"}
                 },
-                "required": ["idea"]
+                "required": ["prima_materia"]
             }
         ),
         types.Tool(
@@ -191,9 +191,9 @@ async def generate_prompt_handler(args: Dict[str, Any]) -> Dict[str, Any]:
     return {
         "status": "success",
         "phases": {
-            "idea": "Generated idea phase prompt",
-            "human": "Generated human phase prompt", 
-            "precision": "Generated precision phase prompt"
+            "prima-materia": "Generated prima materia phase prompt",
+            "solutio": "Generated solutio phase prompt", 
+            "coagulatio": "Generated coagulatio phase prompt"
         },
         "best_prompt": "Final optimized prompt",
         "ranking_score": 0.95
@@ -268,11 +268,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         inputSchema: {
           type: "object",
           properties: {
-            idea: { type: "string", description: "The initial prompt idea" },
+            prima_materia: { type: "string", description: "The initial raw material for the prompt" },
             provider: { type: "string", description: "LLM provider" },
             persona: { type: "string", description: "Persona to use" }
           },
-          required: ["idea"]
+          required: ["prima_materia"]
         }
       },
       {
@@ -344,9 +344,9 @@ async function generatePrompt(args: any) {
   return {
     status: "success",
     phases: {
-      idea: "Generated idea phase prompt",
-      human: "Generated human phase prompt",
-      precision: "Generated precision phase prompt"
+      "prima-materia": "Generated prima materia phase prompt",
+      solutio: "Generated solutio phase prompt",
+      coagulatio: "Generated coagulatio phase prompt"
     },
     best_prompt: "Final optimized prompt",
     ranking_score: 0.95
@@ -531,7 +531,7 @@ Similar to Gemini, create custom GPT actions:
               "schema": {
                 "type": "object",
                 "properties": {
-                  "idea": {"type": "string"},
+                  "prima_materia": {"type": "string"},
                   "provider": {"type": "string"}
                 }
               }

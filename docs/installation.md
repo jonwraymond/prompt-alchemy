@@ -86,7 +86,7 @@ providers:
     
   anthropic:
     api_key: "your-anthropic-api-key"
-    model: "claude-sonnet-4-20250514"
+    model: "claude-3-5-sonnet-20241022"
     
   google:
     api_key: "your-google-api-key"
@@ -97,19 +97,19 @@ providers:
     model: "openrouter/auto"
 
 phases:
-  idea:
-    provider: openai
-  human:
-    provider: anthropic
-  precision:
-    provider: google
+  prima-materia:
+    provider: openai      # Extract raw essence
+  solutio:
+    provider: anthropic   # Dissolve into natural form
+  coagulatio:
+    provider: google      # Crystallize to perfection
 
 generation:
   default_temperature: 0.7
   default_max_tokens: 2000
   default_count: 3
   use_parallel: true
-  default_target_model: "claude-sonnet-4-20250514"
+  default_target_model: "claude-3-5-sonnet-20241022"
   default_embedding_model: "text-embedding-3-small"
   default_embedding_dimensions: 1536
 ```
@@ -236,4 +236,4 @@ rm -rf $(go env GOPATH)/bin/prompt-alchemy
 
 - Follow the [Getting Started](./getting-started) guide
 - Read the [Usage Guide](./usage) for command details
-- Configure providers in [Configuration](./configuration)
+- Configure providers using the [CLI Reference](./cli-reference) for command details
