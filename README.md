@@ -238,77 +238,369 @@ export PROMPT_ALCHEMY_PROVIDERS_OLLAMA_GENERATION_TIMEOUT="120"
 
 ### Generate Prompts
 
-Basic usage:
+#### Basic Generation
+
+Generate prompts using the three alchemical phases:
+
 ```bash
-prompt-alchemy generate "Create a prompt for writing technical documentation"
+prompt-alchemy generate "Create a REST API endpoint for user authentication"
 ```
 
-Advanced options:
-```bash
-# Specify alchemical phases
-prompt-alchemy generate --phases "prima-materia,solutio" "Your raw material"
-
-# Generate multiple transmutations
-prompt-alchemy generate --count 5 "Your raw material"
-
-# Custom temperature and tokens
-prompt-alchemy generate --temperature 0.8 --max-tokens 3000 "Your prompt idea"
-
-# Add tags for organization
-prompt-alchemy generate --tags "technical,documentation" "Your prompt idea"
-
-# Use specific provider for all phases
-prompt-alchemy generate --provider openrouter "Your prompt idea"
-
-# Output as JSON with full metadata
-prompt-alchemy generate --output json "Your prompt idea"
+**Sample Output:**
 ```
+🔬 Prima Materia (OpenAI GPT-4o-mini)
+Raw essence: Authentication endpoint requirements, security considerations, HTTP methods, 
+request/response structure, validation logic, error handling, token management...
+
+🌊 Solutio (Anthropic Claude-4-Sonnet)  
+Natural flow: You need to build a secure login system that handles user credentials safely.
+Think about POST requests to /auth/login, validating email/password, generating JWT tokens,
+and returning appropriate success or error responses...
+
+⚗️ Coagulatio (Google Gemini-2.5-Flash)
+Crystallized form: Create a POST /api/auth/login endpoint that accepts {email, password},
+validates credentials against database, generates JWT token on success, returns
+{token, user_id, expires_at} or {error, message} with appropriate HTTP status codes.
+```
+
+#### Advanced Generation Options
+
+**Multiple Transmutations:**
+```bash
+prompt-alchemy generate --count 5 "Design a caching strategy"
+```
+Generates 5 different prompt variations, ranked by quality score.
+
+**Custom Phases:**
+```bash
+# Skip Prima Materia, go straight to refinement
+prompt-alchemy generate --phases "solutio,coagulatio" "Optimize database queries"
+
+# Only extract raw concepts
+prompt-alchemy generate --phases "prima-materia" "Machine learning workflow"
+```
+
+**Provider-Specific Generation:**
+```bash
+# Use OpenRouter for all phases (access to multiple models)
+prompt-alchemy generate --provider openrouter "Create a microservice architecture"
+
+# Use local Ollama for privacy-sensitive prompts
+prompt-alchemy generate --provider ollama "Handle customer data processing"
+```
+
+**Temperature and Token Control:**
+```bash
+# More creative output
+prompt-alchemy generate --temperature 0.9 --max-tokens 3000 "Write a creative story prompt"
+
+# More focused, deterministic output  
+prompt-alchemy generate --temperature 0.3 --max-tokens 1000 "Create unit test cases"
+```
+
+**Tagging and Organization:**
+```bash
+# Add tags for later retrieval
+prompt-alchemy generate --tags "api,security,backend" "OAuth2 implementation guide"
+
+# Multiple tags for complex categorization
+prompt-alchemy generate --tags "frontend,react,testing,e2e" "Component testing strategy"
+```
+
+**JSON Output for Integration:**
+```bash
+prompt-alchemy generate --output json "Database migration strategy" | jq '.prompts[0].content'
+```
+
+#### Persona-Based Generation
+
+Different personas optimize for different use cases:
+
+```bash
+# Technical documentation persona
+prompt-alchemy generate --persona technical "Implement Redis caching"
+```
+**Output Focus:** Code examples, technical accuracy, implementation details
+
+```bash
+# Creative writing persona  
+prompt-alchemy generate --persona creative "User onboarding experience"
+```
+**Output Focus:** Narrative flow, user experience, emotional engagement
+
+```bash
+# Business strategy persona
+prompt-alchemy generate --persona business "Feature prioritization framework"
+```
+**Output Focus:** ROI considerations, stakeholder impact, business metrics
 
 ### Search Prompts
 
+#### Basic Search
+
+**Text-Based Search:**
 ```bash
-# Search by content (coming soon)
-prompt-alchemy search "authentication flow"
-
-# Filter by tags
-prompt-alchemy search --tags "technical" "documentation"
-
-# Filter by alchemical phase
-prompt-alchemy search --phase solutio "natural language"
-
-# Filter by model
-prompt-alchemy search --model "o4-mini"
+prompt-alchemy search "authentication"
 ```
+
+**Sample Output:**
+```
+┌────┬─────────────────────────────────┬──────────┬─────────────┬───────────────┐
+│ ID │ Content Preview                 │ Score    │ Tags        │ Created       │
+├────┼─────────────────────────────────┼──────────┼─────────────┼───────────────┤
+│ 42 │ Create JWT authentication...    │ 0.95     │ auth,api    │ 2 hours ago   │
+│ 38 │ OAuth2 implementation guide... │ 0.87     │ auth,oauth  │ 1 day ago     │
+│ 29 │ User session management...      │ 0.82     │ auth,users  │ 3 days ago    │
+└────┴─────────────────────────────────┴──────────┴─────────────┴───────────────┘
+```
+
+#### Advanced Search Options
+
+**Tag-Based Filtering:**
+```bash
+# Find all security-related prompts
+prompt-alchemy search --tags "security" "password"
+
+# Multiple tag filtering (AND operation)
+prompt-alchemy search --tags "api,testing" "integration"
+```
+
+**Phase-Specific Search:**
+```bash
+# Find only crystallized (final) prompts
+prompt-alchemy search --phase coagulatio "database design"
+
+# Find raw concepts for inspiration
+prompt-alchemy search --phase prima-materia "machine learning"
+```
+
+**Model-Specific Search:**
+```bash
+# Find prompts generated by specific models
+prompt-alchemy search --model "claude-4-sonnet" "code review"
+prompt-alchemy search --model "gpt-4o-mini" "documentation"
+```
+
+**Semantic Search (Similarity-Based):**
+```bash
+# Find conceptually similar prompts
+prompt-alchemy search --semantic --similarity 0.7 "user interface design"
+```
+
+**Sample Semantic Search Output:**
+```
+┌────┬─────────────────────────────────┬───────────┬─────────────┬───────────────┐
+│ ID │ Content Preview                 │ Similarity│ Tags        │ Created       │
+├────┼─────────────────────────────────┼───────────┼─────────────┼───────────────┤
+│ 67 │ Create responsive web layout... │ 0.89      │ ui,frontend │ 1 hour ago    │
+│ 45 │ Mobile app navigation design... │ 0.76      │ ui,mobile   │ 2 days ago    │
+│ 33 │ Dashboard wireframe creation... │ 0.71      │ ui,admin    │ 1 week ago    │
+└────┴─────────────────────────────────┴───────────┴─────────────┴───────────────┘
+```
+
+#### Search Limitations
+
+**Current Status:**
+- ✅ **Text Search**: Full-text search across prompt content
+- ✅ **Tag Filtering**: Filter by assigned tags
+- ✅ **Phase Filtering**: Filter by alchemical phase
+- ✅ **Model Filtering**: Filter by generation model
+- 🚧 **Semantic Search**: In development (basic similarity matching available)
+- 🚧 **Advanced Filters**: Date ranges, score thresholds (coming soon)
+- 📅 **Planned**: Natural language queries, context-aware search
 
 ### Automated Learning
 
-Set up automated nightly training to improve prompt rankings over time:
+#### Schedule Setup
 
+**Basic Scheduling:**
 ```bash
-# Install nightly job at 2 AM (auto-detects best method for your system)
+# Install nightly learning at 2 AM
 prompt-alchemy schedule --time "0 2 * * *"
+```
 
-# Install at a different time (3:30 AM)
-prompt-alchemy schedule --time "30 3 * * *"
+**Custom Scheduling:**
+```bash
+# Run every 6 hours for active development
+prompt-alchemy schedule --time "0 */6 * * *"
 
+# Weekly training on Sundays at 3 AM
+prompt-alchemy schedule --time "0 3 * * 0"
+```
+
+**System-Specific Methods:**
+```bash
 # Force use of cron (Linux/macOS)
 prompt-alchemy schedule --time "0 2 * * *" --method cron
 
-# Force use of launchd (macOS only)
+# Force use of launchd (macOS only, more reliable)
 prompt-alchemy schedule --time "0 2 * * *" --method launchd
-
-# List current scheduled jobs
-prompt-alchemy schedule --list
-
-# Uninstall scheduled job
-prompt-alchemy schedule --uninstall
 
 # Preview what would be installed
 prompt-alchemy schedule --time "0 2 * * *" --dry-run
-
-# Run training manually
-prompt-alchemy nightly
 ```
+
+#### Manual Training
+
+```bash
+# Run training immediately
+prompt-alchemy nightly
+
+# Training with verbose output
+prompt-alchemy nightly --verbose
+
+# Training with specific parameters
+prompt-alchemy nightly --learning-rate 0.01 --epochs 10
+```
+
+### Common Workflows
+
+#### 1. New Project Setup
+```bash
+# Generate initial architecture prompt
+prompt-alchemy generate --tags "architecture,planning" \
+  "Design microservices architecture for e-commerce platform"
+
+# Generate development workflow
+prompt-alchemy generate --tags "workflow,development" \
+  "Establish CI/CD pipeline for microservices"
+
+# Search for related patterns
+prompt-alchemy search --tags "architecture" "microservices"
+```
+
+#### 2. Feature Development
+```bash
+# Generate feature specification
+prompt-alchemy generate --persona business --tags "feature,spec" \
+  "User notification system requirements"
+
+# Generate technical implementation
+prompt-alchemy generate --persona technical --tags "feature,implementation" \
+  "Real-time notification service architecture"
+
+# Generate testing strategy
+prompt-alchemy generate --tags "testing,feature" \
+  "Notification system test coverage plan"
+```
+
+#### 3. Code Review Process
+```bash
+# Generate review checklist
+prompt-alchemy generate --tags "review,checklist" \
+  "Code review criteria for security features"
+
+# Find existing review patterns
+prompt-alchemy search --tags "review" "security"
+
+# Generate documentation prompts
+prompt-alchemy generate --persona technical --tags "docs,review" \
+  "API documentation standards for security endpoints"
+```
+
+### Best Practices
+
+#### Effective Prompt Generation
+- **Be Specific**: Include context, constraints, and desired outcomes
+- **Use Tags**: Organize prompts for easy retrieval and categorization
+- **Iterate**: Generate multiple variations and refine based on results
+- **Choose Appropriate Phases**: Use all three for complex topics, specific phases for focused needs
+
+#### Tagging Strategy
+- **Hierarchical Tags**: Use broad categories (api, frontend, testing) and specific ones (jwt, react, unit)
+- **Consistent Naming**: Establish tag conventions across your team
+- **Context Tags**: Include project, team, or client-specific tags
+
+#### Provider Selection
+- **OpenAI**: Best for code generation and technical accuracy
+- **Anthropic**: Excellent for natural language and explanations  
+- **Google**: Fast responses and good for general-purpose tasks
+- **OpenRouter**: Access to latest models and fallback options
+- **Ollama**: Privacy-focused, offline usage, cost-effective for development
+
+#### Performance Optimization
+- **Batch Similar Requests**: Generate multiple prompts in one session
+- **Use Appropriate Models**: Faster models for development, premium models for production
+- **Monitor Costs**: Track API usage and optimize model selection
+- **Cache Results**: Save frequently used prompts to avoid regeneration
+
+### Error Handling Examples
+
+#### Common Generation Errors
+```bash
+# API rate limit
+$ prompt-alchemy generate "test prompt"
+Error: rate limit exceeded for provider 'openai'
+Solution: Wait 60 seconds or switch providers with --provider flag
+
+# Invalid configuration
+$ prompt-alchemy generate "test prompt"  
+Error: no valid providers configured
+Solution: Check config.yaml or set environment variables
+
+# Network timeout
+$ prompt-alchemy generate "test prompt"
+Error: timeout connecting to api.anthropic.com
+Solution: Check internet connection or try --provider ollama for offline use
+```
+
+#### Search Error Examples
+```bash
+# Empty database
+$ prompt-alchemy search "test query"
+No prompts found. Generate some prompts first with 'prompt-alchemy generate'
+
+# Invalid similarity threshold
+$ prompt-alchemy search --similarity 1.5 "test"
+Error: similarity must be between 0.0 and 1.0
+```
+
+### Output Formats
+
+#### Default Human-Readable Output
+- Color-coded phases with emoji indicators
+- Formatted text with proper spacing
+- Metadata summary (tokens, cost, timing)
+
+#### JSON Output for Integration
+```bash
+prompt-alchemy generate --output json "test prompt" | jq '.'
+```
+
+**Sample JSON Structure:**
+```json
+{
+  "prompts": [
+    {
+      "id": "abc123",
+      "content": "Crystallized prompt content...",
+      "phase": "coagulatio", 
+      "provider": "anthropic",
+      "model": "claude-4-sonnet",
+      "score": 0.92,
+      "metadata": {
+        "tokens": 150,
+        "cost": 0.003,
+        "duration_ms": 1200
+      },
+      "tags": ["api", "security"],
+      "created_at": "2025-01-11T09:15:30Z"
+    }
+  ],
+  "summary": {
+    "total_prompts": 1,
+    "total_cost": 0.003,
+    "total_duration_ms": 1200
+  }
+}
+```
+
+#### Table Output for Analysis
+```bash
+prompt-alchemy search --output table "authentication" --limit 10
+```
+
+Displays results in a formatted table with columns for ID, content preview, score, tags, and timestamps.
 
 ## Troubleshooting
 
