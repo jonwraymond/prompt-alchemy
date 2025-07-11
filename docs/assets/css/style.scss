@@ -14,9 +14,9 @@
 }
 
 body {
+  font-family: 'Cormorant Garamond', 'Georgia', 'Times New Roman', serif;
   background: linear-gradient(135deg, var(--background-light) 0%, #F5F5DC 100%);
   color: var(--text-dark);
-  font-family: 'Georgia', 'Times New Roman', serif;
 }
 
 /* Header Styling */
@@ -47,6 +47,7 @@ header img:hover {
 
 /* Typography */
 h1, h2, h3, h4, h5, h6 {
+  font-family: 'Cinzel', 'Georgia', serif;
   color: var(--secondary-brown);
   text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
 }
