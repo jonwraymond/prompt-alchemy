@@ -468,10 +468,11 @@ h1, h2, h3, h4, h5, h6 {
   font-family: 'Inter', sans-serif;
   color: var(--text-primary);
   font-weight: 600;
-  margin-top: 2em;
-  margin-bottom: 0.75em;
+  margin-top: 2.5em;
+  margin-bottom: 1em;
   position: relative;
   letter-spacing: -0.02em;
+  line-height: 1.3;
 }
 
 h1 {
@@ -509,8 +510,9 @@ h2::before {
 /* Paragraphs */
 p {
   text-align: left;
-  margin: 1.2em 0;
+  margin: 1.5em 0;
   color: var(--text-primary);
+  line-height: 1.7;
 }
 
 /* First Letter Enhancement */
@@ -531,14 +533,15 @@ pre {
   background: var(--bg-code);
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  padding: 1.5rem;
-  margin: 2em 0;
+  padding: 2rem;
+  margin: 2.5em 0;
   position: relative;
   overflow-x: auto;
   overflow-y: hidden;
   font-family: 'JetBrains Mono', 'Consolas', monospace;
   font-size: 0.9em;
   line-height: 1.6;
+  box-shadow: var(--shadow-md);
 }
 
 pre code {
@@ -636,9 +639,10 @@ table {
   border-collapse: collapse;
   border-radius: 8px;
   overflow: hidden;
-  margin: 2em 0;
+  margin: 2.5em 0;
   background: var(--bg-tertiary);
   border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-md);
 }
 
 th {
@@ -668,13 +672,14 @@ tr:hover {
 blockquote {
   border-left: 3px solid var(--primary-accent);
   background: var(--bg-tertiary);
-  padding: 1.5rem;
-  padding-left: 2rem;
-  margin: 2em 0;
+  padding: 2rem;
+  padding-left: 2.5rem;
+  margin: 2.5em 0;
   border-radius: 0 8px 8px 0;
   position: relative;
   font-style: italic;
   color: var(--text-secondary);
+  box-shadow: var(--shadow-sm);
 }
 
 blockquote::before {
@@ -733,12 +738,12 @@ blockquote::before {
 
 /* Lists */
 ul, ol {
-  margin: 1.5em 0;
-  padding-left: 2em;
+  margin: 2em 0;
+  padding-left: 2.5em;
 }
 
 li {
-  margin: 0.5em 0;
+  margin: 0.75em 0;
   line-height: 1.8;
   color: var(--text-primary);
 }
@@ -850,10 +855,20 @@ footer {
   
   h1 {
     font-size: 1.8em;
+    margin-top: 1.5em;
+    margin-bottom: 0.75em;
   }
   
   h2 {
     font-size: 1.4em;
+    margin-top: 2em;
+    margin-bottom: 0.75em;
+  }
+  
+  h3 {
+    font-size: 1.2em;
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
   }
   
   .alchemical-process {
@@ -864,6 +879,7 @@ footer {
   pre {
     padding: 15px;
     font-size: 0.85em;
+    margin: 1.5em 0;
   }
   
   code {
@@ -873,6 +889,98 @@ footer {
   body {
     font-size: 16px;
   }
+  
+  .content-wrapper {
+    padding: 2rem 1rem;
+  }
+  
+  table {
+    font-size: 0.85em;
+    margin: 1.5em 0;
+  }
+  
+  th, td {
+    padding: 0.75rem 0.5rem;
+  }
+  
+  blockquote {
+    padding: 1.5rem;
+    padding-left: 2rem;
+    margin: 1.5em 0;
+  }
+  
+  ul, ol {
+    margin: 1.5em 0;
+    padding-left: 2em;
+  }
+  
+  li {
+    margin: 0.5em 0;
+  }
+}
+
+/* Accessibility Improvements */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .alchemical-particles {
+    display: none;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --border-color: rgba(255, 255, 255, 0.3);
+    --border-hover: rgba(255, 255, 255, 0.5);
+  }
+  
+  code {
+    border: 2px solid var(--primary-accent);
+  }
+  
+  pre {
+    border: 2px solid var(--border-color);
+  }
+  
+  table {
+    border: 2px solid var(--border-color);
+  }
+  
+  th {
+    border-bottom: 3px solid var(--border-color);
+  }
+}
+
+/* Focus improvements for keyboard navigation */
+a:focus,
+button:focus,
+input:focus,
+textarea:focus,
+select:focus {
+  outline: 2px solid var(--primary-accent);
+  outline-offset: 2px;
+}
+
+/* Skip link for accessibility */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 6px;
+  background: var(--primary-accent);
+  color: var(--bg-primary);
+  padding: 8px;
+  text-decoration: none;
+  border-radius: 4px;
+  z-index: 1001;
+}
+
+.skip-link:focus {
+  top: 6px;
 }
 
 /* Logo Container Enhancement */
@@ -1023,6 +1131,60 @@ footer {
 .content-wrapper {
   position: relative;
   z-index: 1;
+}
+
+/* Improve content spacing and readability */
+.content-wrapper > h1:first-child {
+  margin-top: 0;
+}
+
+.content-wrapper > h2:first-of-type {
+  margin-top: 3em;
+}
+
+/* Better spacing for sections */
+.content-wrapper > section {
+  margin: 3em 0;
+}
+
+/* Improve link spacing */
+.content-wrapper a {
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.content-wrapper a:hover {
+  border-bottom-color: var(--primary-accent);
+}
+
+/* Better spacing for code blocks within content */
+.content-wrapper pre {
+  margin: 2.5em 0;
+}
+
+/* Improve table readability */
+.content-wrapper table {
+  font-size: 0.95em;
+}
+
+.content-wrapper th {
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.85em;
+  letter-spacing: 0.05em;
+}
+
+/* Better list styling */
+.content-wrapper ul li::marker {
+  color: var(--primary-accent);
+  font-weight: 600;
+}
+
+.content-wrapper ol li::before {
+  color: var(--primary-accent);
+  font-weight: 600;
+  font-size: 0.9em;
 }
 
 /* Footer Enhancement */
