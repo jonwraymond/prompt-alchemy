@@ -15,8 +15,10 @@
   </head>
   <body>
     <div class="wrapper">
-      <header>
-        <div class="header-content">
+      <div class="page-wrapper">
+        <header>
+        <div class="container">
+          <div class="header-content">
           <h1><a href="{{ "/" | absolute_url }}">{{ site.title | default: site.github.repository_name }}</a></h1>
 
           {% if site.logo %}
@@ -50,31 +52,38 @@
           {% endif %}
         </div>
 
-        {% if site.navigation %}
-        <nav class="main-navigation" role="navigation" aria-label="Main navigation">
-          <ul role="menubar">
-            {% for item in site.navigation %}
-            <li role="none">
-              <a href="{{ item.url | relative_url }}" 
-                 role="menuitem"
-                 {% if page.url == item.url %}class="active" aria-current="page"{% endif %}>
-                {{ item.title }}
-              </a>
-            </li>
-            {% endfor %}
-          </ul>
-        </nav>
-        {% endif %}
+          {% if site.navigation %}
+          <nav class="main-navigation" role="navigation" aria-label="Main navigation">
+            <ul role="menubar">
+              {% for item in site.navigation %}
+              <li role="none">
+                <a href="{{ item.url | relative_url }}" 
+                   role="menuitem"
+                   {% if page.url == item.url %}class="active" aria-current="page"{% endif %}>
+                  {{ item.title }}
+                </a>
+              </li>
+              {% endfor %}
+            </ul>
+          </nav>
+          {% endif %}
+          </div>
+        </div>
       </header>
       
-      <section class="main-content">
-        <div class="content-wrapper">
-          {{ content }}
-        </div>
-      </section>
+      <main class="main-content">
+        <section>
+          <div class="container">
+            <div class="content-wrapper">
+              {{ content }}
+            </div>
+          </div>
+        </section>
+      </main>
       
       <footer>
-        <div class="footer-content">
+        <div class="container">
+          <div class="footer-content">
           {% if site.github.is_project_page %}
           <p class="maintainer-info">
             <span class="icon">🧪</span> 
@@ -89,8 +98,10 @@
               Enhanced with Alchemical Theme
             </small>
           </p>
+          </div>
         </div>
       </footer>
+      </div>
     </div>
     
     <!-- Alchemical particle effects -->
