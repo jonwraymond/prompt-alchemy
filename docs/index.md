@@ -92,7 +92,6 @@ Unlike manual prompt engineering, Prompt Alchemy provides a consistent, measurab
 ## Support
 
 - **Issues**: [GitHub Issues](https://github.com/jonwraymond/prompt-alchemy/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/jonwraymond/prompt-alchemy/discussions)
 - **Contributing**: See [CONTRIBUTING.md](https://github.com/jonwraymond/prompt-alchemy/blob/main/CONTRIBUTING.md)
 
 ## License

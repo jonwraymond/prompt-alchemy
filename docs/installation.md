@@ -156,12 +156,12 @@ export GOOGLE_API_KEY="your-key"
 ## Provider-Specific Setup
 
 ### OpenAI
-1. Get API key from [platform.openai.com](https://platform.openai.com)
+1. Get API key from [OpenAI Platform](https://platform.openai.com/api-keys)
 2. Add to config or environment
 3. Supports both generation and embeddings
 
 ### Anthropic
-1. Get API key from [console.anthropic.com](https://console.anthropic.com)
+1. Get API key from [Anthropic Console](https://console.anthropic.com/dashboard)
 2. Add to config or environment
 3. Generation only (uses OpenAI for embeddings)
 
