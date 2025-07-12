@@ -78,18 +78,45 @@ prompt-alchemy --log-level debug generate "test prompt"
 
 ## generate
 
-Usage: prompt-alchemy generate <input> [flags]
-Flags:
---phases string
---persona string
---auto-select bool
---count int
---temperature float
---max-tokens int
---tags string
---context []string
---provider string
-Example: prompt-alchemy generate "API design" --phases=prima-materia,coagulatio --auto-select
+Generate refined prompts through the alchemical process.
+
+### Usage
+```bash
+prompt-alchemy generate <input> [flags]
+```
+
+### Flags
+
+| Flag | Short | Type | Default | Description |
+|------|-------|------|---------|-------------|
+| `--phases` | | string | | Comma-separated phases (prima-materia, solutio, coagulatio) |
+| `--persona` | | string | | AI persona (code, writing, analysis, generic) |
+| `--auto-select` | | bool | `false` | Automatically select best variant |
+| `--count` | | int | `3` | Number of variants to generate |
+| `--temperature` | | float | `0.7` | Generation temperature |
+| `--max-tokens` | | int | `2000` | Maximum tokens per response |
+| `--tags` | | string | | Comma-separated tags |
+| `--context` | | []string | | Additional context strings |
+| `--provider` | | string | | Override default provider |
+
+### Examples
+
+```bash
+# Basic generation
+prompt-alchemy generate "Create a REST API endpoint"
+
+# With specific phases
+prompt-alchemy generate "API design" --phases=prima-materia,coagulatio --auto-select
+
+# With persona and multiple variants
+prompt-alchemy generate "Write a blog post" --persona=writing --count=5
+
+# With custom parameters
+prompt-alchemy generate "Debug code" --temperature=0.8 --max-tokens=1500
+
+# With tags and context
+prompt-alchemy generate "Database query" --tags="sql,postgres" --context="PostgreSQL 15"
+```
 
 ## search
 
