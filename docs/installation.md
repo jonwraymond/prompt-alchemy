@@ -44,7 +44,7 @@ This guide covers all installation methods for Prompt Alchemy.
    docker-compose logs prompt-alchemy  # Check for successful startup
    ```
 
-For detailed deployment instructions, see the main [Deployment Guide](./deployment-guide).
+For detailed deployment instructions, see the main [Deployment Guide]({{ site.baseurl }}/deployment-guide).
 
 ### 2. Build from Source (Recommended)
 
@@ -262,6 +262,6 @@ rm -rf $(go env GOPATH)/bin/prompt-alchemy
 
 ## Next Steps
 
-- Follow the [Getting Started](./getting-started) guide
-- Read the [Usage Guide](./usage) for command details
-- Configure providers using the [CLI Reference](./cli-reference) for command details
+- Follow the [Getting Started]({{ site.baseurl }}/getting-started) guide
+- Read the [Usage Guide]({{ site.baseurl }}/usage) for command details
+- Configure providers using the [CLI Reference]({{ site.baseurl }}/cli-reference) for command details

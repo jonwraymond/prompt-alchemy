@@ -283,4 +283,4 @@ Choose based on your compliance requirements.
 
 ---
 
-*Still have questions? Check the [comprehensive comparison](./on-demand-vs-server-mode) or [quick reference](./mode-quick-reference).*
+*Still have questions? Check the [comprehensive comparison]({{ site.baseurl }}/on-demand-vs-server-mode) or [quick reference]({{ site.baseurl }}/mode-quick-reference).*

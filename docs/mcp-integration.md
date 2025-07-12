@@ -13,11 +13,11 @@ Prompt Alchemy's MCP server exposes prompt management capabilities via the Model
 
 ## Setup
 
-The server can be run locally or deployed using Docker. See the [Deployment Guide](./deployment-guide) for detailed instructions.
+The server can be run locally or deployed using Docker. See the [Deployment Guide]({{ site.baseurl }}/deployment-guide) for detailed instructions.
 
 ## Available Tools
 
-The MCP server exposes all 15 core tools of Prompt Alchemy. For a complete list, including request/response schemas, please see the **[MCP API Reference](./mcp-api-reference)**.
+The MCP server exposes all 15 core tools of Prompt Alchemy. For a complete list, including request/response schemas, please see the **[MCP API Reference]({{ site.baseurl }}/mcp-api-reference)**.
 
 ## Integrating with Hosts
 

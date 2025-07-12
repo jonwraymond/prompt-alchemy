@@ -60,34 +60,34 @@ Unlike manual prompt engineering, Prompt Alchemy provides a consistent, measurab
 ## Documentation
 
 ### Getting Started
-- [Getting Started](./getting-started) - Installation and first steps
-- [Installation Guide](./installation) - Detailed setup instructions
-- [Usage Guide](./usage) - Command reference and examples
+- [Getting Started]({{ site.baseurl }}/getting-started) - Installation and first steps
+- [Installation Guide]({{ site.baseurl }}/installation) - Detailed setup instructions
+- [Usage Guide]({{ site.baseurl }}/usage) - Command reference and examples
 
 ### 🔄 Operational Modes
-- **[On-Demand vs Server Mode](./on-demand-vs-server-mode)** - Comprehensive comparison of operational modes
-- **[Mode Quick Reference](./mode-quick-reference)** - Quick decision guide and command reference
-- **[Mode Selection FAQ](./mode-faq)** - Frequently asked questions about choosing a mode.
-- **[Deployment Guide](./deployment-guide)** - Complete deployment strategies for both modes.
+- **[On-Demand vs Server Mode]({{ site.baseurl }}/on-demand-vs-server-mode)** - Comprehensive comparison of operational modes
+- **[Mode Quick Reference]({{ site.baseurl }}/mode-quick-reference)** - Quick decision guide and command reference
+- **[Mode Selection FAQ]({{ site.baseurl }}/mode-faq)** - Frequently asked questions about choosing a mode.
+- **[Deployment Guide]({{ site.baseurl }}/deployment-guide)** - Complete deployment strategies for both modes.
 
 ### Technical Documentation
-- [Architecture](./architecture) - Technical design and internals
-- [Database](./database) - Database schema and implementation details
-- [Vector Embeddings](./vector-embeddings) - Semantic search and vector storage implementation
-- [Diagrams](./diagrams) - Visual architecture and flow diagrams
+- [Architecture]({{ site.baseurl }}/architecture) - Technical design and internals
+- [Database]({{ site.baseurl }}/database) - Database schema and implementation details
+- [Vector Embeddings]({{ site.baseurl }}/vector-embeddings) - Semantic search and vector storage implementation
+- [Diagrams]({{ site.baseurl }}/diagrams) - Visual architecture and flow diagrams
 
 ### Server Mode & Integration
-- [MCP Integration](./mcp-integration) - Model Context Protocol server setup
-- [MCP API Reference](./mcp-api-reference) - Detailed reference for all 15 MCP tools.
-- [Learning Mode](./learning-mode) - Adaptive learning configuration
-- [HTTP API Reference](./http-api-reference) - RESTful API endpoints and models
+- [MCP Integration]({{ site.baseurl }}/mcp-integration) - Model Context Protocol server setup
+- [MCP API Reference]({{ site.baseurl }}/mcp-api-reference) - Detailed reference for all 15 MCP tools.
+- [Learning Mode]({{ site.baseurl }}/learning-mode) - Adaptive learning configuration
+- [HTTP API Reference]({{ site.baseurl }}/http-api-reference) - RESTful API endpoints and models
 
 ### Development & Operations
-- [CLI Reference](./cli-reference) - Complete command-line interface documentation
-- [Automated Scheduling](./scheduling) - Set up nightly training jobs with cron/launchd
-- [Multi-Arch Builds](./multi-arch-builds) - Cross-platform build system and CI/CD
-- [Renovate Setup](./renovate-setup) - Automated dependency updates
-- [Release Automation](./release-automation) - Semantic versioning and GitHub releases
+- [CLI Reference]({{ site.baseurl }}/cli-reference) - Complete command-line interface documentation
+- [Automated Scheduling]({{ site.baseurl }}/scheduling) - Set up nightly training jobs with cron/launchd
+- [Multi-Arch Builds]({{ site.baseurl }}/multi-arch-builds) - Cross-platform build system and CI/CD
+- [Renovate Setup]({{ site.baseurl }}/renovate-setup) - Automated dependency updates
+- [Release Automation]({{ site.baseurl }}/release-automation) - Semantic versioning and GitHub releases
 
 ## Support
 

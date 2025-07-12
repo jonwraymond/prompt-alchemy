@@ -57,7 +57,7 @@ docker-compose ps
 docker-compose logs prompt-alchemy
 ```
 
-For details on deploying with Docker, see the [Deployment Guide](./deployment-guide).
+For details on deploying with Docker, see the [Deployment Guide]({{ site.baseurl }}/deployment-guide).
 
 ## Your First Prompt
 
@@ -77,7 +77,7 @@ This will:
 
 ## Basic Commands
 
-For complete command documentation, see the [CLI Reference](./cli-reference).
+For complete command documentation, see the [CLI Reference]({{ site.baseurl }}/cli-reference).
 
 ### Generate Prompts
 ```bash
@@ -159,12 +159,12 @@ The `schedule` command automatically detects your OS (macOS or Linux) and uses t
 
 ## Next Steps
 
-- Read the [Installation Guide](./installation) for detailed setup.
-- Explore the [Usage Guide](./usage) for advanced features.
-- Learn about the [Architecture](./architecture) to understand how it works.
-- Understand the [Database Schema](./database) and implementation.
-- Set up [MCP Integration](./mcp-integration) for AI assistant connectivity.
-- Review the [MCP API Reference](./mcp-api-reference) for detailed tool reference.
+- Read the [Installation Guide]({{ site.baseurl }}/installation) for detailed setup.
+- Explore the [Usage Guide]({{ site.baseurl }}/usage) for advanced features.
+- Learn about the [Architecture]({{ site.baseurl }}/architecture) to understand how it works.
+- Understand the [Database Schema]({{ site.baseurl }}/database) and implementation.
+- Set up [MCP Integration]({{ site.baseurl }}/mcp-integration) for AI assistant connectivity.
+- Review the [MCP API Reference]({{ site.baseurl }}/mcp-api-reference) for detailed tool reference.
 
 ## Getting Help
 

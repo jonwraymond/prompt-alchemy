@@ -261,4 +261,4 @@ curl http://localhost:8080/api/performance
 
 ---
 
-*For detailed documentation, see [On-Demand vs Server Mode](./on-demand-vs-server-mode)*
+*For detailed documentation, see [On-Demand vs Server Mode]({{ site.baseurl }}/on-demand-vs-server-mode)*

@@ -2,68 +2,46 @@
 
 ```mermaid
 flowchart TD
-    Start["`🌟 **Raw Idea**
-    User Input`"] --> Validate{"`🔍 **Validate Input**
-    Check Format & Content`"}
+    Start["`🌟 **Raw Idea**<br/>User Input`"] --> Validate{"`🔍 **Validate Input**<br/>Check Format & Content`"}
     
-    Validate -->|Invalid| Error["`❌ **Error**
-    Show Validation Issues`"]
-    Validate -->|Valid| PrepPhases["`⚙️ **Prepare Phases**
-    Configure Providers`"]
+    Validate -->|Invalid| Error["`❌ **Error**<br/>Show Validation Issues`"]
+    Validate -->|Valid| PrepPhases["`⚙️ **Prepare Phases**<br/>Configure Providers`"]
     
-    PrepPhases --> PM_Start["`🌱 **Prima Materia Begins**
-    Raw Material Extraction`"]
+    PrepPhases --> PM_Start["`🌱 **Prima Materia Begins**<br/>Raw Material Extraction`"]
     
     subgraph "Prima Materia Phase"
-        PM_Start --> PM_Provider['Select Provider (e.g. OpenAI)']
-        PM_Provider --> PM_Generate["`⚗️ **Extract Essence**
-        Brainstorm & Explore`"]
-        PM_Generate --> PM_Store["`💾 **Store Result**
-        Save Raw Generation`"]
+        PM_Start --> PM_Provider["Select Provider (e.g. OpenAI)"]
+        PM_Provider --> PM_Generate["`⚗️ **Extract Essence**<br/>Brainstorm & Explore`"]
+        PM_Generate --> PM_Store["`💾 **Store Result**<br/>Save Raw Generation`"]
     end
     
-    PM_Store --> SO_Start["`💧 **Solutio Begins**
-    Dissolution Process`"]
+    PM_Store --> SO_Start["`💧 **Solutio Begins**<br/>Dissolution Process`"]
     
     subgraph "Solutio Phase"
-        SO_Start --> SO_Provider["`🧠 **Select Provider**
-        (Default: Anthropic)`"]
-        SO_Provider --> SO_Context["`📝 **Add Context**
-        Prima Materia Results`"]
-        SO_Context --> SO_Generate["`🌊 **Flow Creation**
-        Natural Language Form`"]
-        SO_Generate --> SO_Store["`💾 **Store Result**
-        Save Dissolved Form`"]
+        SO_Start --> SO_Provider["`🧠 **Select Provider**<br/>(Default: Anthropic)`"]
+        SO_Provider --> SO_Context["`📝 **Add Context**<br/>Prima Materia Results`"]
+        SO_Context --> SO_Generate["`🌊 **Flow Creation**<br/>Natural Language Form`"]
+        SO_Generate --> SO_Store["`💾 **Store Result**<br/>Save Dissolved Form`"]
     end
     
-    SO_Store --> CO_Start["`💎 **Coagulatio Begins**
-    Crystallization Process`"]
+    SO_Store --> CO_Start["`💎 **Coagulatio Begins**<br/>Crystallization Process`"]
     
     subgraph "Coagulatio Phase"
-        CO_Start --> CO_Provider["`🌟 **Select Provider**
-        (Default: Google)`"]
-        CO_Provider --> CO_Context["`📋 **Combine Context**
-        Previous Phase Results`"]
-        CO_Context --> CO_Generate["`⚡ **Crystallize**
-        Precise Refinement`"]
-        CO_Generate --> CO_Store["`💾 **Store Result**
-        Save Final Form`"]
+        CO_Start --> CO_Provider["`🌟 **Select Provider**<br/>(Default: Google)`"]
+        CO_Provider --> CO_Context["`📋 **Combine Context**<br/>Previous Phase Results`"]
+        CO_Context --> CO_Generate["`⚡ **Crystallize**<br/>Precise Refinement`"]
+        CO_Generate --> CO_Store["`💾 **Store Result**<br/>Save Final Form`"]
     end
     
-    CO_Store --> Rank["`🏆 **Ranking Engine**
-    Evaluate All Results`"]
+    CO_Store --> Rank["`🏆 **Ranking Engine**<br/>Evaluate All Results`"]
     
     subgraph "Evaluation & Storage"
-        Rank --> Score["`📊 **Calculate Scores**
-        Quality Metrics`"]
-        Score --> Embed["`🧮 **Generate Embeddings**
-        Vector Representations`"]
-        Embed --> Save["`💾 **Persist Data**
-        Database Storage`"]
+        Rank --> Score["`📊 **Calculate Scores**<br/>Quality Metrics`"]
+        Score --> Embed["`🧮 **Generate Embeddings**<br/>Vector Representations`"]
+        Embed --> Save["`💾 **Persist Data**<br/>Database Storage`"]
     end
     
-    Save --> Output["`✨ **Present Results**
-    Ranked Prompt Options`"]
+    Save --> Output["`✨ **Present Results**<br/>Ranked Prompt Options`"]
     
     subgraph "Parallel Processing"
         Parallel1["`⚗️ **Variant 1**`"]
