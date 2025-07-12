@@ -5,54 +5,57 @@ title: Home
 
 # Prompt Alchemy
 
-<div style="text-align: center; margin: 30px 0;">
-  <img src="/prompt-alchemy/assets/prompt_alchemy2.png" alt="Prompt Alchemy Logo" style="max-width: 400px; border-radius: 15px; box-shadow: 0 8px 20px rgba(218, 165, 32, 0.4);">
-</div>
+Prompt Alchemy transforms your raw ideas into high-quality prompts for AI systems. 
 
-> Transform raw ideas into golden prompts through the ancient art of linguistic alchemy
+The tool uses a three-phase refinement process to create precise, effective prompts. You can use it as a command-line tool or integrate it with AI agents.
 
-<div class="alchemical-process">
-Prompt Alchemy is a sophisticated AI system that transmutes concepts through three sacred phases of refinement. Like the ancient alchemists who sought to transform base metals into gold, we transform raw ideas into potent, precisely-crafted prompts ready for any AI system.
-</div>
+> **What you'll accomplish**: Generate better prompts, integrate with multiple AI providers, and improve results over time with machine learning.
 
-## Features
-- ⚗️ **Alchemical Phases**: `prima-materia` (raw essence), `solutio` (natural flow), and `coagulatio` (precision).
-- 🤖 **Multi-Provider**: OpenAI, Anthropic, Google, OpenRouter, and local Ollama models.
-- 🏆 **AI Selection**: An LLM-as-Judge system to intelligently select the best prompt variants.
-- 🔄 **Modes**: A powerful CLI for on-demand use and an MCP server for AI agent integration.
-- 📈 **Learning-to-Rank**: An adaptive system that learns from user feedback to improve results over time.
-- 💾 **Local-First Storage**: All data is stored in a local SQLite database, including prompts, metrics, and vector embeddings.
+## Key features
 
-## Quick Start
+- **Three-phase prompt refinement**: Improves your prompts through idea extraction, natural language flow, and precision tuning
+- **Multiple AI providers**: Works with OpenAI, Anthropic, Google, OpenRouter, and local Ollama models
+- **Intelligent selection**: Uses AI to automatically choose the best prompt variants
+- **Flexible deployment**: Run as a CLI tool for quick tasks or as a server for AI agent integration
+- **Adaptive learning**: Improves recommendations over time based on your feedback
+- **Local storage**: Keeps all your data in a local SQLite database for privacy and speed
 
-### On-Demand Generation
+## Quick start
+
+### Generate a prompt (CLI)
+
 ```bash
-# Generate a prompt using the three alchemical phases
-prompt-alchemy generate "A blog post about the future of AI" --phases="prima-materia,solutio,coagulatio" --persona=writing
+# Generate a prompt with all three refinement phases
+prompt-alchemy generate "A blog post about the future of AI" --persona=writing
 ```
 
-### Server for AI Agents
+### Start a server (for AI agents)
+
 ```bash
-# Start the MCP server to allow AI agents to connect
+# Start the MCP server for AI agent integration
 prompt-alchemy serve
 ```
-An AI agent can then connect to the server's `stdin`/`stdout` to make JSON-RPC calls.
 
-## The Alchemical Process
+AI agents can connect to the server using `stdin`/`stdout` and make JSON-RPC calls.
 
-Prompt Alchemy transforms ideas through three sacred phases:
-1.  **Prima Materia**: Extracts the raw essence and core concepts from an idea.
-2.  **Solutio**: Dissolves rigid structures into natural, flowing, human-readable language.
-3.  **Coagulatio**: Crystallizes the prompt into a precise, production-ready form.
+## How it works
 
-## Why Prompt Alchemy?
+Prompt Alchemy refines your ideas through three phases:
 
-Prompt Alchemy brings a structured, repeatable process to prompt engineering:
+1. **Extract core concepts**: Identifies the key ideas from your input
+2. **Create natural flow**: Transforms concepts into readable, flowing language  
+3. **Add precision**: Refines the prompt for accuracy and effectiveness
 
-1. **Systematic Refinement**: Each alchemical phase improves a specific quality of the prompt.
-2. **Provider Optimization**: Use the best AI provider for each specific phase of refinement.
-3. **Data-Driven Improvement**: Track successes and failures with comprehensive local analytics.
-4. **Adaptive Learning**: The system learns from your feedback to improve its own processes over time.
+Each phase can use a different AI provider for optimal results.
+
+## Why use Prompt Alchemy?
+
+Unlike manual prompt engineering, Prompt Alchemy provides a consistent, measurable approach:
+
+- **Repeatable process**: Every prompt goes through the same proven refinement steps
+- **Provider flexibility**: Use the best AI model for each phase of improvement  
+- **Performance tracking**: Monitor success rates and identify what works best
+- **Continuous improvement**: The system learns from your feedback to get better over time
 
 ## Documentation
 
@@ -77,7 +80,7 @@ Prompt Alchemy brings a structured, repeatable process to prompt engineering:
 - [MCP Integration](./mcp-integration) - Model Context Protocol server setup
 - [MCP API Reference](./mcp-api-reference) - Detailed reference for all 15 MCP tools.
 - [Learning Mode](./learning-mode) - Adaptive learning configuration
-- [API Reference](./api-reference) - Provider interfaces and models
+- [HTTP API Reference](./http-api-reference) - RESTful API endpoints and models
 
 ### Development & Operations
 - [CLI Reference](./cli-reference) - Complete command-line interface documentation

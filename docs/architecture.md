@@ -93,7 +93,7 @@ This process allows for leveraging the unique strengths of different AI provider
 
 The storage layer uses **SQLite** for its simplicity, performance, and portability. All data, including prompts, metrics, and vector embeddings, is stored in a single database file.
 
-For a detailed, up-to-date view of the database structure, please see the **[Database Schema Reference](./database-schema.md)**.
+For a detailed, up-to-date view of the database structure, please see the **[Database Schema Reference](./database)**.
 
 ## Learning System
 
@@ -103,7 +103,7 @@ The learning system is designed to improve prompt ranking over time by analyzing
 - **Nightly Training**: The `nightly` command processes this feedback, identifies correlations between prompt features and success, and updates the ranking weights in the `config.yaml` file.
 - **Adaptive Ranking**: The `Ranking Engine` uses these updated weights to provide more relevant search results over time.
 
-For more details, see the **[Learning Mode Guide](./learning-mode.md)**.
+For more details, see the **[Learning Mode Guide](./learning-mode)**.
 
 ## Server Integrations
 
@@ -113,14 +113,14 @@ Prompt Alchemy offers two distinct server modes for programmatic integration.
 
 This server communicates over **stdin/stdout** using the Model Context Protocol (MCP). It is designed for deep integration with a single AI agent or parent application.
 
-- **[MCP Integration Guide](./mcp-integration.md)**
-- **[MCP API Reference](./mcp-api-reference.md)**
+- **[MCP Integration Guide](./mcp-integration)**
+- **[MCP API Reference](./mcp-api-reference)**
 
 ### 2. HTTP Server (`http-server` command)
 
 This server exposes a **RESTful API** over HTTP, allowing for broader integration with web services and other clients.
 
-- **[HTTP API Reference](./http-api-reference.md)**
+- **[HTTP API Reference](./http-api-reference)**
 
 ## Configuration System
 
@@ -145,4 +145,4 @@ The current security model is simple and designed for local, trusted environment
 Deployment strategies vary by mode.
 
 -   **On-Demand/CLI**: Deployment involves placing the single `prompt-alchemy` binary in the system's `PATH`.
--   **Server Modes**: The `serve` or `http-server` commands can be run as persistent services using tools like `systemd` or within a Docker container. See the **[Deployment Guide](./deployment-guide.md)** for detailed examples.
+-   **Server Modes**: The `serve` or `http-server` commands can be run as persistent services using tools like `systemd` or within a Docker container. See the **[Deployment Guide](./deployment-guide)** for detailed examples.

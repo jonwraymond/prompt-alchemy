@@ -44,7 +44,7 @@ This guide covers all installation methods for Prompt Alchemy.
    docker-compose logs prompt-alchemy  # Check for successful startup
    ```
 
-For detailed deployment instructions, see the main [Deployment Guide](./deployment-guide.md).
+For detailed deployment instructions, see the main [Deployment Guide](./deployment-guide).
 
 ### 2. Build from Source (Recommended)
 

@@ -3,18 +3,20 @@ layout: default
 title: Getting Started
 ---
 
-# Getting Started with Prompt Alchemy
+# Getting started with Prompt Alchemy
 
-Welcome to Prompt Alchemy! This guide will help you get up and running quickly.
+This guide shows you how to install and configure Prompt Alchemy, then generate your first prompt.
+
+**What you'll learn**: How to install the tool, configure AI providers, and generate improved prompts.
 
 ## Prerequisites
 
-Before you begin, ensure you have:
+Before you start, you need:
 
-- Go 1.24 or higher installed
-- Git for cloning the repository
-- At least one LLM provider API key (OpenAI, Anthropic, Google, OpenRouter, or Ollama setup)
-- SQLite (usually pre-installed on most systems)
+- **Go 1.24 or higher** for building from source
+- **Git** for cloning the repository  
+- **API key** for at least one AI provider (OpenAI, Anthropic, Google, OpenRouter, or Ollama)
+- **SQLite** (included with most operating systems)
 
 ## Quick Installation
 
@@ -55,7 +57,7 @@ docker-compose ps
 docker-compose logs prompt-alchemy
 ```
 
-For details on deploying with Docker, see the [Deployment Guide](./deployment-guide.md).
+For details on deploying with Docker, see the [Deployment Guide](./deployment-guide).
 
 ## Your First Prompt
 
@@ -160,7 +162,7 @@ The `schedule` command automatically detects your OS (macOS or Linux) and uses t
 - Read the [Installation Guide](./installation) for detailed setup.
 - Explore the [Usage Guide](./usage) for advanced features.
 - Learn about the [Architecture](./architecture) to understand how it works.
-- Understand the [Database Schema](./database-schema) and implementation.
+- Understand the [Database Schema](./database) and implementation.
 - Set up [MCP Integration](./mcp-integration) for AI assistant connectivity.
 - Review the [MCP API Reference](./mcp-api-reference) for detailed tool reference.
 

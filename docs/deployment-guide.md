@@ -634,5 +634,3 @@ curl http://localhost:8080/alive
 ```
 
 ---
-
-*Next: [Monitoring Guide](./monitoring) | [Security Best Practices](./security)*
