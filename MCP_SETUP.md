@@ -322,6 +322,12 @@ for resp in responses:
 
 ### Claude Desktop
 
+Claude Desktop supports MCP servers natively. Add to your Claude Desktop configuration:
+
+**macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`  
+**Windows:** `%APPDATA%\Claude\claude_desktop_config.json`  
+**Linux:** `~/.config/Claude/claude_desktop_config.json`
+
 **For Docker Setup:**
 ```json
 {
@@ -340,10 +346,195 @@ for resp in responses:
   "mcpServers": {
     "prompt-alchemy": {
       "command": "prompt-alchemy",
-      "args": ["serve", "mcp"]
+      "args": ["serve", "mcp"],
+      "env": {
+        "PROMPT_ALCHEMY_CONFIG": "/path/to/config.yaml"
+      }
     }
   }
 }
+```
+
+**Usage in Claude Desktop:**
+- The tools will appear automatically in Claude's tool selector
+- Simply ask Claude to "generate prompts for X" or "optimize this prompt"
+- Claude will automatically use the appropriate MCP tools
+
+### Claude Code (claude.ai/code)
+
+Claude Code integrates with MCP servers for enhanced development capabilities.
+
+**Configuration:** Add to `~/.claude/mcp_server_config.json`:
+```json
+{
+  "mcpServers": {
+    "prompt-alchemy": {
+      "command": "/usr/local/bin/prompt-alchemy",
+      "args": ["serve", "mcp"],
+      "description": "AI prompt generation and optimization",
+      "alwaysAllow": ["generate_prompts", "optimize_prompt", "search_prompts"]
+    }
+  }
+}
+```
+
+**Docker Configuration:**
+```json
+{
+  "mcpServers": {
+    "prompt-alchemy": {
+      "command": "docker",
+      "args": ["exec", "-i", "prompt-alchemy-mcp", "prompt-alchemy", "serve", "mcp"],
+      "description": "AI prompt generation via Docker",
+      "restartOnFailure": true,
+      "timeout": 30000
+    }
+  }
+}
+```
+
+**Usage Examples in Claude Code:**
+```python
+# Claude Code can directly call MCP tools
+# Example: Generate prompts for a coding task
+result = mcp.call_tool("prompt-alchemy", "generate_prompts", {
+    "input": "Create a Redis caching layer for REST API",
+    "persona": "code",
+    "count": 3
+})
+
+# Example: Optimize an existing prompt
+optimized = mcp.call_tool("prompt-alchemy", "optimize_prompt", {
+    "prompt": "Write Python code",
+    "task": "Create async web scraper with rate limiting",
+    "target_model": "claude-3-opus",
+    "target_score": 9.0
+})
+```
+
+### Cursor IDE
+
+Cursor IDE supports MCP through its AI features configuration.
+
+**Setup in Cursor:**
+1. Open Cursor Settings (Cmd/Ctrl + ,)
+2. Navigate to AI → MCP Servers
+3. Add configuration:
+
+```json
+{
+  "prompt-alchemy": {
+    "command": "prompt-alchemy",
+    "args": ["serve", "mcp"],
+    "env": {
+      "PROMPT_ALCHEMY_CONFIG": "${workspaceFolder}/.prompt-alchemy/config.yaml"
+    },
+    "triggers": ["@prompt", "@optimize"],
+    "capabilities": {
+      "tools": [
+        {
+          "name": "generate_prompts",
+          "description": "Generate AI prompts for coding tasks",
+          "shortcuts": ["@prompt", "@generate"]
+        },
+        {
+          "name": "optimize_prompt",
+          "description": "Optimize prompts for better results",
+          "shortcuts": ["@optimize"]
+        }
+      ]
+    }
+  }
+}
+```
+
+**Docker Setup for Cursor:**
+```json
+{
+  "prompt-alchemy": {
+    "command": "docker",
+    "args": ["exec", "-i", "prompt-alchemy-mcp", "prompt-alchemy", "serve", "mcp"],
+    "restartOnCrash": true,
+    "env": {
+      "DOCKER_HOST": "unix:///var/run/docker.sock"
+    }
+  }
+}
+```
+
+**Usage in Cursor:**
+- Use `@prompt` to generate prompts inline
+- Use `@optimize` to improve existing prompts
+- Example: Type `@prompt create a React hook for API calls` in editor
+- Cursor will automatically invoke the MCP tool and insert results
+
+### Google Gemini (via MCP Bridge)
+
+While Gemini doesn't natively support MCP, you can use a bridge adapter:
+
+**1. Install MCP-Gemini Bridge:**
+```bash
+pip install mcp-gemini-bridge
+```
+
+**2. Configure Bridge:**
+Create `~/.mcp-gemini/config.yaml`:
+```yaml
+servers:
+  prompt-alchemy:
+    command: prompt-alchemy
+    args: [serve, mcp]
+    description: "AI prompt generation"
+    
+gemini:
+  api_key: ${GOOGLE_API_KEY}
+  model: gemini-pro
+  
+routing:
+  - pattern: "generate.*prompt"
+    server: prompt-alchemy
+    tool: generate_prompts
+  - pattern: "optimize.*prompt"
+    server: prompt-alchemy
+    tool: optimize_prompt
+```
+
+**3. Start Bridge:**
+```bash
+mcp-gemini-bridge --config ~/.mcp-gemini/config.yaml
+```
+
+**4. Use with Gemini:**
+```python
+import google.generativeai as genai
+
+# Configure with bridge endpoint
+genai.configure(
+    api_key=os.environ["GOOGLE_API_KEY"],
+    transport="grpc",
+    client_options={"api_endpoint": "localhost:8080"}
+)
+
+model = genai.GenerativeModel('gemini-pro')
+
+# The bridge translates function calls to MCP
+response = model.generate_content(
+    "Generate 3 prompts for creating a REST API authentication system",
+    tools=[{
+        "function_declarations": [{
+            "name": "generate_prompts",
+            "description": "Generate AI prompts",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "input": {"type": "string"},
+                    "count": {"type": "integer"},
+                    "persona": {"type": "string"}
+                }
+            }
+        }]
+    }]
+)
 ```
 
 ### Custom Integration
