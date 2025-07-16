@@ -14,7 +14,7 @@ require (
 	github.com/gorilla/websocket v1.5.3
 	github.com/ncruces/go-sqlite3 v0.26.3
 	github.com/ollama/ollama v0.9.6
-	github.com/openai/openai-go v1.10.0
+	github.com/openai/openai-go v1.11.0
 	github.com/philippgille/chromem-go v0.5.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.9.1
