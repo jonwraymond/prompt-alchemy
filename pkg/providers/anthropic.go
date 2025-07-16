@@ -64,8 +64,12 @@ func (p *AnthropicProvider) Generate(ctx context.Context, req GenerateRequest) (
 		Messages:  messages,
 	}
 
-	// Add temperature if specified
+	// Add temperature if specified (Anthropic expects 0-1 range)
 	if req.Temperature > 0 {
+		// Validate temperature range for Anthropic (0-1)
+		if req.Temperature > 1.0 {
+			return nil, fmt.Errorf("temperature must be between 0 and 1 for Anthropic, got %f", req.Temperature)
+		}
 		params.Temperature = anthropic.Float(req.Temperature)
 	}
 
@@ -131,5 +135,10 @@ func (p *AnthropicProvider) IsAvailable() bool {
 
 // SupportsEmbeddings checks if the provider supports embedding generation
 func (p *AnthropicProvider) SupportsEmbeddings() bool {
+	return false
+}
+
+// SupportsStreaming checks if the provider supports streaming generation
+func (p *AnthropicProvider) SupportsStreaming() bool {
 	return false
 }

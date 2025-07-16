@@ -30,6 +30,22 @@ func init() {
 func runHealth(cmd *cobra.Command, args []string) error {
 	logger := log.GetLogger()
 
+	// Check if we're in local mode
+	mode := viper.GetString("mode")
+	if mode == "" {
+		mode = "local" // Default to local mode
+	}
+
+	if mode == "local" {
+		// In local mode, there's no server to check
+		logger.Info("Running in local mode - no server health check available")
+		fmt.Println("Health check is only available in client/server mode.")
+		fmt.Println("To run in server mode:")
+		fmt.Println("  1. Start server: prompt-alchemy server")
+		fmt.Println("  2. In another terminal: prompt-alchemy --mode client health")
+		return nil
+	}
+
 	// Create client (check for --server flag override)
 	var c *client.Client
 	if serverFlag, _ := cmd.Flags().GetString("server"); serverFlag != "" {
@@ -37,6 +53,9 @@ func runHealth(cmd *cobra.Command, args []string) error {
 		logger.Infof("Checking server: %s", serverFlag)
 	} else {
 		serverURL := viper.GetString("client.server_url")
+		if serverURL == "" {
+			return fmt.Errorf("no server URL configured for client mode")
+		}
 		c = client.NewClient(logger)
 		logger.Infof("Checking configured server: %s", serverURL)
 	}

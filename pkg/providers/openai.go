@@ -152,5 +152,10 @@ func (p *OpenAIProvider) IsAvailable() bool {
 
 // SupportsEmbeddings checks if the provider supports embedding generation
 func (p *OpenAIProvider) SupportsEmbeddings() bool {
+	return true // OpenAI supports embeddings
+}
+
+// SupportsStreaming checks if the provider supports streaming generation
+func (p *OpenAIProvider) SupportsStreaming() bool {
 	return true
 }

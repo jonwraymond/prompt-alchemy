@@ -37,6 +37,9 @@ var (
 	persona             string
 	targetModel         string
 	embeddingDimensions int
+	optimize            bool
+	optimizeTargetScore float64
+	optimizeMaxIter     int
 )
 
 // generateCmd represents the generate command
@@ -64,19 +67,22 @@ func init() {
 	generateCmd.Flags().StringVar(&persona, "persona", "code", "AI persona to use (code, writing, analysis, generic)")
 	generateCmd.Flags().StringVar(&targetModel, "target-model", "", "Target model family for optimization (claude-4-sonnet-20250522, o4-mini, gemini-2.5-flash, etc.)")
 	generateCmd.Flags().IntVar(&embeddingDimensions, "embedding-dimensions", 0, "Embedding dimensions for similarity search (uses config default if not specified)")
+	generateCmd.Flags().BoolVar(&optimize, "optimize", false, "Enable AI-powered optimization with LLM-as-Judge and meta-prompting")
+	generateCmd.Flags().Float64Var(&optimizeTargetScore, "optimize-target-score", 8.5, "Target quality score for optimization (1-10)")
+	generateCmd.Flags().IntVar(&optimizeMaxIter, "optimize-max-iterations", 3, "Maximum optimization iterations per phase")
 
 	// Client mode flag (overrides config)
 	generateCmd.Flags().String("server", "", "Server URL for client mode (overrides config and enables client mode)")
 
 	// Bind flags to viper for configuration file support
-	viper.BindPFlag("generation.default_phases", generateCmd.Flags().Lookup("phases"))
-	viper.BindPFlag("generation.default_count", generateCmd.Flags().Lookup("count"))
-	viper.BindPFlag("generation.default_temperature", generateCmd.Flags().Lookup("temperature"))
-	viper.BindPFlag("generation.default_max_tokens", generateCmd.Flags().Lookup("max-tokens"))
-	viper.BindPFlag("generation.default_provider", generateCmd.Flags().Lookup("provider"))
-	viper.BindPFlag("generation.default_persona", generateCmd.Flags().Lookup("persona"))
-	viper.BindPFlag("generation.default_target_model", generateCmd.Flags().Lookup("target-model"))
-	viper.BindPFlag("generation.default_embedding_dimensions", generateCmd.Flags().Lookup("embedding-dimensions"))
+	_ = viper.BindPFlag("generation.default_phases", generateCmd.Flags().Lookup("phases"))
+	_ = viper.BindPFlag("generation.default_count", generateCmd.Flags().Lookup("count"))
+	_ = viper.BindPFlag("generation.default_temperature", generateCmd.Flags().Lookup("temperature"))
+	_ = viper.BindPFlag("generation.default_max_tokens", generateCmd.Flags().Lookup("max-tokens"))
+	_ = viper.BindPFlag("generation.default_provider", generateCmd.Flags().Lookup("provider"))
+	_ = viper.BindPFlag("generation.default_persona", generateCmd.Flags().Lookup("persona"))
+	_ = viper.BindPFlag("generation.default_target_model", generateCmd.Flags().Lookup("target-model"))
+	_ = viper.BindPFlag("generation.default_embedding_dimensions", generateCmd.Flags().Lookup("embedding-dimensions"))
 }
 
 func runGenerate(cmd *cobra.Command, args []string) error {
@@ -120,14 +126,22 @@ func runGenerateClient(cmd *cobra.Command, args []string, input string) error {
 	}
 	logger.Infof("Connected to server: %s (version: %s)", health.Status, health.Version)
 
+	// Parse phases and tags for client request
+	phaseList := helpers.ParsePhases(phases)
+	phaseStrings := make([]string, len(phaseList))
+	for i, phase := range phaseList {
+		phaseStrings[i] = string(phase)
+	}
+	tagList := parseTags(tags)
+
 	// Create client request
 	req := client.GenerateRequest{
 		Input:       input,
-		Phases:      phases,
+		Phases:      phaseStrings,
 		Count:       count,
 		Temperature: temperature,
 		MaxTokens:   maxTokens,
-		Tags:        tags,
+		Tags:        tagList,
 		Persona:     persona,
 		TargetModel: targetModel,
 	}
@@ -172,6 +186,12 @@ func runGenerateLocal(cmd *cobra.Command, args []string, input string) error {
 	}
 	logger.Debugf("Using persona: %s", persona)
 
+	// Validate temperature range (general validation, providers may have stricter limits)
+	if temperature < 0 || temperature > 2.0 {
+		return fmt.Errorf("temperature must be between 0 and 2.0, got %f", temperature)
+	}
+	logger.Debugf("Temperature: %f", temperature)
+
 	// Detect or use specified target model family
 	var modelFamily models.ModelFamily
 	if targetModel != "" {
@@ -204,17 +224,34 @@ func runGenerateLocal(cmd *cobra.Command, args []string, input string) error {
 		logger.WithField("embedding_dimensions", embeddingDimensions).Info("Using custom embedding dimensions")
 	}
 
-	// Initialize storage
-	logger.Debug("Initializing storage")
-	store, err := storage.NewStorage(viper.GetString("data_dir"), logger)
-	if err != nil {
-		return fmt.Errorf("failed to initialize storage: %w", err)
-	}
-	defer func() {
-		if err := store.Close(); err != nil {
-			logger.WithError(err).Error("Failed to close storage")
+	// Initialize storage only if we need to save prompts
+	var store *storage.Storage
+	if savePrompt {
+		logger.Debug("Initializing storage")
+		var err error
+		store, err = storage.NewStorage(viper.GetString("data_dir"), logger)
+		if err != nil {
+			return fmt.Errorf("failed to initialize storage: %w", err)
 		}
-	}()
+		defer func() {
+			if err := store.Close(); err != nil {
+				logger.WithError(err).Error("Failed to close storage")
+			}
+		}()
+
+		// Set embedding configuration from config if available
+		embeddingProvider := viper.GetString("embeddings.provider")
+		embeddingModel := viper.GetString("embeddings.model")
+		embeddingDims := viper.GetInt("embeddings.dimensions")
+		if embeddingProvider != "" && embeddingModel != "" && embeddingDims > 0 {
+			store.SetEmbeddingConfig(embeddingProvider, embeddingModel, embeddingDims)
+			logger.WithFields(map[string]interface{}{
+				"provider": embeddingProvider,
+				"model":    embeddingModel,
+				"dims":     embeddingDims,
+			}).Info("Set embedding configuration from config")
+		}
+	}
 
 	// Initialize providers
 	logger.Debug("Initializing providers")
@@ -229,6 +266,9 @@ func runGenerateLocal(cmd *cobra.Command, args []string, input string) error {
 
 	// Initialize engine
 	eng := engine.NewEngine(registry, logger)
+	if store != nil {
+		eng.SetStorage(store)
+	}
 
 	// Create request
 	request := models.PromptRequest{
@@ -248,12 +288,15 @@ func runGenerateLocal(cmd *cobra.Command, args []string, input string) error {
 	logger.Info("Generating prompts...")
 	ctx := context.Background()
 	result, err := eng.Generate(ctx, models.GenerateOptions{
-		Request:        request,
-		PhaseConfigs:   phaseConfigs,
-		UseParallel:    viper.GetBool("generation.use_parallel"),
-		IncludeContext: true,
-		Persona:        persona,
-		TargetModel:    string(modelFamily),
+		Request:             request,
+		PhaseConfigs:        phaseConfigs,
+		UseParallel:         viper.GetBool("generation.use_parallel"),
+		IncludeContext:      true,
+		Persona:             persona,
+		TargetModel:         string(modelFamily),
+		Optimize:            optimize,
+		OptimizeTargetScore: optimizeTargetScore,
+		OptimizeMaxIter:     optimizeMaxIter,
 	})
 
 	if err != nil {
@@ -286,7 +329,7 @@ func runGenerateLocal(cmd *cobra.Command, args []string, input string) error {
 	if savePrompt {
 		logger.Info("Saving prompts...")
 		for _, prompt := range result.Prompts {
-			if err := store.SavePrompt(&prompt); err != nil {
+			if err := store.SavePrompt(cmd.Context(), &prompt); err != nil {
 				logger.WithError(err).Warn("Failed to save prompt")
 			}
 		}
@@ -295,7 +338,7 @@ func runGenerateLocal(cmd *cobra.Command, args []string, input string) error {
 
 	// Output results with persona information
 	logger.Infof("Outputting results in %s format", outputFormat)
-	return outputResults(store, result, outputFormat, personaObj, modelFamily)
+	return outputResults(ctx, store, result, outputFormat, personaObj, modelFamily)
 }
 
 func parseTags(tagsStr string) []string {
@@ -395,6 +438,20 @@ func initializeProviders(registry *providers.Registry) error {
 		logger.Warn("Failed to register Ollama provider", "error", err)
 	}
 
+	// Initialize Grok (xAI)
+	if apiKey := viper.GetString("providers.grok.api_key"); apiKey != "" {
+		logger.Debug("Initializing Grok provider")
+		config := providers.Config{
+			APIKey:  apiKey,
+			Model:   viper.GetString("providers.grok.model"),
+			BaseURL: viper.GetString("providers.grok.base_url"),
+			Timeout: viper.GetInt("providers.grok.timeout"),
+		}
+		if err := registry.Register(providers.ProviderGrok, providers.NewGrokProvider(config)); err != nil {
+			logger.Warn("Failed to register Grok provider", "error", err)
+		}
+	}
+
 	// Check if at least one provider is available
 	if len(registry.ListAvailable()) == 0 {
 		logger.Error("no providers configured")
@@ -405,7 +462,7 @@ func initializeProviders(registry *providers.Registry) error {
 	return nil
 }
 
-func outputResults(store *storage.Storage, result *models.GenerationResult, format string, persona *models.Persona, modelFamily models.ModelFamily) error {
+func outputResults(ctx context.Context, store *storage.Storage, result *models.GenerationResult, format string, persona *models.Persona, modelFamily models.ModelFamily) error {
 	logger := log.GetLogger()
 	switch format {
 	case "json":
@@ -420,7 +477,7 @@ func outputResults(store *storage.Storage, result *models.GenerationResult, form
 		// For simplicity, using JSON for now
 		// Can add proper YAML support later
 		logger.Warn("YAML output is not yet supported, falling back to JSON")
-		return outputResults(store, result, "json", persona, modelFamily)
+		return outputResults(ctx, store, result, "json", persona, modelFamily)
 
 	default: // text
 		logger.Infof("Generated Prompts (Persona: %s, Target Model Family: %s):", persona.Name, modelFamily)
@@ -491,7 +548,7 @@ func outputResults(store *storage.Storage, result *models.GenerationResult, form
 				inter.Action = "chosen"
 				inter.Score = 1
 			}
-			if err := store.SaveInteraction(inter); err != nil {
+			if err := store.SaveInteraction(ctx, inter); err != nil {
 				logger.WithError(err).Warn("Failed to save interaction for prompt ", p.ID)
 			}
 		}

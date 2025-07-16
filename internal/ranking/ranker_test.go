@@ -95,15 +95,14 @@ func TestRankPrompts(t *testing.T) {
 	// Create ranker with proper mocks
 	logger := logrus.New()
 	r := &Ranker{
-		storage:          &storage.Storage{}, // Mock if needed
-		registry:         reg,
-		logger:           logger,
-		embedProvider:    "openai",
-		tempWeight:       0.2,
-		tokenWeight:      0.2,
-		semanticWeight:   0.3,
-		lengthWeight:     0.1,
-		historicalWeight: 0.2,
+		storage:        &storage.Storage{}, // Mock if needed
+		registry:       reg,
+		logger:         logger,
+		embedProvider:  "openai",
+		tempWeight:     0.2,
+		tokenWeight:    0.2,
+		semanticWeight: 0.4,
+		lengthWeight:   0.2,
 	}
 
 	prompts := []models.Prompt{{

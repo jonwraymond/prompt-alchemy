@@ -2,42 +2,55 @@ package phases
 
 import (
 	"fmt"
-	"strings"
 
+	"github.com/jonwraymond/prompt-alchemy/internal/templates"
 	"github.com/jonwraymond/prompt-alchemy/pkg/models"
 )
 
 type Coagulatio struct{}
 
 func (c *Coagulatio) GetTemplate() string {
-	return `You are a master alchemist performing Coagulatio - the final crystallization. Take this flowing prompt and crystallize it into its most potent, refined form. Remove all impurities to reveal the philosopher's stone of prompts.
-
-Solution to Crystallize:
-{{PROMPT}}
-
-Crystallization Requirements:
-- Distill to pure essence
-- Remove all redundant matter
-- Perfect the structural lattice
-- Optimize for maximum potency
-- Achieve the golden ratio of clarity to power`
+	return "coagulatio" // Return template name for new system
 }
 
 func (c *Coagulatio) BuildSystemPrompt(opts models.GenerateOptions) string {
-	baseSystem := "You are a master alchemist of language, transforming raw ideas into golden prompts through ancient processes."
-	return baseSystem + " In this Coagulatio phase, crystallize the dissolved essence into its most potent form - achieving maximum effectiveness through perfect refinement."
+	tmpl, err := templates.LoadPhaseSystemPrompt("coagulatio")
+	if err != nil {
+		// Fallback to embedded system prompt
+		return "You excel at refining and perfecting content to achieve maximum clarity, effectiveness, and impact. Your focus is on crystallizing ideas into their most potent form through careful optimization and refinement."
+	}
+
+	systemPrompt, err := templates.ExecuteTemplate(tmpl, nil)
+	if err != nil {
+		// Fallback to embedded system prompt
+		return "You excel at refining and perfecting content to achieve maximum clarity, effectiveness, and impact. Your focus is on crystallizing ideas into their most potent form through careful optimization and refinement."
+	}
+	return systemPrompt
 }
 
 func (c *Coagulatio) PreparePromptContent(input string, opts models.GenerateOptions) string {
-	template := c.GetTemplate()
+	templateName := c.GetTemplate()
 
-	content := strings.ReplaceAll(template, "{{PROMPT}}", input)
+	// Create template context
+	context := &templates.PhaseContext{
+		Prompt:       input,
+		Context:      opts.Request.Context,
+		Requirements: []string{}, // Could be extracted from opts if needed
+		Phase:        "coagulatio",
+	}
 
-	if len(opts.Request.Context) > 0 {
-		content += "\n\nAdditional Context:\n"
-		for _, ctx := range opts.Request.Context {
-			content += fmt.Sprintf("- %s\n", ctx)
-		}
+	// Add persona and target model if available
+	if opts.Persona != "" {
+		context.Persona = opts.Persona
+	}
+	if opts.TargetModel != "" {
+		context.TargetModel = opts.TargetModel
+	}
+
+	content, err := templates.ExecutePhaseTemplate(templateName, context)
+	if err != nil {
+		// Fallback to simple content if template execution fails
+		return fmt.Sprintf("Take the following prompt and refine it to its most effective, crystallized form:\\n\\nPrompt: %s", input)
 	}
 
 	return content

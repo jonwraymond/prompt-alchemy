@@ -10,6 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/subosito/gotenv"
 )
 
 var (
@@ -83,6 +84,16 @@ func Execute() error {
 }
 
 func init() {
+	// Load .env file early, before viper bindings
+	// Try current directory first, then parent directories
+	envPaths := []string{".env", "../.env", "../../.env"}
+
+	for _, envPath := range envPaths {
+		if err := gotenv.Load(envPath); err == nil {
+			break
+		}
+	}
+
 	cobra.OnInitialize(initConfig)
 
 	// Set defaults before config is loaded (but not for provider models which are in config)
@@ -151,13 +162,11 @@ func init() {
 	}
 	rootCmd.AddCommand(testCmd) // TODO: Implement test command
 	rootCmd.AddCommand(metricsCmd)
-	rootCmd.AddCommand(serveCmd)
 	rootCmd.AddCommand(configCmd)
 	rootCmd.AddCommand(validateCmd)
 	rootCmd.AddCommand(providersCmd)
 	rootCmd.AddCommand(optimizeCmd)
 	rootCmd.AddCommand(updateCmd)
-	rootCmd.AddCommand(deleteCmd)
 	rootCmd.AddCommand(migrateCmd)
 	rootCmd.AddCommand(versionCmd)
 	rootCmd.AddCommand(httpCmd)
@@ -230,15 +239,18 @@ func initConfig() {
 	logger.Debug("Checking for environment variables with prefix PROMPT_ALCHEMY")
 
 	// Explicitly bind provider API key environment variables
-	viper.BindEnv("providers.openai.api_key", "PROMPT_ALCHEMY_PROVIDERS_OPENAI_API_KEY")
-	viper.BindEnv("providers.anthropic.api_key", "PROMPT_ALCHEMY_PROVIDERS_ANTHROPIC_API_KEY")
-	viper.BindEnv("providers.google.api_key", "PROMPT_ALCHEMY_PROVIDERS_GOOGLE_API_KEY")
-	viper.BindEnv("providers.openrouter.api_key", "PROMPT_ALCHEMY_PROVIDERS_OPENROUTER_API_KEY")
+	// Support both standard names and prefixed names
+	_ = viper.BindEnv("providers.openai.api_key", "OPENAI_API_KEY", "PROMPT_ALCHEMY_PROVIDERS_OPENAI_API_KEY")
+	_ = viper.BindEnv("providers.anthropic.api_key", "ANTHROPIC_API_KEY", "PROMPT_ALCHEMY_PROVIDERS_ANTHROPIC_API_KEY")
+	_ = viper.BindEnv("providers.google.api_key", "GOOGLE_API_KEY", "PROMPT_ALCHEMY_PROVIDERS_GOOGLE_API_KEY")
+	_ = viper.BindEnv("providers.openrouter.api_key", "OPENROUTER_API_KEY", "PROMPT_ALCHEMY_PROVIDERS_OPENROUTER_API_KEY")
+	_ = viper.BindEnv("providers.grok.api_key", "GROK_API_KEY", "PROMPT_ALCHEMY_PROVIDERS_GROK_API_KEY")
 
 	// Read config file
 	if err := viper.ReadInConfig(); err != nil {
 		logger.Warnf("Failed to read config file: %s", err)
 	} else {
 		logger.Infof("Using config file: %s", viper.ConfigFileUsed())
+
 	}
 }

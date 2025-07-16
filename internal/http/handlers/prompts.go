@@ -62,7 +62,8 @@ func SelectPromptHandler(w http.ResponseWriter, r *http.Request, registry *provi
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Request-ID", reqID)
-	json.NewEncoder(w).Encode(result)
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(result)
 
 	logger.WithField("duration_ms", time.Since(start).Milliseconds()).Info("Prompt selection completed")
 }

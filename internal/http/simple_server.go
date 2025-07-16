@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -237,21 +235,23 @@ func (s *SimpleServer) setupRouter() {
 
 	// API routes
 	r.Route("/api/v1", func(r chi.Router) {
+		r.Get("/health", s.handleHealth) // Add health endpoint under API
 		r.Get("/status", s.handleStatus)
 		r.Get("/info", s.handleInfo)
+		r.Post("/generate", s.handleGeneratePrompts) // Add generate directly under API
 
 		// Prompt CRUD endpoints
 		r.Route("/prompts", func(r chi.Router) {
 			s.logger.Info("=== REGISTERING PROMPTS ROUTES ===")
-			r.Get("/", s.handleListPrompts)
+			// r.Get("/", s.handleListPrompts)
 			r.Post("/", s.handleCreatePrompt)
 			r.Post("/generate", s.handleGeneratePrompts)
 			s.logger.Info("=== REGISTERED /generate ROUTE ===")
-			r.Post("/select", s.handleAISelectPrompt)
-			r.Get("/search", s.handleSearchPrompts)
-			r.Get("/{id}", s.handleGetPrompt)
-			r.Put("/{id}", s.handleUpdatePrompt)
-			r.Delete("/{id}", s.handleDeletePrompt)
+			// r.Post("/select", s.handleAISelectPrompt)
+			// r.Get("/search", s.handleSearchPrompts)
+			// r.Get("/{id}", s.handleGetPrompt)
+			// r.Put("/{id}", s.handleUpdatePrompt)
+			// r.Delete("/{id}", s.handleDeletePrompt)
 		})
 
 		// TODO: Add more endpoints
@@ -337,6 +337,7 @@ func (s *SimpleServer) handleInfo(w http.ResponseWriter, r *http.Request) {
 	s.writeJSON(w, http.StatusOK, response)
 }
 
+//nolint:unused // Reserved for future functionality
 func (s *SimpleServer) handleNotImplemented(w http.ResponseWriter, r *http.Request) {
 	response := map[string]interface{}{
 		"error":   "Not implemented yet",
@@ -348,41 +349,41 @@ func (s *SimpleServer) handleNotImplemented(w http.ResponseWriter, r *http.Reque
 }
 
 // CRUD handlers for prompts
-func (s *SimpleServer) handleListPrompts(w http.ResponseWriter, r *http.Request) {
-	// Parse pagination parameters
-	limitStr := r.URL.Query().Get("limit")
-	offsetStr := r.URL.Query().Get("offset")
+// func (s *SimpleServer) handleListPrompts(w http.ResponseWriter, r *http.Request) {
+// 	// Parse pagination parameters
+// 	limitStr := r.URL.Query().Get("limit")
+// 	offsetStr := r.URL.Query().Get("offset")
 
-	limit := 20 // default
-	offset := 0 // default
+// 	limit := 20 // default
+// 	offset := 0 // default
 
-	if limitStr != "" {
-		if parsedLimit, err := strconv.Atoi(limitStr); err == nil && parsedLimit > 0 && parsedLimit <= 100 {
-			limit = parsedLimit
-		}
-	}
+// 	if limitStr != "" {
+// 		if parsedLimit, err := strconv.Atoi(limitStr); err == nil && parsedLimit > 0 && parsedLimit <= 100 {
+// 			limit = parsedLimit
+// 		}
+// 	}
 
-	if offsetStr != "" {
-		if parsedOffset, err := strconv.Atoi(offsetStr); err == nil && parsedOffset >= 0 {
-			offset = parsedOffset
-		}
-	}
+// 	if offsetStr != "" {
+// 		if parsedOffset, err := strconv.Atoi(offsetStr); err == nil && parsedOffset >= 0 {
+// 			offset = parsedOffset
+// 		}
+// 	}
 
-	prompts, err := s.store.ListPrompts(limit, offset)
-	if err != nil {
-		s.logger.WithError(err).Error("Failed to list prompts")
-		s.writeError(w, http.StatusInternalServerError, "Failed to list prompts")
-		return
-	}
+// 	prompts, err := s.store.ListPrompts(limit, offset)
+// 	if err != nil {
+// 		s.logger.WithError(err).Error("Failed to list prompts")
+// 		s.writeError(w, http.StatusInternalServerError, "Failed to list prompts")
+// 		return
+// 	}
 
-	response := map[string]interface{}{
-		"prompts": prompts,
-		"limit":   limit,
-		"offset":  offset,
-		"count":   len(prompts),
-	}
-	s.writeJSON(w, http.StatusOK, response)
-}
+// 	response := map[string]interface{}{
+// 		"prompts": prompts,
+// 		"limit":   limit,
+// 		"offset":  offset,
+// 		"count":   len(prompts),
+// 	}
+// 	s.writeJSON(w, http.StatusOK, response)
+// }
 
 func (s *SimpleServer) handleCreatePrompt(w http.ResponseWriter, r *http.Request) {
 	var prompt models.Prompt
@@ -411,7 +412,7 @@ func (s *SimpleServer) handleCreatePrompt(w http.ResponseWriter, r *http.Request
 		prompt.Tags = []string{}
 	}
 
-	if err := s.store.SavePrompt(&prompt); err != nil {
+	if err := s.store.SavePrompt(r.Context(), &prompt); err != nil {
 		s.logger.WithError(err).Error("Failed to save prompt")
 		s.writeError(w, http.StatusInternalServerError, "Failed to save prompt")
 		return
@@ -420,96 +421,96 @@ func (s *SimpleServer) handleCreatePrompt(w http.ResponseWriter, r *http.Request
 	s.writeJSON(w, http.StatusCreated, prompt)
 }
 
-func (s *SimpleServer) handleGetPrompt(w http.ResponseWriter, r *http.Request) {
-	idStr := chi.URLParam(r, "id")
-	id, err := uuid.Parse(idStr)
-	if err != nil {
-		s.writeError(w, http.StatusBadRequest, "Invalid prompt ID")
-		return
-	}
+// func (s *SimpleServer) handleGetPrompt(w http.ResponseWriter, r *http.Request) {
+// 	idStr := chi.URLParam(r, "id")
+// 	id, err := uuid.Parse(idStr)
+// 	if err != nil {
+// 		s.writeError(w, http.StatusBadRequest, "Invalid prompt ID")
+// 		return
+// 	}
 
-	prompt, err := s.store.GetPrompt(id)
-	if err != nil {
-		if err.Error() == "prompt not found" {
-			s.writeError(w, http.StatusNotFound, "Prompt not found")
-		} else {
-			s.logger.WithError(err).Error("Failed to get prompt")
-			s.writeError(w, http.StatusInternalServerError, "Failed to get prompt")
-		}
-		return
-	}
+// 	prompt, err := s.store.GetPrompt(id)
+// 	if err != nil {
+// 		if err.Error() == "prompt not found" {
+// 			s.writeError(w, http.StatusNotFound, "Prompt not found")
+// 		} else {
+// 			s.logger.WithError(err).Error("Failed to get prompt")
+// 			s.writeError(w, http.StatusInternalServerError, "Failed to get prompt")
+// 		}
+// 		return
+// 	}
 
-	s.writeJSON(w, http.StatusOK, prompt)
-}
+// 	s.writeJSON(w, http.StatusOK, prompt)
+// }
 
-func (s *SimpleServer) handleUpdatePrompt(w http.ResponseWriter, r *http.Request) {
-	idStr := chi.URLParam(r, "id")
-	id, err := uuid.Parse(idStr)
-	if err != nil {
-		s.writeError(w, http.StatusBadRequest, "Invalid prompt ID")
-		return
-	}
+// func (s *SimpleServer) handleUpdatePrompt(w http.ResponseWriter, r *http.Request) {
+// 	idStr := chi.URLParam(r, "id")
+// 	id, err := uuid.Parse(idStr)
+// 	if err != nil {
+// 		s.writeError(w, http.StatusBadRequest, "Invalid prompt ID")
+// 		return
+// 	}
 
-	// Check if prompt exists
-	existingPrompt, err := s.store.GetPrompt(id)
-	if err != nil {
-		if err.Error() == "prompt not found" {
-			s.writeError(w, http.StatusNotFound, "Prompt not found")
-		} else {
-			s.logger.WithError(err).Error("Failed to get prompt")
-			s.writeError(w, http.StatusInternalServerError, "Failed to get prompt")
-		}
-		return
-	}
+// 	// Check if prompt exists
+// 	existingPrompt, err := s.store.GetPrompt(id)
+// 	if err != nil {
+// 		if err.Error() == "prompt not found" {
+// 			s.writeError(w, http.StatusNotFound, "Prompt not found")
+// 		} else {
+// 			s.logger.WithError(err).Error("Failed to get prompt")
+// 			s.writeError(w, http.StatusInternalServerError, "Failed to get prompt")
+// 		}
+// 		return
+// 	}
 
-	var updatedPrompt models.Prompt
-	if err := json.NewDecoder(r.Body).Decode(&updatedPrompt); err != nil {
-		s.writeError(w, http.StatusBadRequest, "Invalid JSON payload")
-		return
-	}
+// 	var updatedPrompt models.Prompt
+// 	if err := json.NewDecoder(r.Body).Decode(&updatedPrompt); err != nil {
+// 		s.writeError(w, http.StatusBadRequest, "Invalid JSON payload")
+// 		return
+// 	}
 
-	// Preserve important fields
-	updatedPrompt.ID = existingPrompt.ID
-	updatedPrompt.CreatedAt = existingPrompt.CreatedAt
-	updatedPrompt.UpdatedAt = time.Now()
-	updatedPrompt.SessionID = existingPrompt.SessionID
+// 	// Preserve important fields
+// 	updatedPrompt.ID = existingPrompt.ID
+// 	updatedPrompt.CreatedAt = existingPrompt.CreatedAt
+// 	updatedPrompt.UpdatedAt = time.Now()
+// 	updatedPrompt.SessionID = existingPrompt.SessionID
 
-	if err := s.store.UpdatePrompt(&updatedPrompt); err != nil {
-		s.logger.WithError(err).Error("Failed to update prompt")
-		s.writeError(w, http.StatusInternalServerError, "Failed to update prompt")
-		return
-	}
+// 	if err := s.store.UpdatePrompt(&updatedPrompt); err != nil {
+// 		s.logger.WithError(err).Error("Failed to update prompt")
+// 		s.writeError(w, http.StatusInternalServerError, "Failed to update prompt")
+// 		return
+// 	}
 
-	s.writeJSON(w, http.StatusOK, updatedPrompt)
-}
+// 	s.writeJSON(w, http.StatusOK, updatedPrompt)
+// }
 
-func (s *SimpleServer) handleDeletePrompt(w http.ResponseWriter, r *http.Request) {
-	idStr := chi.URLParam(r, "id")
-	id, err := uuid.Parse(idStr)
-	if err != nil {
-		s.writeError(w, http.StatusBadRequest, "Invalid prompt ID")
-		return
-	}
+// func (s *SimpleServer) handleDeletePrompt(w http.ResponseWriter, r *http.Request) {
+// 	idStr := chi.URLParam(r, "id")
+// 	id, err := uuid.Parse(idStr)
+// 	if err != nil {
+// 		s.writeError(w, http.StatusBadRequest, "Invalid prompt ID")
+// 		return
+// 	}
 
-	// Check if prompt exists
-	if _, err := s.store.GetPrompt(id); err != nil {
-		if err.Error() == "prompt not found" {
-			s.writeError(w, http.StatusNotFound, "Prompt not found")
-		} else {
-			s.logger.WithError(err).Error("Failed to get prompt")
-			s.writeError(w, http.StatusInternalServerError, "Failed to get prompt")
-		}
-		return
-	}
+// 	// Check if prompt exists
+// 	if _, err := s.store.GetPrompt(id); err != nil {
+// 		if err.Error() == "prompt not found" {
+// 			s.writeError(w, http.StatusNotFound, "Prompt not found")
+// 		} else {
+// 			s.logger.WithError(err).Error("Failed to get prompt")
+// 			s.writeError(w, http.StatusInternalServerError, "Failed to get prompt")
+// 		}
+// 		return
+// 	}
 
-	if err := s.store.DeletePrompt(id); err != nil {
-		s.logger.WithError(err).Error("Failed to delete prompt")
-		s.writeError(w, http.StatusInternalServerError, "Failed to delete prompt")
-		return
-	}
+// 	if err := s.store.DeletePrompt(id); err != nil {
+// 		s.logger.WithError(err).Error("Failed to delete prompt")
+// 		s.writeError(w, http.StatusInternalServerError, "Failed to delete prompt")
+// 		return
+// 	}
 
-	w.WriteHeader(http.StatusNoContent)
-}
+// 	w.WriteHeader(http.StatusNoContent)
+// }
 
 func (s *SimpleServer) handleGeneratePrompts(w http.ResponseWriter, r *http.Request) {
 	s.logger.Info("=== GENERATE ENDPOINT CALLED ===")
@@ -557,7 +558,7 @@ func (s *SimpleServer) handleGeneratePrompts(w http.ResponseWriter, r *http.Requ
 		req.Context = []string{}
 	}
 	// Save defaults to true unless explicitly disabled
-	if !r.URL.Query().Has("save") && req.Save == false {
+	if !r.URL.Query().Has("save") {
 		req.Save = true
 	}
 
@@ -597,7 +598,7 @@ func (s *SimpleServer) handleGeneratePrompts(w http.ResponseWriter, r *http.Requ
 	}).Info("Processing provider request details")
 
 	// If no providers were specified in request, read from viper configuration
-	if req.Providers == nil || len(req.Providers) == 0 {
+	if len(req.Providers) == 0 {
 		s.logger.Info("No providers specified in request, reading from viper configuration")
 		// Read directly from viper with logging
 		for i, phase := range phases {
@@ -716,7 +717,7 @@ func (s *SimpleServer) handleGeneratePrompts(w http.ResponseWriter, r *http.Requ
 	if req.Save {
 		for i := range result.Prompts {
 			prompt := &result.Prompts[i]
-			if err := s.store.SavePrompt(prompt); err != nil {
+			if err := s.store.SavePrompt(ctx, prompt); err != nil {
 				s.logger.WithError(err).WithField("prompt_id", prompt.ID).Error("Failed to save prompt")
 				// Continue with other prompts even if one fails
 			}
@@ -780,268 +781,268 @@ func (s *SimpleServer) writeError(w http.ResponseWriter, status int, message str
 	s.writeJSON(w, status, response)
 }
 
-func (s *SimpleServer) handleAISelectPrompt(w http.ResponseWriter, r *http.Request) {
-	var req AISelectRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		s.writeError(w, http.StatusBadRequest, "Invalid JSON payload")
-		return
-	}
+// func (s *SimpleServer) handleAISelectPrompt(w http.ResponseWriter, r *http.Request) {
+// 	var req AISelectRequest
+// 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+// 		s.writeError(w, http.StatusBadRequest, "Invalid JSON payload")
+// 		return
+// 	}
 
-	// Validate required fields
-	if len(req.PromptIDs) == 0 {
-		s.writeError(w, http.StatusBadRequest, "prompt_ids is required (array of prompt UUIDs)")
-		return
-	}
+// 	// Validate required fields
+// 	if len(req.PromptIDs) == 0 {
+// 		s.writeError(w, http.StatusBadRequest, "prompt_ids is required (array of prompt UUIDs)")
+// 		return
+// 	}
 
-	// Set defaults
-	if req.TaskDescription == "" {
-		req.TaskDescription = "General prompt selection"
-	}
-	if req.TargetAudience == "" {
-		req.TargetAudience = "general audience"
-	}
-	if req.RequiredTone == "" {
-		req.RequiredTone = "professional"
-	}
-	if req.PreferredLength == "" {
-		req.PreferredLength = "medium"
-	}
-	if req.Persona == "" {
-		req.Persona = "generic"
-	}
-	if req.ModelFamily == "" {
-		req.ModelFamily = "claude"
-	}
-	if req.SelectionProvider == "" {
-		req.SelectionProvider = "openai"
-	}
+// 	// Set defaults
+// 	if req.TaskDescription == "" {
+// 		req.TaskDescription = "General prompt selection"
+// 	}
+// 	if req.TargetAudience == "" {
+// 		req.TargetAudience = "general audience"
+// 	}
+// 	if req.RequiredTone == "" {
+// 		req.RequiredTone = "professional"
+// 	}
+// 	if req.PreferredLength == "" {
+// 		req.PreferredLength = "medium"
+// 	}
+// 	if req.Persona == "" {
+// 		req.Persona = "generic"
+// 	}
+// 	if req.ModelFamily == "" {
+// 		req.ModelFamily = "claude"
+// 	}
+// 	if req.SelectionProvider == "" {
+// 		req.SelectionProvider = "openai"
+// 	}
 
-	// Convert prompt IDs to UUIDs and fetch prompts
-	prompts := make([]models.Prompt, 0, len(req.PromptIDs))
-	for _, idStr := range req.PromptIDs {
-		promptID, err := uuid.Parse(idStr)
-		if err != nil {
-			s.writeError(w, http.StatusBadRequest, fmt.Sprintf("Invalid prompt ID: %s", idStr))
-			return
-		}
+// 	// Convert prompt IDs to UUIDs and fetch prompts
+// 	prompts := make([]models.Prompt, 0, len(req.PromptIDs))
+// 	for _, idStr := range req.PromptIDs {
+// 		promptID, err := uuid.Parse(idStr)
+// 		if err != nil {
+// 			s.writeError(w, http.StatusBadRequest, fmt.Sprintf("Invalid prompt ID: %s", idStr))
+// 			return
+// 		}
 
-		prompt, err := s.store.GetPrompt(promptID)
-		if err != nil {
-			s.writeError(w, http.StatusNotFound, fmt.Sprintf("Prompt not found: %s", idStr))
-			return
-		}
-		prompts = append(prompts, *prompt)
-	}
+// 		prompt, err := s.store.GetPrompt(promptID)
+// 		if err != nil {
+// 			s.writeError(w, http.StatusNotFound, fmt.Sprintf("Prompt not found: %s", idStr))
+// 			return
+// 		}
+// 		prompts = append(prompts, *prompt)
+// 	}
 
-	if len(prompts) == 0 {
-		s.writeError(w, http.StatusBadRequest, "No valid prompts found")
-		return
-	}
+// 	if len(prompts) == 0 {
+// 		s.writeError(w, http.StatusBadRequest, "No valid prompts found")
+// 		return
+// 	}
 
-	// Create AI selector with registry
-	aiSelector := selection.NewAISelector(s.registry)
+// 	// Create AI selector with registry
+// 	aiSelector := selection.NewAISelector(s.registry)
 
-	// Create selection criteria
-	var weights selection.EvaluationWeights
-	switch req.Persona {
-	case "code":
-		weights = selection.CodeWeightFactors()
-	case "writing":
-		weights = selection.WritingWeightFactors()
-	default:
-		weights = selection.DefaultWeightFactors()
-	}
+// 	// Create selection criteria
+// 	var weights selection.EvaluationWeights
+// 	switch req.Persona {
+// 	case "code":
+// 		weights = selection.CodeWeightFactors()
+// 	case "writing":
+// 		weights = selection.WritingWeightFactors()
+// 	default:
+// 		weights = selection.DefaultWeightFactors()
+// 	}
 
-	// Convert preferred_length string to int
-	var maxLength int
-	switch req.PreferredLength {
-	case "short":
-		maxLength = 100
-	case "long":
-		maxLength = 500
-	default: // medium
-		maxLength = 250
-	}
+// 	// Convert preferred_length string to int
+// 	var maxLength int
+// 	switch req.PreferredLength {
+// 	case "short":
+// 		maxLength = 100
+// 	case "long":
+// 		maxLength = 500
+// 	default: // medium
+// 		maxLength = 250
+// 	}
 
-	criteria := selection.SelectionCriteria{
-		TaskDescription:    req.TaskDescription,
-		TargetAudience:     req.TargetAudience,
-		DesiredTone:        req.RequiredTone,
-		MaxLength:          maxLength,
-		Requirements:       req.SpecificRequirements,
-		Persona:            req.Persona,
-		EvaluationModel:    req.ModelFamily,
-		EvaluationProvider: req.SelectionProvider,
-		Weights:            weights,
-	}
+// 	criteria := selection.SelectionCriteria{
+// 		TaskDescription:    req.TaskDescription,
+// 		TargetAudience:     req.TargetAudience,
+// 		DesiredTone:        req.RequiredTone,
+// 		MaxLength:          maxLength,
+// 		Requirements:       req.SpecificRequirements,
+// 		Persona:            req.Persona,
+// 		EvaluationModel:    req.ModelFamily,
+// 		EvaluationProvider: req.SelectionProvider,
+// 		Weights:            weights,
+// 	}
 
-	// Perform AI-powered selection
-	ctx := context.Background()
-	result, err := aiSelector.Select(ctx, prompts, criteria)
-	if err != nil {
-		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("AI selection failed: %v", err))
-		return
-	}
+// 	// Perform AI-powered selection
+// 	ctx := context.Background()
+// 	result, err := aiSelector.Select(ctx, prompts, criteria)
+// 	if err != nil {
+// 		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("AI selection failed: %v", err))
+// 		return
+// 	}
 
-	// Convert scores to alternative ranking
-	alternativeRanking := make([]selection.PromptEvaluation, 0)
-	for _, score := range result.Scores {
-		// Find the prompt for this score
-		var scoredPrompt *models.Prompt
-		for _, p := range prompts {
-			if p.ID == score.PromptID {
-				scoredPrompt = &p
-				break
-			}
-		}
-		if scoredPrompt != nil {
-			alternativeRanking = append(alternativeRanking, selection.PromptEvaluation{
-				Prompt:    scoredPrompt,
-				Score:     score.Score,
-				Reasoning: score.Reasoning,
-			})
-		}
-	}
+// 	// Convert scores to alternative ranking
+// 	alternativeRanking := make([]selection.PromptEvaluation, 0)
+// 	for _, score := range result.Scores {
+// 		// Find the prompt for this score
+// 		var scoredPrompt *models.Prompt
+// 		for _, p := range prompts {
+// 			if p.ID == score.PromptID {
+// 				scoredPrompt = &p
+// 				break
+// 			}
+// 		}
+// 		if scoredPrompt != nil {
+// 			alternativeRanking = append(alternativeRanking, selection.PromptEvaluation{
+// 				Prompt:    scoredPrompt,
+// 				Score:     score.Score,
+// 				Reasoning: score.Reasoning,
+// 			})
+// 		}
+// 	}
 
-	// Create response
-	response := AISelectResponse{
-		SelectedPrompt:     result.SelectedPrompt,
-		SelectionReason:    result.Reasoning,
-		ConfidenceScore:    result.Confidence,
-		AlternativeRanking: alternativeRanking,
-		ProcessingDuration: time.Duration(result.ProcessingTime) * time.Millisecond,
-		Metadata: AISelectMetadata{
-			TaskDescription:   req.TaskDescription,
-			TargetAudience:    req.TargetAudience,
-			RequiredTone:      req.RequiredTone,
-			PreferredLength:   req.PreferredLength,
-			Persona:           req.Persona,
-			ModelFamily:       req.ModelFamily,
-			SelectionProvider: req.SelectionProvider,
-			EvaluatedAt:       time.Now(),
-		},
-	}
+// 	// Create response
+// 	response := AISelectResponse{
+// 		SelectedPrompt:     result.SelectedPrompt,
+// 		SelectionReason:    result.Reasoning,
+// 		ConfidenceScore:    result.Confidence,
+// 		AlternativeRanking: alternativeRanking,
+// 		ProcessingDuration: time.Duration(result.ProcessingTime) * time.Millisecond,
+// 		Metadata: AISelectMetadata{
+// 			TaskDescription:   req.TaskDescription,
+// 			TargetAudience:    req.TargetAudience,
+// 			RequiredTone:      req.RequiredTone,
+// 			PreferredLength:   req.PreferredLength,
+// 			Persona:           req.Persona,
+// 			ModelFamily:       req.ModelFamily,
+// 			SelectionProvider: req.SelectionProvider,
+// 			EvaluatedAt:       time.Now(),
+// 		},
+// 	}
 
-	s.logger.WithFields(logrus.Fields{
-		"selected_prompt_id": result.SelectedPrompt.ID,
-		"confidence_score":   result.Confidence,
-		"processing_time_ms": result.ProcessingTime,
-		"task_description":   req.TaskDescription,
-	}).Info("AI prompt selection completed via HTTP API")
+// 	s.logger.WithFields(logrus.Fields{
+// 		"selected_prompt_id": result.SelectedPrompt.ID,
+// 		"confidence_score":   result.Confidence,
+// 		"processing_time_ms": result.ProcessingTime,
+// 		"task_description":   req.TaskDescription,
+// 	}).Info("AI prompt selection completed via HTTP API")
 
-	s.writeJSON(w, http.StatusOK, response)
-}
+// 	s.writeJSON(w, http.StatusOK, response)
+// }
 
-func (s *SimpleServer) handleSearchPrompts(w http.ResponseWriter, r *http.Request) {
-	// Parse query parameters
-	query := r.URL.Query().Get("q")
-	semantic := r.URL.Query().Get("semantic") == "true"
-	phase := r.URL.Query().Get("phase")
-	provider := r.URL.Query().Get("provider")
-	tagsStr := r.URL.Query().Get("tags")
-	since := r.URL.Query().Get("since")
+// func (s *SimpleServer) handleSearchPrompts(w http.ResponseWriter, r *http.Request) {
+// 	// Parse query parameters
+// 	query := r.URL.Query().Get("q")
+// 	semantic := r.URL.Query().Get("semantic") == "true"
+// 	phase := r.URL.Query().Get("phase")
+// 	provider := r.URL.Query().Get("provider")
+// 	tagsStr := r.URL.Query().Get("tags")
+// 	since := r.URL.Query().Get("since")
 
-	// Parse limit parameter
-	limit := 10 // default
-	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
-		if parsedLimit, err := strconv.Atoi(limitStr); err == nil && parsedLimit > 0 && parsedLimit <= 100 {
-			limit = parsedLimit
-		}
-	}
+// 	// Parse limit parameter
+// 	limit := 10 // default
+// 	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
+// 		if parsedLimit, err := strconv.Atoi(limitStr); err == nil && parsedLimit > 0 && parsedLimit <= 100 {
+// 			limit = parsedLimit
+// 		}
+// 	}
 
-	// Parse similarity parameter for semantic search
-	similarity := 0.5 // default
-	if similarityStr := r.URL.Query().Get("similarity"); similarityStr != "" {
-		if parsedSimilarity, err := strconv.ParseFloat(similarityStr, 64); err == nil && parsedSimilarity >= 0 && parsedSimilarity <= 1 {
-			similarity = parsedSimilarity
-		}
-	}
+// 	// Parse similarity parameter for semantic search
+// 	similarity := 0.5 // default
+// 	if similarityStr := r.URL.Query().Get("similarity"); similarityStr != "" {
+// 		if parsedSimilarity, err := strconv.ParseFloat(similarityStr, 64); err == nil && parsedSimilarity >= 0 && parsedSimilarity <= 1 {
+// 			similarity = parsedSimilarity
+// 		}
+// 	}
 
-	// Parse tags
-	var tagList []string
-	if tagsStr != "" {
-		tagList = strings.Split(tagsStr, ",")
-		for i, tag := range tagList {
-			tagList[i] = strings.TrimSpace(tag)
-		}
-	}
+// 	// Parse tags
+// 	var tagList []string
+// 	if tagsStr != "" {
+// 		tagList = strings.Split(tagsStr, ",")
+// 		for i, tag := range tagList {
+// 			tagList[i] = strings.TrimSpace(tag)
+// 		}
+// 	}
 
-	// Parse since date
-	var sinceTime *time.Time
-	if since != "" {
-		if parsed, err := time.Parse("2006-01-02", since); err == nil {
-			sinceTime = &parsed
-		} else {
-			s.writeError(w, http.StatusBadRequest, "Invalid date format for 'since' parameter (use YYYY-MM-DD)")
-			return
-		}
-	}
+// 	// Parse since date
+// 	var sinceTime *time.Time
+// 	if since != "" {
+// 		if parsed, err := time.Parse("2006-01-02", since); err == nil {
+// 			sinceTime = &parsed
+// 		} else {
+// 			s.writeError(w, http.StatusBadRequest, "Invalid date format for 'since' parameter (use YYYY-MM-DD)")
+// 			return
+// 		}
+// 	}
 
-	var prompts []models.Prompt
-	var similarities []float64
-	var err error
-	searchType := "text"
+// 	var prompts []models.Prompt
+// 	var similarities []float64
+// 	var err error
+// 	searchType := "text"
 
-	if semantic && query != "" {
-		// Semantic search
-		searchType = "semantic"
-		criteria := storage.SemanticSearchCriteria{
-			Query:         query,
-			Limit:         limit,
-			MinSimilarity: similarity,
-			Phase:         phase,
-			Provider:      provider,
-			Tags:          tagList,
-			Since:         sinceTime,
-		}
-		prompts, similarities, err = s.store.SearchPromptsSemanticFast(criteria)
-	} else {
-		// Text-based search (metadata filtering only)
-		criteria := storage.SearchCriteria{
-			Phase:    phase,
-			Provider: provider,
-			Tags:     tagList,
-			Since:    sinceTime,
-			Limit:    limit,
-		}
-		prompts, err = s.store.SearchPrompts(criteria)
-	}
+// 	if semantic && query != "" {
+// 		// Semantic search
+// 		searchType = "semantic"
+// 		criteria := storage.SemanticSearchCriteria{
+// 			Query:         query,
+// 			Limit:         limit,
+// 			MinSimilarity: similarity,
+// 			Phase:         phase,
+// 			Provider:      provider,
+// 			Tags:          tagList,
+// 			Since:         sinceTime,
+// 		}
+// 		prompts, similarities, err = s.store.SearchPromptsSemanticFast(criteria)
+// 	} else {
+// 		// Text-based search (metadata filtering only)
+// 		criteria := storage.SearchCriteria{
+// 			Phase:    phase,
+// 			Provider: provider,
+// 			Tags:     tagList,
+// 			Since:    sinceTime,
+// 			Limit:    limit,
+// 		}
+// 		prompts, err = s.store.SearchPrompts(criteria)
+// 	}
 
-	if err != nil {
-		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("Search failed: %v", err))
-		return
-	}
+// 	if err != nil {
+// 		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("Search failed: %v", err))
+// 		return
+// 	}
 
-	// Create response
-	response := SearchPromptsResponse{
-		Prompts:      prompts,
-		TotalFound:   len(prompts),
-		SearchType:   searchType,
-		Query:        query,
-		Similarities: similarities,
-		Metadata: SearchMetadata{
-			Phase:         phase,
-			Provider:      provider,
-			Tags:          tagList,
-			Since:         sinceTime,
-			Limit:         limit,
-			Semantic:      semantic,
-			MinSimilarity: similarity,
-			SearchedAt:    time.Now(),
-		},
-	}
+// 	// Create response
+// 	response := SearchPromptsResponse{
+// 		Prompts:      prompts,
+// 		TotalFound:   len(prompts),
+// 		SearchType:   searchType,
+// 		Query:        query,
+// 		Similarities: similarities,
+// 		Metadata: SearchMetadata{
+// 			Phase:         phase,
+// 			Provider:      provider,
+// 			Tags:          tagList,
+// 			Since:         sinceTime,
+// 			Limit:         limit,
+// 			Semantic:      semantic,
+// 			MinSimilarity: similarity,
+// 			SearchedAt:    time.Now(),
+// 		},
+// 	}
 
-	s.logger.WithFields(logrus.Fields{
-		"query":       query,
-		"search_type": searchType,
-		"results":     len(prompts),
-		"semantic":    semantic,
-		"phase":       phase,
-		"provider":    provider,
-	}).Info("Prompt search completed via HTTP API")
+// 	s.logger.WithFields(logrus.Fields{
+// 		"query":       query,
+// 		"search_type": searchType,
+// 		"results":     len(prompts),
+// 		"semantic":    semantic,
+// 		"phase":       phase,
+// 		"provider":    provider,
+// 	}).Info("Prompt search completed via HTTP API")
 
-	s.writeJSON(w, http.StatusOK, response)
-}
+// 	s.writeJSON(w, http.StatusOK, response)
+// }
 
 func convertToProviderPhaseConfigs(configs []models.PhaseConfig) []models.PhaseConfig {
 	// No conversion needed since the engine now expects models.PhaseConfig

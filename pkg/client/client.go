@@ -50,14 +50,14 @@ func NewClientWithURL(serverURL string, logger *logrus.Logger) *Client {
 
 // GenerateRequest represents a request to generate prompts via HTTP API
 type GenerateRequest struct {
-	Input       string  `json:"input"`
-	Phases      string  `json:"phases"`
-	Count       int     `json:"count"`
-	Temperature float64 `json:"temperature"`
-	MaxTokens   int     `json:"max_tokens"`
-	Tags        string  `json:"tags"`
-	Persona     string  `json:"persona"`
-	TargetModel string  `json:"target_model"`
+	Input       string   `json:"input"`
+	Phases      []string `json:"phases"`
+	Count       int      `json:"count"`
+	Temperature float64  `json:"temperature"`
+	MaxTokens   int      `json:"max_tokens"`
+	Tags        []string `json:"tags"`
+	Persona     string   `json:"persona"`
+	TargetModel string   `json:"target_model"`
 }
 
 // GenerateResponse represents the response from the generate API
@@ -102,20 +102,20 @@ func (c *Client) Generate(ctx context.Context, req GenerateRequest) (*models.Gen
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	// Create HTTP request
-	httpReq, err := http.NewRequestWithContext(ctx, "POST", endpoint, bytes.NewBuffer(reqBody))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create HTTP request: %w", err)
-	}
-
-	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("Accept", "application/json")
-
 	// Make request with retry logic
 	var resp *http.Response
 	retryAttempts := viper.GetInt("client.retry_attempts")
 
 	for attempt := 0; attempt <= retryAttempts; attempt++ {
+		// Create HTTP request for each attempt (to avoid body reuse issues)
+		httpReq, err := http.NewRequestWithContext(ctx, "POST", endpoint, bytes.NewBuffer(reqBody))
+		if err != nil {
+			return nil, fmt.Errorf("failed to create HTTP request: %w", err)
+		}
+
+		httpReq.Header.Set("Content-Type", "application/json")
+		httpReq.Header.Set("Accept", "application/json")
+
 		resp, err = c.httpClient.Do(httpReq)
 		if err == nil {
 			break
@@ -130,7 +130,7 @@ func (c *Client) Generate(ctx context.Context, req GenerateRequest) (*models.Gen
 	if err != nil {
 		return nil, fmt.Errorf("failed to make HTTP request after %d attempts: %w", retryAttempts+1, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	// Read response body
 	body, err := io.ReadAll(resp.Body)
@@ -182,7 +182,7 @@ func (c *Client) Search(ctx context.Context, req SearchRequest) ([]models.Prompt
 	if err != nil {
 		return nil, fmt.Errorf("failed to make HTTP request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	// Read response body
 	body, err := io.ReadAll(resp.Body)
@@ -227,7 +227,7 @@ func (c *Client) Health(ctx context.Context) (*HealthResponse, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to make HTTP request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	// Read response body
 	body, err := io.ReadAll(resp.Body)

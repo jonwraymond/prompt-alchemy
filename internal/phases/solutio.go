@@ -2,41 +2,55 @@ package phases
 
 import (
 	"fmt"
-	"strings"
 
+	"github.com/jonwraymond/prompt-alchemy/internal/templates"
 	"github.com/jonwraymond/prompt-alchemy/pkg/models"
 )
 
 type Solutio struct{}
 
 func (s *Solutio) GetTemplate() string {
-	return `You are a linguistic alchemist performing Solutio - the dissolution phase. Take this crystallized prompt and dissolve it into flowing, natural language that resonates with the soul. Transform rigid structure into fluid conversation.
-
-Material to Dissolve:
-{{PROMPT}}
-
-Transformation Requirements:
-- Dissolve formality into natural flow
-- Infuse with emotional resonance
-- Add the warmth of human connection
-- Preserve the essential truth while softening edges`
+	return "solutio" // Return template name for new system
 }
 
 func (s *Solutio) BuildSystemPrompt(opts models.GenerateOptions) string {
-	baseSystem := "You are a master alchemist of language, transforming raw ideas into golden prompts through ancient processes."
-	return baseSystem + " In this Solutio phase, dissolve rigid structures into flowing, natural language that speaks to the human soul while maintaining clarity of purpose."
+	tmpl, err := templates.LoadPhaseSystemPrompt("solutio")
+	if err != nil {
+		// Fallback to embedded system prompt
+		return "You excel at transforming formal or structured text into natural, engaging language. Your focus is on improving readability, flow, and accessibility while preserving all essential information and maintaining the original intent and requirements."
+	}
+
+	systemPrompt, err := templates.ExecuteTemplate(tmpl, nil)
+	if err != nil {
+		// Fallback to embedded system prompt
+		return "You excel at transforming formal or structured text into natural, engaging language. Your focus is on improving readability, flow, and accessibility while preserving all essential information and maintaining the original intent and requirements."
+	}
+	return systemPrompt
 }
 
 func (s *Solutio) PreparePromptContent(input string, opts models.GenerateOptions) string {
-	template := s.GetTemplate()
+	templateName := s.GetTemplate()
 
-	content := strings.ReplaceAll(template, "{{PROMPT}}", input)
+	// Create template context
+	context := &templates.PhaseContext{
+		Prompt:       input,
+		Context:      opts.Request.Context,
+		Requirements: []string{}, // Could be extracted from opts if needed
+		Phase:        "solutio",
+	}
 
-	if len(opts.Request.Context) > 0 {
-		content += "\n\nAdditional Context:\n"
-		for _, ctx := range opts.Request.Context {
-			content += fmt.Sprintf("- %s\n", ctx)
-		}
+	// Add persona and target model if available
+	if opts.Persona != "" {
+		context.Persona = opts.Persona
+	}
+	if opts.TargetModel != "" {
+		context.TargetModel = opts.TargetModel
+	}
+
+	content, err := templates.ExecutePhaseTemplate(templateName, context)
+	if err != nil {
+		// Fallback to simple content if template execution fails
+		return fmt.Sprintf("Take the following prompt and transform it into more natural, engaging language:\n\nPrompt: %s", input)
 	}
 
 	return content

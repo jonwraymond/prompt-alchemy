@@ -1,48 +1,74 @@
 version: '3.8'
 
 services:
+  # API Server (default)
   prompt-alchemy:
     build: .
-    image: prompt-alchemy-hybrid:latest
-    container_name: prompt-alchemy-hybrid
-    volumes:
-      # Mount configuration file
-      - ./docker-config.yaml:/app/config.yaml:ro
-      # Mount data directory for persistence
-      - prompt-alchemy-data:/app/data
-      # Mount logs directory
-      - prompt-alchemy-logs:/app/logs
-    environment:
-      # API Keys from .env file with proper naming
-      - PROMPT_ALCHEMY_PROVIDERS_OPENAI_API_KEY=${PROMPT_ALCHEMY_PROVIDERS_OPENAI_API_KEY}
-      - PROMPT_ALCHEMY_PROVIDERS_OPENAI_MODEL=${PROMPT_ALCHEMY_PROVIDERS_OPENAI_MODEL}
-      - PROMPT_ALCHEMY_PROVIDERS_OPENROUTER_API_KEY=${PROMPT_ALCHEMY_PROVIDERS_OPENROUTER_API_KEY}
-      - PROMPT_ALCHEMY_PROVIDERS_OPENROUTER_MODEL=${PROMPT_ALCHEMY_PROVIDERS_OPENROUTER_MODEL}
-      - PROMPT_ALCHEMY_PROVIDERS_ANTHROPIC_API_KEY=${PROMPT_ALCHEMY_PROVIDERS_ANTHROPIC_API_KEY}
-      - PROMPT_ALCHEMY_PROVIDERS_ANTHROPIC_MODEL=${PROMPT_ALCHEMY_PROVIDERS_ANTHROPIC_MODEL}
-      - PROMPT_ALCHEMY_PROVIDERS_GOOGLE_API_KEY=${PROMPT_ALCHEMY_PROVIDERS_GOOGLE_API_KEY}
-      - PROMPT_ALCHEMY_PROVIDERS_GOOGLE_MODEL=${PROMPT_ALCHEMY_PROVIDERS_GOOGLE_MODEL}
-      - PROMPT_ALCHEMY_PROVIDERS_OLLAMA_MODEL=${PROMPT_ALCHEMY_PROVIDERS_OLLAMA_MODEL}
-      - PROMPT_ALCHEMY_PROVIDERS_OLLAMA_BASE_URL=${PROMPT_ALCHEMY_PROVIDERS_OLLAMA_BASE_URL}
-      # Application configuration
-      - PROMPT_ALCHEMY_CONFIG=/app/config.yaml
-      - PROMPT_ALCHEMY_DATA_DIR=/app/data
-      - PROMPT_ALCHEMY_LOG_LEVEL=info
-    # Hybrid mode runs both MCP and HTTP servers
-    # No command override needed - using Dockerfile ENTRYPOINT
-    # HTTP API port exposed
+    container_name: prompt-alchemy-server
     ports:
-      - "9090:8080"
-    restart: unless-stopped
+      - "${API_PORT:-8080}:8080"
+    command: ["prompt-alchemy", "serve", "${SERVE_MODE:-api}", "--config", "/app/config.yaml", "--host", "0.0.0.0", "--port", "8080"]
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./data:/app/data
+      - ./docker-config.yaml:/app/config.yaml
+    env_file:
+      - .env
+    environment:
+      - PROMPT_ALCHEMY_CONFIG=/app/config.yaml
+      # Map .env variables to the format expected by the app
+      - PROMPT_ALCHEMY_PROVIDERS_OPENAI_API_KEY=${OPENAI_API_KEY}
+      - PROMPT_ALCHEMY_PROVIDERS_OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - PROMPT_ALCHEMY_PROVIDERS_ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - PROMPT_ALCHEMY_PROVIDERS_GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - PROMPT_ALCHEMY_PROVIDERS_GROK_API_KEY=${GROK_API_KEY}
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 20s
+      start_period: 60s
+    restart: unless-stopped
+    profiles:
+      - api
+      - hybrid
+
+  # MCP Server (for AI agents)
+  prompt-alchemy-mcp:
+    build: .
+    container_name: prompt-alchemy-mcp
+    command: ["prompt-alchemy", "serve", "mcp", "--config", "/app/config.yaml"]
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./data:/app/data
+      - ./docker-config.yaml:/app/config.yaml
+    env_file:
+      - .env
+    environment:
+      - PROMPT_ALCHEMY_CONFIG=/app/config.yaml
+      # Map .env variables to the format expected by the app
+      - PROMPT_ALCHEMY_PROVIDERS_OPENAI_API_KEY=${OPENAI_API_KEY}
+      - PROMPT_ALCHEMY_PROVIDERS_OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - PROMPT_ALCHEMY_PROVIDERS_ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - PROMPT_ALCHEMY_PROVIDERS_GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - PROMPT_ALCHEMY_PROVIDERS_GROK_API_KEY=${GROK_API_KEY}
+    restart: unless-stopped
+    profiles:
+      - mcp
+
+  # Ollama (optional local AI)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: prompt-alchemy-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    restart: unless-stopped
+    profiles:
+      - ollama
 
 volumes:
-  prompt-alchemy-data:
-    driver: local
-  prompt-alchemy-logs:
-    driver: local 
+  ollama-data: 

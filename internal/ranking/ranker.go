@@ -26,11 +26,10 @@ type Ranker struct {
 	logger   *logrus.Logger
 
 	// configurable weights (must sum ~1.0; will be normalised)
-	tempWeight       float64
-	tokenWeight      float64
-	semanticWeight   float64
-	lengthWeight     float64
-	historicalWeight float64
+	tempWeight     float64
+	tokenWeight    float64
+	semanticWeight float64
+	lengthWeight   float64
 
 	embedModel    string
 	embedProvider string
@@ -46,16 +45,14 @@ const (
 	WeightTokenKey       = "ranking.weights.token"
 	WeightSemanticKey    = "ranking.weights.semantic"
 	WeightLengthKey      = "ranking.weights.length"
-	WeightHistoricalKey  = "ranking.weights.historical"
 	EmbeddingModelKey    = "ranking.embedding_model"
 	EmbeddingProviderKey = "ranking.embedding_provider"
 
 	// Default weight values
 	DefaultWeightTemperature = 0.2
 	DefaultWeightToken       = 0.2
-	DefaultWeightSemantic    = 0.3
-	DefaultWeightLength      = 0.1
-	DefaultWeightHistorical  = 0.2
+	DefaultWeightSemantic    = 0.4
+	DefaultWeightLength      = 0.2
 
 	// Optimal temperature for scoring
 	OptimalTemperature = 0.7
@@ -74,7 +71,6 @@ func NewRanker(storage *storage.Storage, registry providers.RegistryInterface, l
 	viper.SetDefault(WeightTokenKey, DefaultWeightToken)
 	viper.SetDefault(WeightSemanticKey, DefaultWeightSemantic)
 	viper.SetDefault(WeightLengthKey, DefaultWeightLength)
-	viper.SetDefault(WeightHistoricalKey, DefaultWeightHistorical)
 	viper.SetDefault(EmbeddingModelKey, "text-embedding-3-small")
 	viper.SetDefault(EmbeddingProviderKey, "openai")
 
@@ -82,16 +78,15 @@ func NewRanker(storage *storage.Storage, registry providers.RegistryInterface, l
 	normalizedWeights := normalizeWeights(weights)
 
 	ranker := &Ranker{
-		storage:          storage,
-		registry:         registry,
-		logger:           log.GetLogger(),
-		tempWeight:       normalizedWeights[0],
-		tokenWeight:      normalizedWeights[1],
-		semanticWeight:   normalizedWeights[2],
-		lengthWeight:     normalizedWeights[3],
-		historicalWeight: normalizedWeights[4],
-		embedModel:       viper.GetString(EmbeddingModelKey),
-		embedProvider:    viper.GetString(EmbeddingProviderKey),
+		storage:        storage,
+		registry:       registry,
+		logger:         log.GetLogger(),
+		tempWeight:     normalizedWeights[0],
+		tokenWeight:    normalizedWeights[1],
+		semanticWeight: normalizedWeights[2],
+		lengthWeight:   normalizedWeights[3],
+		embedModel:     viper.GetString(EmbeddingModelKey),
+		embedProvider:  viper.GetString(EmbeddingProviderKey),
 	}
 
 	// Setup config file watcher for hot-reload
@@ -109,7 +104,6 @@ func loadWeights() []float64 {
 		viper.GetFloat64(WeightTokenKey),
 		viper.GetFloat64(WeightSemanticKey),
 		viper.GetFloat64(WeightLengthKey),
-		viper.GetFloat64(WeightHistoricalKey),
 	}
 }
 
@@ -142,14 +136,12 @@ func (r *Ranker) ReloadWeights() error {
 	r.tokenWeight = normalizedWeights[1]
 	r.semanticWeight = normalizedWeights[2]
 	r.lengthWeight = normalizedWeights[3]
-	r.historicalWeight = normalizedWeights[4]
 
 	r.logger.WithFields(logrus.Fields{
-		"temp_weight":       r.tempWeight,
-		"token_weight":      r.tokenWeight,
-		"semantic_weight":   r.semanticWeight,
-		"length_weight":     r.lengthWeight,
-		"historical_weight": r.historicalWeight,
+		"temp_weight":     r.tempWeight,
+		"token_weight":    r.tokenWeight,
+		"semantic_weight": r.semanticWeight,
+		"length_weight":   r.lengthWeight,
 	}).Info("Reloaded ranking weights from config")
 
 	return nil
@@ -269,34 +261,28 @@ func (r *Ranker) calculateRanking(ctx context.Context, prompt *models.Prompt, or
 	// Length score (prefer similar lengths)
 	lengthScore := r.calculateLengthRatio(prompt.Content, originalInput)
 
-	// Historical score
-	historicalScore := r.getHistoricalScore(prompt.ID.String())
-
 	// Calculate weighted total score using configurable weights
 	totalScore := (tempScore * r.tempWeight) + (tokenScore * r.tokenWeight) +
-		(semanticScore * r.semanticWeight) + (lengthScore * r.lengthWeight) +
-		(historicalScore * r.historicalWeight)
+		(semanticScore * r.semanticWeight) + (lengthScore * r.lengthWeight)
 
 	r.logger.WithFields(logrus.Fields{
-		"prompt_id":        prompt.ID,
-		"score":            totalScore,
-		"temp_score":       tempScore,
-		"token_score":      tokenScore,
-		"semantic_score":   semanticScore,
-		"length_score":     lengthScore,
-		"historical_score": historicalScore,
-		"w_temp":           r.tempWeight,
-		"w_token":          r.tokenWeight,
-		"w_semantic":       r.semanticWeight,
-		"w_length":         r.lengthWeight,
-		"w_hist":           r.historicalWeight,
+		"prompt_id":      prompt.ID,
+		"score":          totalScore,
+		"temp_score":     tempScore,
+		"token_score":    tokenScore,
+		"semantic_score": semanticScore,
+		"length_score":   lengthScore,
+		"w_temp":         r.tempWeight,
+		"w_token":        r.tokenWeight,
+		"w_semantic":     r.semanticWeight,
+		"w_length":       r.lengthWeight,
 	}).Debug("Calculated prompt ranking")
 	return models.PromptRanking{
 		Prompt:           prompt,
 		Score:            totalScore,
 		TemperatureScore: tempScore,
 		TokenScore:       tokenScore,
-		HistoricalScore:  historicalScore,
+		HistoricalScore:  0, // No longer used
 		SemanticScore:    semanticScore,
 		LengthScore:      lengthScore,
 	}
@@ -408,27 +394,27 @@ func cosineSimilarity(a, b []float32) float64 {
 }
 
 // getHistoricalScore retrieves the historical quality score for a prompt
-func (r *Ranker) getHistoricalScore(promptID string) float64 {
-	// Get metrics for this specific prompt
-	criteria := storage.MetricsCriteria{
-		Limit: 1,
-	}
+// func (r *Ranker) getHistoricalScore(promptID string) float64 {
+// 	// Get metrics for this specific prompt
+// 	criteria := storage.MetricsCriteria{
+// 		Limit: 1,
+// 	}
 
-	metrics, err := r.storage.GetMetrics(criteria)
-	if err != nil {
-		r.logger.WithError(err).Debug("Failed to get historical metrics")
-		return 0.5 // Default fallback score
-	}
+// 	metrics, err := r.storage.GetMetrics(context.Background(), criteria)
+// 	if err != nil {
+// 		r.logger.WithError(err).Debug("Failed to get historical metrics")
+// 		return 0.5 // Default fallback score
+// 	}
 
-	// Find the metrics for this specific prompt
-	for _, m := range metrics {
-		if m.PromptID.String() == promptID {
-			// Use engagement score as a proxy for quality
-			if m.EngagementScore > 0 {
-				return m.EngagementScore / 100.0 // Normalize to 0-1
-			}
-		}
-	}
+// 	// Find the metrics for this specific prompt
+// 	for _, m := range metrics {
+// 		if m.PromptID.String() == promptID {
+// 			// Use engagement score as a proxy for quality
+// 			if m.EngagementScore > 0 {
+// 				return m.EngagementScore / 100.0 // Normalize to 0-1
+// 			}
+// 		}
+// 	}
 
-	return 0.5 // Default if no metrics found
-}
+// 	return 0.5 // Default if no metrics found
+// }

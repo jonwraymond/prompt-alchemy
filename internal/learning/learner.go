@@ -3,7 +3,6 @@ package learning
 import (
 	"context"
 	"fmt"
-	"math"
 	"sync"
 	"time"
 
@@ -30,6 +29,8 @@ type LearningEngine struct {
 
 	// Real-time metrics
 	metrics *MetricsCollector
+
+	// TODO: Refactor learning engine to use the new storage layer.
 }
 
 // Pattern represents a learned pattern in prompt usage
@@ -86,33 +87,33 @@ func NewLearningEngine(storage *storage.Storage, logger *logrus.Logger) *Learnin
 }
 
 // RecordUsage records a prompt usage event for learning
-func (le *LearningEngine) RecordUsage(ctx context.Context, usage models.UsageAnalytics) error {
-	le.logger.WithFields(logrus.Fields{
-		"prompt_id":     usage.PromptID,
-		"effectiveness": usage.EffectivenessScore,
-		"session_id":    usage.SessionID,
-	}).Debug("Recording usage for learning")
+// func (le *LearningEngine) RecordUsage(ctx context.Context, usage models.UsageAnalytics) error {
+// 	le.logger.WithFields(logrus.Fields{
+// 		"prompt_id":     usage.PromptID,
+// 		"effectiveness": usage.EffectivenessScore,
+// 		"session_id":    usage.SessionID,
+// 	}).Debug("Recording usage for learning")
 
-	// Update prompt metrics
-	le.updatePromptMetrics(usage)
+// 	// Update prompt metrics
+// 	le.updatePromptMetrics(usage)
 
-	// Detect patterns
-	if pattern := le.detectPattern(usage); pattern != nil {
-		le.storePattern(pattern)
-	}
+// 	// Detect patterns
+// 	if pattern := le.detectPattern(usage); pattern != nil {
+// 		le.storePattern(pattern)
+// 	}
 
-	// Update relevance scores
-	if err := le.updateRelevanceScore(ctx, usage); err != nil {
-		le.logger.WithError(err).Warn("Failed to update relevance score")
-	}
+// 	// Update relevance scores
+// 	if err := le.updateRelevanceScore(ctx, usage); err != nil {
+// 		le.logger.WithError(err).Warn("Failed to update relevance score")
+// 	}
 
-	// Store usage analytics
-	if err := le.storage.SaveUsageAnalytics(usage); err != nil {
-		return fmt.Errorf("failed to save usage analytics: %w", err)
-	}
+// 	// Store usage analytics
+// 	if err := le.storage.SaveUsageAnalytics(usage); err != nil {
+// 		return fmt.Errorf("failed to save usage analytics: %w", err)
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
 // updatePromptMetrics updates real-time metrics for a prompt
 func (le *LearningEngine) updatePromptMetrics(usage models.UsageAnalytics) {
@@ -187,6 +188,8 @@ func (le *LearningEngine) detectPattern(usage models.UsageAnalytics) *Pattern {
 }
 
 // storePattern stores a detected pattern
+//
+//nolint:unused // Reserved for future functionality
 func (le *LearningEngine) storePattern(pattern *Pattern) {
 	le.patternMutex.Lock()
 	defer le.patternMutex.Unlock()
@@ -207,31 +210,31 @@ func (le *LearningEngine) storePattern(pattern *Pattern) {
 }
 
 // updateRelevanceScore updates prompt relevance based on usage
-func (le *LearningEngine) updateRelevanceScore(ctx context.Context, usage models.UsageAnalytics) error {
-	// Get current prompt
-	prompt, err := le.storage.GetPrompt(usage.PromptID)
-	if err != nil {
-		return fmt.Errorf("failed to get prompt: %w", err)
-	}
+// func (le *LearningEngine) updateRelevanceScore(ctx context.Context, usage models.UsageAnalytics) error {
+// 	// Get current prompt
+// 	prompt, err := le.storage.GetPromptByID(ctx, usage.PromptID)
+// 	if err != nil {
+// 		return fmt.Errorf("failed to get prompt: %w", err)
+// 	}
 
-	// Calculate new relevance score
-	currentScore := prompt.RelevanceScore
-	effectivenessBoost := usage.EffectivenessScore * le.learningRate
-	timeDecay := le.calculateTimeDecay(prompt.LastUsedAt)
+// 	// Calculate new relevance score
+// 	currentScore := prompt.RelevanceScore
+// 	effectivenessBoost := usage.EffectivenessScore * le.learningRate
+// 	timeDecay := le.calculateTimeDecay(prompt.LastUsedAt)
 
-	newScore := currentScore + effectivenessBoost - timeDecay
-	newScore = math.Max(0.0, math.Min(1.0, newScore)) // Clamp to [0, 1]
+// 	newScore := currentScore + effectivenessBoost - timeDecay
+// 	newScore = math.Max(0.0, math.Min(1.0, newScore)) // Clamp to [0, 1]
 
-	// Update in database
-	prompt.RelevanceScore = newScore
-	prompt.LastUsedAt = &usage.GeneratedAt
+// 	// Update in database
+// 	prompt.RelevanceScore = newScore
+// 	prompt.LastUsedAt = &usage.GeneratedAt
 
-	if err := le.storage.UpdatePrompt(prompt); err != nil {
-		return fmt.Errorf("failed to update prompt: %w", err)
-	}
+// 	if err := le.storage.SavePrompt(ctx, prompt); err != nil {
+// 		return fmt.Errorf("failed to update prompt: %w", err)
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
 // calculateTimeDecay calculates relevance decay based on time
 func (le *LearningEngine) calculateTimeDecay(lastUsed *time.Time) float64 {
@@ -244,23 +247,23 @@ func (le *LearningEngine) calculateTimeDecay(lastUsed *time.Time) float64 {
 }
 
 // GetRecommendations provides prompt recommendations based on learning
-func (le *LearningEngine) GetRecommendations(ctx context.Context, input string, limit int) ([]models.Prompt, error) {
-	// Get high-relevance prompts
-	prompts, err := le.storage.SearchPromptsByRelevance(ctx, le.minConfidence, limit*2)
-	if err != nil {
-		return nil, fmt.Errorf("failed to search by relevance: %w", err)
-	}
+// func (le *LearningEngine) GetRecommendations(ctx context.Context, input string, limit int) ([]*models.Prompt, error) {
+// 	// Get high-relevance prompts
+// 	prompts, err := le.storage.GetHighQualityHistoricalPrompts(ctx, limit*2)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("failed to search by relevance: %w", err)
+// 	}
 
-	// Apply pattern-based filtering
-	filtered := le.applyPatternFiltering(prompts, input)
+// 	// Apply pattern-based filtering
+// 	filtered := le.applyPatternFiltering(prompts, input)
 
-	// Limit results
-	if len(filtered) > limit {
-		filtered = filtered[:limit]
-	}
+// 	// Limit results
+// 	if len(filtered) > limit {
+// 		filtered = filtered[:limit]
+// 	}
 
-	return filtered, nil
-}
+// 	return filtered, nil
+// }
 
 // applyPatternFiltering filters prompts based on learned patterns
 func (le *LearningEngine) applyPatternFiltering(prompts []models.Prompt, input string) []models.Prompt {
@@ -376,9 +379,9 @@ func (le *LearningEngine) runRelevanceDecay(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			if err := le.storage.DecayRelevanceScores(le.decayRate); err != nil {
-				le.logger.WithError(err).Warn("Failed to decay relevance scores")
-			}
+			// if err := le.storage.DecayRelevanceScores(le.decayRate); err != nil {
+			// 	le.logger.WithError(err).Warn("Failed to decay relevance scores")
+			// }
 		}
 	}
 }

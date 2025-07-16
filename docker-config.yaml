@@ -1,21 +1,38 @@
-# Docker Configuration for Prompt Alchemy
-# Basic configuration for container testing
+# Prompt Alchemy Configuration with API Keys
 
-# Provider configurations (using environment variables)
+# Provider configurations - API keys will come from environment
 providers:
   openai:
-    api_key: "${OPENAI_API_KEY}"
+    # API key from PROMPT_ALCHEMY_PROVIDERS_OPENAI_API_KEY env var
     model: "o4-mini"
-    timeout: 30
-  
+    base_url: "https://api.openai.com/v1"
+    timeout: 60
+    
   anthropic:
-    api_key: "${ANTHROPIC_API_KEY}"
-    model: "claude-4-sonnet-20250522"
-    timeout: 30
-  
+    # API key from PROMPT_ALCHEMY_PROVIDERS_ANTHROPIC_API_KEY env var
+    model: "claude-3-5-sonnet-20241022"
+    timeout: 60
+    
   google:
-    api_key: "${GOOGLE_API_KEY}"
+    # API key from PROMPT_ALCHEMY_PROVIDERS_GOOGLE_API_KEY env var
     model: "gemini-2.5-flash"
+    timeout: 60
+    
+  openrouter:
+    # API key from PROMPT_ALCHEMY_PROVIDERS_OPENROUTER_API_KEY env var
+    model: "openrouter/auto"
+    base_url: "https://openrouter.ai/api/v1"
+    timeout: 60
+    
+  ollama:
+    base_url: "http://host.docker.internal:11434"
+    model: "gemma2:2b"
+    timeout: 120
+    
+  grok:
+    # API key from PROMPT_ALCHEMY_PROVIDERS_GROK_API_KEY env var
+    model: "grok-2-1212"
+    base_url: "https://api.x.ai/v1"
     timeout: 60
 
 # Phase configurations
@@ -27,26 +44,16 @@ phases:
   coagulatio:
     provider: "google"
 
-# Embedding configuration
-embeddings:
-  standard_model: "text-embedding-3-small"
-  standard_dimensions: 1536
-  provider_priority:
-    - "openai"
-    - "anthropic"
-    - "google"
-  auto_migrate_legacy: true
-  cache_embeddings: true
-  similarity_threshold: 0.3
-
 # Generation settings
 generation:
   default_temperature: 0.7
   default_max_tokens: 2000
   default_count: 3
   use_parallel: true
+  default_embedding_model: "text-embedding-3-small"
+  default_embedding_dimensions: 1536
 
-# Data storage (container path)
+# Data storage
 data_dir: "/app/data"
 
 # Logging
@@ -54,11 +61,7 @@ log_level: "info"
 
 # Learning settings
 learning:
-  enabled: true
-  learning_rate: 0.1
-  decay_rate: 0.01
-  min_confidence: 0.6
-  feedback_window: 24h
+  enabled: false
 
 # Ranking configuration
 ranking:
@@ -67,4 +70,4 @@ ranking:
     token: 0.2
     semantic: 0.3
     length: 0.1
-    historical: 0.2 
+    historical: 0.2

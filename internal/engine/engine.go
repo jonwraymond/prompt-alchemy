@@ -11,6 +11,7 @@ import (
 	"github.com/jonwraymond/prompt-alchemy/internal/helpers"
 	"github.com/jonwraymond/prompt-alchemy/internal/phases"
 	"github.com/jonwraymond/prompt-alchemy/internal/selection"
+	"github.com/jonwraymond/prompt-alchemy/internal/storage"
 	"github.com/jonwraymond/prompt-alchemy/pkg/models"
 	"github.com/jonwraymond/prompt-alchemy/pkg/providers"
 	"github.com/sirupsen/logrus"
@@ -31,6 +32,8 @@ type Engine struct {
 	registry      *providers.Registry
 	phaseHandlers map[models.Phase]phases.PhaseHandler
 	logger        *logrus.Logger
+	storage       storage.StorageInterface
+	optimizer     *OptimizationIntegrator
 }
 
 // NewEngine creates a new prompt generation engine
@@ -43,6 +46,14 @@ func NewEngine(registry *providers.Registry, logger *logrus.Logger) *Engine {
 			models.PhaseCoagulatio:    &phases.Coagulatio{},
 		},
 		logger: logger,
+	}
+}
+
+// SetStorage sets the storage interface for the engine
+func (e *Engine) SetStorage(storage storage.StorageInterface) {
+	e.storage = storage
+	if e.storage != nil {
+		e.optimizer = NewOptimizationIntegrator(e.logger, e.storage, e.registry)
 	}
 }
 
@@ -74,6 +85,18 @@ func (e *Engine) Generate(ctx context.Context, opts models.GenerateOptions) (*mo
 		phasePrompts, err := e.processPhase(ctx, phase, provider, basePrompts, opts)
 		if err != nil {
 			return nil, fmt.Errorf("failed to process phase %s: %w", phase, err)
+		}
+
+		// Optimize phase prompts if enabled
+		if e.optimizer != nil && opts.Optimize {
+			for i, prompt := range phasePrompts {
+				optimized, err := e.optimizer.OptimizePhaseOutput(ctx, &prompt, opts)
+				if err != nil {
+					e.logger.WithError(err).Warn("Optimization failed, using original prompt")
+				} else {
+					phasePrompts[i] = *optimized
+				}
+			}
 		}
 
 		// Update base prompts for next phase
@@ -252,7 +275,12 @@ func (e *Engine) generateSinglePrompt(ctx context.Context, phase models.Phase, p
 	prompt.GenerationContext = []string{
 		fmt.Sprintf("phase=%s", phase),
 		fmt.Sprintf("provider=%s", provider.Name()),
-		fmt.Sprintf("template=%s", template[:50]+"..."), // Truncate template for brevity
+		fmt.Sprintf("template=%s", func() string {
+			if len(template) > 50 {
+				return template[:50] + "..."
+			}
+			return template
+		}()), // Truncate template for brevity
 		fmt.Sprintf("processing_time=%dms", processingTime),
 	}
 	// Add context files if any

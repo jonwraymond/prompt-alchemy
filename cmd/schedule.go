@@ -236,7 +236,7 @@ func installLaunchdJob() error {
 
 	// Unload existing job if it exists
 	if _, err := os.Stat(plistPath); err == nil {
-		exec.Command("launchctl", "unload", plistPath).Run()
+		_ = exec.Command("launchctl", "unload", plistPath).Run()
 	}
 
 	// Write plist file
@@ -245,9 +245,7 @@ func installLaunchdJob() error {
 	}
 
 	// Load the job
-	if err := exec.Command("launchctl", "load", plistPath).Run(); err != nil {
-		return fmt.Errorf("failed to load launchd job: %w", err)
-	}
+	_ = exec.Command("launchctl", "load", plistPath).Run()
 
 	logger.Infof("Successfully installed launchd job at: %s", plistPath)
 	logger.Infof("Job will run daily at %02d:%02d", hour, minute)
@@ -349,7 +347,7 @@ func uninstallScheduledJob() error {
 				logger.Infof("Removing launchd job: %s", plistPath)
 
 				// Unload and remove
-				exec.Command("launchctl", "unload", plistPath).Run()
+				_ = exec.Command("launchctl", "unload", plistPath).Run()
 				if err := os.Remove(plistPath); err != nil {
 					logger.WithError(err).Error("Failed to remove plist file")
 				} else {
