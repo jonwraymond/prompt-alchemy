@@ -7,7 +7,7 @@ toolchain go1.24.4
 require (
 	github.com/anthropics/anthropic-sdk-go v1.5.0
 	github.com/cenkalti/backoff/v4 v4.3.0
-	github.com/fsnotify/fsnotify v1.8.0
+	github.com/fsnotify/fsnotify v1.9.0
 	github.com/go-chi/chi/v5 v5.2.2
 	github.com/go-chi/cors v1.2.2
 	github.com/google/uuid v1.6.0
