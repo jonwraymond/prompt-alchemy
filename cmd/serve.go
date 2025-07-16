@@ -120,7 +120,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to initialize storage: %w", err)
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	// Initialize provider registry
 	registry := providers.NewRegistry()
@@ -1076,7 +1076,7 @@ func registerProviders(registry *providers.Registry, logger *logrus.Logger) erro
 			Model:  viper.GetString("providers.openai.model"),
 		}
 		openai := providers.NewOpenAIProvider(config)
-		registry.Register(providers.ProviderOpenAI, openai)
+		_ = registry.Register(providers.ProviderOpenAI, openai)
 		logger.Info("Registered OpenAI provider")
 	}
 
@@ -1086,7 +1086,7 @@ func registerProviders(registry *providers.Registry, logger *logrus.Logger) erro
 			Model:  viper.GetString("providers.anthropic.model"),
 		}
 		anthropic := providers.NewAnthropicProvider(config)
-		registry.Register(providers.ProviderAnthropic, anthropic)
+		_ = registry.Register(providers.ProviderAnthropic, anthropic)
 		logger.Info("Registered Anthropic provider")
 	}
 
@@ -1096,7 +1096,7 @@ func registerProviders(registry *providers.Registry, logger *logrus.Logger) erro
 			Model:  viper.GetString("providers.google.model"),
 		}
 		google := providers.NewGoogleProvider(config)
-		registry.Register(providers.ProviderGoogle, google)
+		_ = registry.Register(providers.ProviderGoogle, google)
 		logger.Info("Registered Google provider")
 	}
 
@@ -1106,7 +1106,7 @@ func registerProviders(registry *providers.Registry, logger *logrus.Logger) erro
 			Model:  viper.GetString("providers.grok.model"),
 		}
 		grok := providers.NewGrokProvider(config)
-		registry.Register(providers.ProviderGrok, grok)
+		_ = registry.Register(providers.ProviderGrok, grok)
 		logger.Info("Registered Grok provider")
 	}
 
@@ -1117,7 +1117,7 @@ func registerProviders(registry *providers.Registry, logger *logrus.Logger) erro
 			Model:   viper.GetString("providers.ollama.model"),
 		}
 		ollama := providers.NewOllamaProvider(config)
-		registry.Register(providers.ProviderOllama, ollama)
+		_ = registry.Register(providers.ProviderOllama, ollama)
 		logger.Info("Registered Ollama provider")
 	}
 
@@ -1127,7 +1127,7 @@ func registerProviders(registry *providers.Registry, logger *logrus.Logger) erro
 			Model:  viper.GetString("providers.openrouter.model"),
 		}
 		openrouter := providers.NewOpenRouterProvider(config)
-		registry.Register(providers.ProviderOpenRouter, openrouter)
+		_ = registry.Register(providers.ProviderOpenRouter, openrouter)
 		logger.Info("Registered OpenRouter provider")
 	}
 

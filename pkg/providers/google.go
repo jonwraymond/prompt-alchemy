@@ -48,7 +48,7 @@ func NewGoogleProvider(config Config) *GoogleProvider {
 // Generate generates a prompt using Google Gemini
 func (p *GoogleProvider) Generate(ctx context.Context, req GenerateRequest) (*GenerateResponse, error) {
 	if p.client == nil {
-		return nil, fmt.Errorf("Google client not initialized")
+		return nil, fmt.Errorf("google client not initialized")
 	}
 
 	// Use configured model or default
@@ -109,7 +109,7 @@ func (p *GoogleProvider) Generate(ctx context.Context, req GenerateRequest) (*Ge
 	// Send the actual prompt
 	result, err := chat.SendMessage(ctx, genai.Part{Text: req.Prompt})
 	if err != nil {
-		return nil, fmt.Errorf("Google Gemini API call failed: %w", err)
+		return nil, fmt.Errorf("google Gemini API call failed: %w", err)
 	}
 
 	// Extract content from response
@@ -136,7 +136,7 @@ func (p *GoogleProvider) Generate(ctx context.Context, req GenerateRequest) (*Ge
 // GetEmbedding generates an embedding for the given text
 func (p *GoogleProvider) GetEmbedding(ctx context.Context, text string, registry RegistryInterface) ([]float32, error) {
 	if p.client == nil {
-		return nil, fmt.Errorf("Google client not initialized")
+		return nil, fmt.Errorf("google client not initialized")
 	}
 
 	// Google Gemini doesn't have a dedicated embedding model like text-embedding-gecko
@@ -166,7 +166,7 @@ func (p *GoogleProvider) GetEmbedding(ctx context.Context, text string, registry
 		}
 	}
 
-	return nil, fmt.Errorf("Google provider does not support embeddings directly and no fallback provider available")
+	return nil, fmt.Errorf("google provider does not support embeddings directly and no fallback provider available")
 }
 
 // Name returns the name of the provider

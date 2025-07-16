@@ -87,7 +87,7 @@ func (p *GrokProvider) Generate(ctx context.Context, req GenerateRequest) (*Gene
 	// Make the API call
 	response, err := p.client.Chat.Completions.New(ctx, params)
 	if err != nil {
-		return nil, fmt.Errorf("Grok API call failed: %w", err)
+		return nil, fmt.Errorf("grok API call failed: %w", err)
 	}
 
 	// Extract the response
