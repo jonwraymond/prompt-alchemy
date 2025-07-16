@@ -145,7 +145,46 @@ func (j *LLMJudge) buildClaudeEvaluationPrompt(request *PromptEvaluationRequest,
 		referenceSection = fmt.Sprintf("\n<reference_answer>\n%s\n</reference_answer>", request.ReferenceAnswer)
 	}
 
-	template := "<instructions>\nYou are an expert evaluator specializing in " + personaContext + ". Your task is to evaluate the quality of an AI-generated response based on specific criteria.\n\nCRITICAL: Be objective and avoid verbosity bias. Concise, accurate responses are better than verbose ones.\n\n<evaluation_criteria>\n" + criteria + "\n</evaluation_criteria>\n\nFollow this evaluation process:\n1. Analyze the response systematically\n2. Score each criterion (1-10 scale)\n3. Provide specific improvement suggestions\n4. Give an overall assessment\n\nYour response must be in valid JSON format.\n</instructions>\n\n<original_prompt>\n" + request.OriginalPrompt + "\n</original_prompt>\n\n<generated_response>\n" + request.GeneratedResponse + "\n</generated_response>\n\n" + referenceSection + "\n\n<thinking>\nLet me evaluate this response step by step against each criterion...\n</thinking>\n\n<answer>\nProvide your evaluation in this exact JSON format:\n{\n  \"overall_score\": 0.0,\n  \"criteria_scores\": {\n    \"criterion_name\": 0.0\n  },\n  \"reasoning\": \"Detailed step-by-step reasoning\",\n  \"improvements\": [\"Specific improvement suggestion 1\", \"Specific improvement suggestion 2\"],\n  \"bias_notes\": [\"Any bias concerns detected\"]\n}\n</answer>"
+	template := `<instructions>
+You are an expert evaluator specializing in ` + personaContext + `. Your task is to evaluate the quality of an AI-generated response based on specific criteria.
+
+CRITICAL: Be objective and avoid verbosity bias. Concise, accurate responses are better than verbose ones.
+
+<evaluation_criteria>
+` + criteria + `
+</evaluation_criteria>
+
+Follow this evaluation process:
+1. Analyze the response systematically
+2. Score each criterion (1-10 scale)
+3. Provide specific improvement suggestions
+4. Give an overall assessment
+
+IMPORTANT: Your response must be ONLY valid JSON with no additional text before or after.
+</instructions>
+
+<original_prompt>
+` + request.OriginalPrompt + `
+</original_prompt>
+
+<generated_response>
+` + request.GeneratedResponse + `
+</generated_response>
+` + referenceSection + `
+
+Provide your evaluation as a single JSON object with this exact structure:
+{
+  "overall_score": 7.5,
+  "criteria_scores": {
+    "factual_accuracy": 8.0,
+    "helpfulness": 7.0,
+    "code_quality": 8.0,
+    "conciseness": 7.0
+  },
+  "reasoning": "The response correctly addresses the user's request...",
+  "improvements": ["Be more specific about...", "Include examples of..."],
+  "bias_notes": []
+}`
 
 	return template
 }
@@ -158,7 +197,39 @@ func (j *LLMJudge) buildGPTEvaluationPrompt(request *PromptEvaluationRequest, cr
 		referenceSection = fmt.Sprintf("\n## Reference Answer\n```\n%s\n```", request.ReferenceAnswer)
 	}
 
-	return fmt.Sprintf("# Evaluation Instructions\n\nYou are an expert evaluator for %s responses. Evaluate the AI-generated response objectively and systematically.\n\n## Important Guidelines\n- Be concise and precise in your evaluation\n- Avoid verbosity bias - shorter accurate responses are better than longer verbose ones\n- Use chain-of-thought reasoning before providing scores\n- Focus on quality, not quantity\n\n## Evaluation Criteria\n%s\n\n## Original Prompt\n```\n%s\n```\n\n## Generated Response\n```\n%s\n```\n\n%s\n\n## Evaluation Process\nThink through each criterion step by step:\n\n1. **Factual Accuracy**: Is the information correct and verifiable?\n2. **Helpfulness**: Does it address the user's needs effectively?\n3. **Code Quality**: Is the code clean, efficient, and well-structured?\n4. **Conciseness**: Is it appropriately concise without sacrificing clarity?\n\n## Output Format\nProvide your evaluation in valid JSON format:\n\n{\n  \"overall_score\": 0.0,\n  \"criteria_scores\": {\n    \"criterion_name\": 0.0\n  },\n  \"reasoning\": \"Step-by-step reasoning for each score\",\n  \"improvements\": [\"Specific actionable improvements\"],\n  \"bias_notes\": [\"Any evaluation biases detected\"]\n}", personaContext, criteria, request.OriginalPrompt, request.GeneratedResponse, referenceSection)
+	return fmt.Sprintf(`You are an expert evaluator for %s responses. Evaluate the AI-generated response objectively.
+
+## Evaluation Criteria
+%s
+
+## Original Prompt
+%s
+
+## Generated Response
+%s
+%s
+
+## Instructions
+1. Analyze each criterion systematically
+2. Score each criterion from 1-10
+3. Calculate an overall score
+4. Provide specific improvements
+
+CRITICAL: Respond with ONLY a JSON object, no additional text or markdown.
+
+Example format:
+{
+  "overall_score": 7.5,
+  "criteria_scores": {
+    "factual_accuracy": 8.0,
+    "helpfulness": 7.0,
+    "code_quality": 8.0,
+    "conciseness": 7.0
+  },
+  "reasoning": "The response addresses the main requirements...",
+  "improvements": ["Add more specific examples", "Improve error handling"],
+  "bias_notes": []
+}`, personaContext, criteria, request.OriginalPrompt, request.GeneratedResponse, referenceSection)
 }
 
 // buildGeminiEvaluationPrompt creates Gemini-optimized evaluation prompt
@@ -211,7 +282,12 @@ func (j *LLMJudge) buildCriteriaDescription(criteria map[string]EvaluationCriter
 func (j *LLMJudge) parseEvaluationResponse(response string, request *PromptEvaluationRequest) (*EvaluationResult, error) {
 	logger := log.GetLogger()
 	logger.Debug("Parsing evaluation response")
-	// Try multiple strategies to extract JSON from the response
+
+	// First, try to parse the response as-is (in case it's pure JSON)
+	if result, err := j.tryParseJSON(response); err == nil {
+		logger.Debug("Successfully parsed response as pure JSON")
+		return result, nil
+	}
 
 	// Strategy 1: Look for JSON between code blocks
 	logger.Debug("Trying to parse JSON from code blocks")
@@ -226,7 +302,22 @@ func (j *LLMJudge) parseEvaluationResponse(response string, request *PromptEvalu
 		}
 	}
 
-	// Strategy 2: Look for JSON between <answer> tags (Claude style)
+	// Strategy 2: Look for JSON in any code block
+	if strings.Contains(response, "```") {
+		parts := strings.Split(response, "```")
+		for i := 1; i < len(parts); i += 2 {
+			jsonStr := strings.TrimSpace(parts[i])
+			// Remove language identifier if present
+			if idx := strings.Index(jsonStr, "\n"); idx > 0 && idx < 20 {
+				jsonStr = strings.TrimSpace(jsonStr[idx+1:])
+			}
+			if result, err := j.tryParseJSON(jsonStr); err == nil {
+				return result, nil
+			}
+		}
+	}
+
+	// Strategy 3: Look for JSON between <answer> tags (Claude style)
 	logger.Debug("Trying to parse JSON from <answer> tags")
 	if strings.Contains(response, "<answer>") && strings.Contains(response, "</answer>") {
 		start := strings.Index(response, "<answer>") + 8
@@ -239,7 +330,7 @@ func (j *LLMJudge) parseEvaluationResponse(response string, request *PromptEvalu
 		}
 	}
 
-	// Strategy 3: Extract JSON between first { and last }
+	// Strategy 4: Extract JSON between first { and last }
 	logger.Debug("Trying to parse JSON between curly braces")
 	jsonStart := strings.Index(response, "{")
 	jsonEnd := strings.LastIndex(response, "}") + 1
@@ -251,22 +342,32 @@ func (j *LLMJudge) parseEvaluationResponse(response string, request *PromptEvalu
 		}
 	}
 
-	// Strategy 4: Try to find and clean JSON with common LLM formatting issues
+	// Strategy 5: Try to find and clean JSON with common LLM formatting issues
 	logger.Debug("Trying to parse cleaned JSON")
 	cleanedResponse := j.cleanLLMResponse(response)
 	if result, err := j.tryParseJSON(cleanedResponse); err == nil {
 		return result, nil
 	}
 
-	// Strategy 5: Fallback - create a default evaluation with extracted info
+	// Strategy 6: Fallback - create a default evaluation with extracted info
 	logger.Warn("All JSON parsing strategies failed, creating fallback evaluation")
 	return j.createFallbackEvaluation(response, request)
 }
 
 // tryParseJSON attempts to parse JSON with validation
 func (j *LLMJudge) tryParseJSON(jsonStr string) (*EvaluationResult, error) {
+	logger := log.GetLogger()
+
+	// Log first 200 chars of JSON for debugging
+	logStr := jsonStr
+	if len(logStr) > 200 {
+		logStr = logStr[:200] + "..."
+	}
+	logger.Debugf("Attempting to parse JSON: %s", logStr)
+
 	var result EvaluationResult
 	if err := json.Unmarshal([]byte(jsonStr), &result); err != nil {
+		logger.Debugf("JSON parse error: %v", err)
 		return nil, err
 	}
 
@@ -295,6 +396,7 @@ func (j *LLMJudge) tryParseJSON(jsonStr string) (*EvaluationResult, error) {
 		result.Improvements = []string{}
 	}
 
+	logger.Debugf("Successfully parsed JSON with overall_score: %.1f", result.OverallScore)
 	return &result, nil
 }
 

@@ -3,6 +3,8 @@ package models
 import (
 	"fmt"
 	"strings"
+
+	"github.com/jonwraymond/prompt-alchemy/internal/templates"
 )
 
 // PersonaType represents different AI interaction patterns
@@ -128,7 +130,7 @@ func getBuiltInPersonas() map[PersonaType]*Persona {
 			Name:             "Code Generation & Analysis",
 			Description:      "Specialized for software development, code generation, debugging, and technical analysis",
 			DefaultReasoning: ReasoningSCoT,
-			SystemPrompt:     "You are an expert software engineer and code architect. You excel at writing clean, efficient, and well-documented code across multiple programming languages and frameworks.",
+			SystemPrompt:     loadPersonaPrompt("code"),
 			Capabilities:     []string{"code_generation", "debugging", "refactoring", "architecture_design", "testing", "documentation"},
 			ModelOptimizations: map[ModelFamily]ModelOptimization{
 				ModelFamilyClaude: {
@@ -178,7 +180,7 @@ func getBuiltInPersonas() map[PersonaType]*Persona {
 			Name:             "Content Writing & Communication",
 			Description:      "Specialized for content creation, technical writing, documentation, and communication",
 			DefaultReasoning: ReasoningCoT,
-			SystemPrompt:     "You are an expert writer and communication specialist. You excel at creating clear, engaging, and well-structured content across various formats and audiences.",
+			SystemPrompt:     loadPersonaPrompt("writing"),
 			Capabilities:     []string{"content_writing", "technical_documentation", "copywriting", "editing", "communication_strategy"},
 			ModelOptimizations: map[ModelFamily]ModelOptimization{
 				ModelFamilyClaude: {
@@ -228,7 +230,7 @@ func getBuiltInPersonas() map[PersonaType]*Persona {
 			Name:             "Data Analysis & Research",
 			Description:      "Specialized for data analysis, research, problem-solving, and analytical thinking",
 			DefaultReasoning: ReasoningSCoT,
-			SystemPrompt:     "You are an expert analyst and researcher. You excel at breaking down complex problems, analyzing data, identifying patterns, and providing evidence-based insights.",
+			SystemPrompt:     loadPersonaPrompt("analysis"),
 			Capabilities:     []string{"data_analysis", "research", "problem_solving", "pattern_recognition", "statistical_analysis", "critical_thinking"},
 			ModelOptimizations: map[ModelFamily]ModelOptimization{
 				ModelFamilyClaude: {
@@ -278,7 +280,7 @@ func getBuiltInPersonas() map[PersonaType]*Persona {
 			Name:             "General Purpose",
 			Description:      "Balanced approach suitable for general tasks and broad applications",
 			DefaultReasoning: ReasoningCoT,
-			SystemPrompt:     "You are a helpful, accurate, and thoughtful AI assistant.",
+			SystemPrompt:     loadPersonaPrompt("generic"),
 			Capabilities:     []string{"general_assistance", "analysis", "writing", "problem_solving"},
 			ModelOptimizations: map[ModelFamily]ModelOptimization{
 				ModelFamilyGeneric: {
@@ -351,5 +353,22 @@ func (p *Persona) buildPrompt(template string, optimization ModelOptimization, c
 		prompt = strings.ReplaceAll(prompt, placeholder, value)
 	}
 
+	return prompt
+}
+
+// loadPersonaPrompt loads a persona system prompt from template files
+func loadPersonaPrompt(personaType string) string {
+	tmpl, err := templates.LoadPersonaSystemPrompt(personaType)
+	if err != nil {
+		// Fallback to basic prompt if template loading fails
+		return "You are a helpful, accurate, and thoughtful AI assistant."
+	}
+
+	// For persona templates, we just execute with empty context since they're base prompts
+	prompt, err := templates.ExecuteTemplate(tmpl, nil)
+	if err != nil {
+		// Fallback to basic prompt if template execution fails
+		return "You are a helpful, accurate, and thoughtful AI assistant."
+	}
 	return prompt
 }

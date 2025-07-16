@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"math"
 	"time"
 
@@ -29,11 +30,11 @@ func runNightly(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	// Get interactions since last run (e.g. last 24h)
 	since := time.Now().Add(-24 * time.Hour)
-	interactions, err := store.ListInteractions(map[string]interface{}{"since": since})
+	interactions, err := store.ListInteractions(cmd.Context(), since)
 	if err != nil {
 		return err
 	}
@@ -54,9 +55,10 @@ func runNightly(cmd *cobra.Command, args []string) error {
 	for _, group := range sessions {
 		var chosen, skipped []*models.UserInteraction
 		for _, inter := range group {
-			if inter.Action == "chosen" {
+			switch inter.Action {
+			case "chosen":
 				chosen = append(chosen, inter)
-			} else if inter.Action == "skipped" {
+			case "skipped":
 				skipped = append(skipped, inter)
 			}
 		}
@@ -66,11 +68,11 @@ func runNightly(cmd *cobra.Command, args []string) error {
 
 		for _, c := range chosen {
 			for _, s := range skipped {
-				crank, err := getRanking(store, c.PromptID, sessionInput)
+				crank, err := getRanking(cmd.Context(), store, c.PromptID, sessionInput)
 				if err != nil {
 					continue
 				}
-				srank, err := getRanking(store, s.PromptID, sessionInput)
+				srank, err := getRanking(cmd.Context(), store, s.PromptID, sessionInput)
 				if err != nil {
 					continue
 				}
@@ -167,9 +169,9 @@ func runNightly(cmd *cobra.Command, args []string) error {
 }
 
 // getRanking fetches or computes ranking features for a prompt
-func getRanking(store *storage.Storage, promptID uuid.UUID, originalInput string) (*models.PromptRanking, error) {
+func getRanking(ctx context.Context, store *storage.Storage, promptID uuid.UUID, originalInput string) (*models.PromptRanking, error) {
 	// Get prompt from storage
-	prompt, err := store.GetPrompt(promptID)
+	prompt, err := store.GetPromptByID(ctx, promptID)
 	if err != nil {
 		return nil, err
 	}

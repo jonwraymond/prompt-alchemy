@@ -95,6 +95,9 @@ logs/
 tmp/
 temp/
 .tmp/
+__pycache__/
+*.pyc
+*.pyo
 
 # Build artifacts
 dist/
@@ -123,6 +126,20 @@ dlv-dap.log
 # Test and benchmark files
 *.bench
 benchmarks/
+test-*.py
+test-*.json
+test-*.html
+test-*.md
+*test-results*
+*test-output*
+comprehensive-test-*.sh
+quick-test-*.py
+final-test-*.py
+retest-*.py
+simple-test-*.py
+test-*.yaml
+test-*.yml
+testing-suite/
 
 # Documentation generated files
 docs/build/

@@ -43,6 +43,10 @@ func (p *TestProvider) GetEmbedding(ctx context.Context, text string, registry R
 	return []float32{0.1, 0.2, 0.3}, nil
 }
 
+func (p *TestProvider) SupportsStreaming() bool {
+	return false
+}
+
 func TestProviderRegistry(t *testing.T) {
 	// Create test providers
 	provider1 := &TestProvider{

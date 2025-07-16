@@ -5,7 +5,7 @@
 <h1 align="center">Prompt Alchemy</h1>
 
 <p align="center">
-  <strong>Transform raw ideas into golden prompts through the ancient art of linguistic alchemy. A sophisticated AI system that transmutes concepts through three sacred phases of refinement.</strong>
+  <strong>Transform raw ideas into refined, effective prompts through a systematic three-phase process. An AI-powered system that improves prompt quality through structured refinement stages.</strong>
 </p>
 
 <p align="center">
@@ -15,19 +15,39 @@
 
 ---
 
+## Table of Contents
+
+- [Features](#features)
+- [System Requirements](#system-requirements)
+- [Quick Start](#-quick-start)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Security Best Practices](#-security-best-practices)
+- [Usage](#usage)
+- [Integration Scenarios](#integration-scenarios)
+- [Common Workflows](#common-workflows)
+- [Troubleshooting](#troubleshooting)
+- [The Three-Phase Process](#the-three-phase-process)
+- [Testing](#testing)
+- [Architecture](#architecture)
+- [Contributing](#contributing)
+- [License](#license)
+
+---
+
 ## Features
 
-- **⚗️ Alchemical Transformation**: Three sacred phases of transmutation
-  - **Prima Materia**: Extract pure essence from raw materials
-  - **Solutio**: Dissolve into flowing, natural language
-  - **Coagulatio**: Crystallize into refined, potent form
-- **🤖 Multi-Provider Support**: OpenAI, Claude (via Anthropic), Gemini, and OpenRouter
-- **💾 Smart Storage**: SQLite-based grimoire with context accumulation
-- **🎯 Intelligent Ranking**: Advanced scoring based on alchemical principles
-- **📊 Performance Tracking**: Track transmutation success rates
+- **⚗️ Three-Phase Refinement Process**: Systematic prompt improvement through distinct stages
+  - **Prima Materia**: Extract core concepts and brainstorm possibilities
+  - **Solutio**: Convert ideas into natural, conversational language
+  - **Coagulatio**: Refine to precise, actionable prompts
+- **🤖 Multi-Provider Support**: OpenAI, Claude (via Anthropic), Gemini, OpenRouter, Grok, and Ollama (local AI)
+- **💾 Smart Storage**: SQLite database with context accumulation and search capabilities
+- **🎯 Intelligent Ranking**: Advanced scoring system for prompt quality assessment
+- **📊 Performance Tracking**: Monitor generation success rates and usage metrics
 - **🔌 MCP Integration**: AI agent-friendly interface for seamless integration
-- **⚡ Fast & Efficient**: Parallel alchemical processing
-- **📈 Detailed Metadata**: Complete transmutation records including costs
+- **⚡ Fast & Efficient**: Parallel processing for faster generation
+- **📈 Detailed Metadata**: Complete generation records including costs and timing
 - **🕒 Automated Scheduling**: Easy setup of nightly training jobs via cron/launchd
 
 ## System Requirements
@@ -79,6 +99,11 @@ To use Prompt Alchemy, you need API access to at least one AI provider:
   - Supports: Local model execution
   - Requirements: Additional 4-8 GB RAM for models
   - Setup: Install from [ollama.ai](https://ollama.ai)
+  
+- **Grok**: API key from [platform.grok.com](https://platform.grok.com)
+  - Supports: Grok models with conversational AI
+  - Billing: Pay-per-use
+  - Rate limits: Standard for most use cases
 
 #### Regional Availability
 - OpenAI: Available in most countries (check OpenAI's usage policies)
@@ -86,6 +111,7 @@ To use Prompt Alchemy, you need API access to at least one AI provider:
 - Google: Available globally with some regional restrictions
 - OpenRouter: Global availability (depends on underlying providers)
 - Ollama: No restrictions (runs locally)
+- Grok: Check platform.grok.com for current availability
 
 ### Development Requirements (For Contributors)
 - **Go**: Version 1.23+ with modules enabled
@@ -120,19 +146,51 @@ If using Docker deployment:
 - Database backup strategy
 - Monitoring and alerting setup
 - Multiple API keys for rate limit distribution
+- **Security hardening**: Firewall rules, network segmentation
+- **Access control**: Authentication, authorization, audit logging
+- **Secret management**: Secure vault for API keys, regular rotation
+- **Container security**: Use non-root user, scan for vulnerabilities
+- **HTTPS only**: TLS termination, secure headers
+
+## 🚀 Quick Start
+
+**Get up and running in 5 minutes!** See [QUICKSTART.md](./QUICKSTART.md) for comprehensive setup instructions covering:
+
+- **Docker deployment** (recommended) - One-command setup
+- **Local installation** - Build from source or download binary
+- **All modes**: API server, MCP server, hybrid mode, and Ollama integration
+- **Both deployment types** with troubleshooting guides
+
+### Super Quick Docker Start
+```bash
+# 1. Setup
+cp .env.example .env
+# Edit .env with your API keys
+
+# 2. Choose your mode
+./start-api.sh      # API Server (Web Apps)
+./start-mcp.sh      # MCP Server (AI Agents)
+./start-hybrid.sh   # Both (Development)
+./start-ollama.sh   # Local AI
+```
 
 ## Installation
 
+For detailed installation instructions, see [QUICKSTART.md](./QUICKSTART.md). Quick options:
+
 ```bash
-# Clone the repository
+# Docker (Recommended)
 git clone https://github.com/jonwraymond/prompt-alchemy.git
 cd prompt-alchemy
+cp .env.example .env
+# Edit .env with your API keys
+./start-api.sh
 
-# Build the CLI
-go build -o prompt-alchemy cmd/prompt-alchemy/main.go
-
-# Or install directly
-go install github.com/jonwraymond/prompt-alchemy/cmd/prompt-alchemy@latest
+# Local Build
+git clone https://github.com/jonwraymond/prompt-alchemy.git
+cd prompt-alchemy
+make build
+prompt-alchemy serve api
 ```
 
 ## Configuration
@@ -175,6 +233,10 @@ providers:
     default_embedding_model: "nomic-embed-text"  # Default embedding model
     embedding_timeout: 5     # Embedding timeout in seconds
     generation_timeout: 120  # Generation timeout in seconds
+
+  grok:
+    api_key: "your-grok-api-key"
+    model: "grok-2-1212"
 
 # Alchemical phase configurations
 phases:
@@ -230,9 +292,30 @@ export PROMPT_ALCHEMY_PROVIDERS_OLLAMA_TIMEOUT="60"
 export PROMPT_ALCHEMY_PROVIDERS_OLLAMA_DEFAULT_EMBEDDING_MODEL="nomic-embed-text"
 export PROMPT_ALCHEMY_PROVIDERS_OLLAMA_EMBEDDING_TIMEOUT="5"
 export PROMPT_ALCHEMY_PROVIDERS_OLLAMA_GENERATION_TIMEOUT="120"
+
+# Grok Configuration
+export PROMPT_ALCHEMY_PROVIDERS_GROK_API_KEY="your-grok-api-key"
+export PROMPT_ALCHEMY_PROVIDERS_GROK_MODEL="grok-2-1212"
 ```
 
 **`.env` File Example:** Copy the above exports to a `.env` file (without `export`) for automatic loading.
+
+### 🔐 Security Best Practices
+
+**⚠️ API Key Security**
+- Never commit API keys to version control
+- Use environment variables or secure configuration files
+- Keep `.env` files in `.gitignore` (already configured)
+- Rotate API keys regularly
+- Use least-privilege access when possible
+- Monitor API usage for unexpected activity
+
+**🛡️ Additional Security Measures**
+- Run local Ollama for privacy-sensitive prompts
+- Use network isolation for production deployments
+- Implement rate limiting if exposing API publicly
+- Regular security updates and dependency scanning
+- Audit logs for sensitive operations
 
 ## Usage
 
@@ -453,6 +536,225 @@ prompt-alchemy nightly --verbose
 prompt-alchemy nightly --learning-rate 0.01 --epochs 10
 ```
 
+### Integration Scenarios
+
+#### 1. Claude Desktop Integration (MCP)
+```bash
+# Setup MCP server for Claude Desktop
+prompt-alchemy serve mcp
+
+# Configure Claude Desktop MCP settings
+{
+  "mcpServers": {
+    "prompt-alchemy": {
+      "command": "prompt-alchemy",
+      "args": ["serve", "mcp"]
+    }
+  }
+}
+```
+
+#### 2. Web Application Integration (REST API)
+```bash
+# Start API server
+prompt-alchemy serve api --port 8080
+
+# Generate prompts via REST API
+curl -X POST http://localhost:8080/api/v1/prompts/generate \
+  -H "Content-Type: application/json" \
+  -d '{"input": "Create authentication system", "count": 3}'
+
+# Search existing prompts
+curl "http://localhost:8080/api/v1/prompts/search?query=auth&limit=5"
+```
+
+#### 3. CI/CD Pipeline Integration
+```bash
+# Add to your CI/CD pipeline
+name: Generate Documentation Prompts
+jobs:
+  generate-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Generate prompts
+        run: |
+          echo "${{ secrets.OPENAI_API_KEY }}" | prompt-alchemy generate \
+            --tags "docs,ci" "Generate API documentation for ${{ github.repository }}"
+```
+
+#### 4. Automated Content Generation
+```bash
+# Schedule nightly prompt generation
+prompt-alchemy schedule --time "0 2 * * *"
+
+# Batch generate prompts for content calendar
+prompt-alchemy batch generate \
+  --input-file content-ideas.txt \
+  --output-file generated-prompts.json \
+  --workers 5
+```
+
+#### 5. Docker Production Deployment
+```bash
+# Production API server
+docker-compose -f docker-compose.yml up -d
+
+# Production MCP server
+docker run -d \
+  --name prompt-alchemy-mcp \
+  --env-file .env \
+  prompt-alchemy:latest serve mcp
+```
+
+#### 6. Multi-Environment Setup
+```bash
+# Development environment
+PROMPT_ALCHEMY_PROVIDERS_OPENAI_MODEL="gpt-4o-mini" \
+  prompt-alchemy serve api --port 8080
+
+# Staging environment
+PROMPT_ALCHEMY_PROVIDERS_OPENAI_MODEL="gpt-4o" \
+  prompt-alchemy serve api --port 8081
+
+# Production environment
+PROMPT_ALCHEMY_PROVIDERS_OPENAI_MODEL="gpt-4o" \
+  prompt-alchemy serve api --port 8082
+```
+
+#### 7. Webhook Integration
+```bash
+# Setup webhook endpoint (requires reverse proxy)
+prompt-alchemy serve api --port 8080 --host 0.0.0.0
+
+# Process webhook data
+curl -X POST http://your-domain.com/api/v1/prompts/generate \
+  -H "Content-Type: application/json" \
+  -d '{"input": "Process webhook: ${webhook_data}", "tags": ["webhook", "auto"]}'
+```
+
+#### 8. Monitoring and Observability
+```bash
+# Enable debug logging
+export LOG_LEVEL=debug
+prompt-alchemy serve api --log-level debug
+
+# Monitor API performance
+curl http://localhost:8080/health
+curl http://localhost:8080/api/v1/providers
+
+# Database monitoring
+sqlite3 ~/.prompt-alchemy/prompts.db "SELECT COUNT(*) FROM prompts;"
+```
+
+#### 9. Kubernetes Deployment
+```yaml
+# kubernetes/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prompt-alchemy-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: prompt-alchemy-api
+  template:
+    metadata:
+      labels:
+        app: prompt-alchemy-api
+    spec:
+      containers:
+      - name: prompt-alchemy
+        image: prompt-alchemy:latest
+        command: ["prompt-alchemy", "serve", "api"]
+        ports:
+        - containerPort: 8080
+        env:
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: api-keys
+              key: openai-key
+```
+
+#### 10. Cloud Function Integration
+```javascript
+// Google Cloud Function
+exports.generatePrompt = async (req, res) => {
+  const { spawn } = require('child_process');
+  
+  const prompt = spawn('prompt-alchemy', ['generate', req.body.input]);
+  let output = '';
+  
+  prompt.stdout.on('data', (data) => {
+    output += data.toString();
+  });
+  
+  prompt.on('close', (code) => {
+    res.json({ result: output, status: code });
+  });
+};
+```
+
+#### 11. Infrastructure as Code (Terraform)
+```hcl
+# terraform/main.tf
+resource "aws_ecs_task_definition" "prompt_alchemy" {
+  family                   = "prompt-alchemy"
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  cpu                      = 512
+  memory                   = 1024
+  
+  container_definitions = jsonencode([
+    {
+      name  = "prompt-alchemy"
+      image = "prompt-alchemy:latest"
+      command = ["prompt-alchemy", "serve", "api"]
+      portMappings = [
+        {
+          containerPort = 8080
+          protocol      = "tcp"
+        }
+      ]
+      environment = [
+        {
+          name  = "OPENAI_API_KEY"
+          value = var.openai_api_key
+        }
+      ]
+    }
+  ])
+}
+```
+
+#### 12. Serverless Integration (AWS Lambda)
+```python
+# lambda_function.py
+import json
+import subprocess
+import os
+
+def lambda_handler(event, context):
+    # Set environment variables
+    os.environ['OPENAI_API_KEY'] = os.environ['OPENAI_API_KEY']
+    
+    # Generate prompt
+    result = subprocess.run([
+        'prompt-alchemy', 'generate', 
+        event['input']
+    ], capture_output=True, text=True)
+    
+    return {
+        'statusCode': 200,
+        'body': json.dumps({
+            'result': result.stdout,
+            'error': result.stderr
+        })
+    }
+```
+
 ### Common Workflows
 
 #### 1. New Project Setup
@@ -516,6 +818,7 @@ prompt-alchemy generate --persona technical --tags "docs,review" \
 - **Anthropic**: Excellent for natural language and explanations  
 - **Google**: Fast responses and good for general-purpose tasks
 - **OpenRouter**: Access to latest models and fallback options
+- **Grok**: Conversational AI with unique personality and approach
 - **Ollama**: Privacy-focused, offline usage, cost-effective for development
 
 #### Performance Optimization
@@ -523,6 +826,10 @@ prompt-alchemy generate --persona technical --tags "docs,review" \
 - **Use Appropriate Models**: Faster models for development, premium models for production
 - **Monitor Costs**: Track API usage and optimize model selection
 - **Cache Results**: Save frequently used prompts to avoid regeneration
+- **Parallel Processing**: Enable `use_parallel: true` for faster generation
+- **Provider Selection**: Use local Ollama for development, cloud providers for production
+- **Token Optimization**: Set appropriate max_tokens based on use case
+- **Network Optimization**: Use providers with lowest latency for your region
 
 ### Error Handling Examples
 
@@ -674,6 +981,10 @@ Solution: Adjust safety_threshold in config
 # Ollama Errors
 Error: connection refused (localhost:11434)
 Solution: Start Ollama service: ollama serve
+
+# Grok Errors
+Error: authentication failed (401)
+Solution: Check API key and account status
 ```
 
 #### Database and Storage Errors
@@ -693,6 +1004,41 @@ Error: permission denied: ~/.prompt-alchemy/
 1. Check directory permissions: ls -la ~/.prompt-alchemy/
 2. Create directory manually: mkdir -p ~/.prompt-alchemy/
 3. Fix permissions: chmod 755 ~/.prompt-alchemy/
+```
+
+#### MCP Server Errors
+```bash
+# Error: JSON-RPC parse error
+Error: invalid JSON-RPC request format
+
+# Solutions:
+1. Verify JSON-RPC 2.0 format compliance
+2. Check for proper Content-Type headers
+3. Ensure stdin/stdout are not mixed with logs
+
+# Error: Method not found
+Error: method 'invalid_method' not found
+
+# Solutions:
+1. Use supported methods: tools/list, tools/call
+2. Check MCP protocol documentation
+3. Verify method spelling and parameters
+
+# Error: Hybrid mode output mixing
+Warning: HTTP logs mixed with MCP JSON-RPC
+
+# Solutions:
+1. Use separate processes for production
+2. Redirect logs to file: --log-level warn
+3. Use dedicated MCP or API mode instead
+
+# Error: Claude Desktop connection failed
+Error: MCP server not responding
+
+# Solutions:
+1. Check Claude Desktop MCP configuration
+2. Verify binary path and permissions
+3. Test MCP server manually: echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | prompt-alchemy serve mcp
 ```
 
 ### Debug and Logging
@@ -773,6 +1119,34 @@ go version
 
 ### Common Issues and Solutions
 
+#### CLI Command Errors
+```bash
+# Issue: Command not found
+Error: prompt-alchemy: command not found
+
+# Solution:
+1. Check installation: which prompt-alchemy
+2. Add to PATH: export PATH=$PATH:/path/to/prompt-alchemy
+3. Use full path: /path/to/prompt-alchemy generate "test"
+4. For Docker: Use docker-compose or startup scripts
+
+# Issue: Invalid flag
+Error: unknown flag: --invalid-flag
+
+# Solution:
+1. Check available flags: prompt-alchemy generate --help
+2. Verify flag spelling and format
+3. Use proper flag syntax: --flag=value or --flag value
+
+# Issue: Invalid phase name
+Error: unknown phase: "invalid-phase"
+
+# Solution:
+1. Use valid phases: prima-materia, solutio, coagulatio
+2. Check phase spelling (use hyphens, not underscores)
+3. List available phases: prompt-alchemy generate --help
+```
+
 #### Installation Issues
 ```bash
 # Issue: Go version too old
@@ -790,6 +1164,24 @@ Error: package not found
 go clean -modcache
 go mod download
 go build -o prompt-alchemy cmd/prompt-alchemy/main.go
+
+# Issue: Docker build fails
+Error: failed to solve: executor failed running [/bin/sh -c go build]
+
+# Solution: 
+1. Check Docker daemon is running
+2. Clear Docker cache: docker system prune -a
+3. Rebuild with --no-cache flag
+4. Check available disk space
+
+# Issue: Docker container won't start
+Error: container exits immediately
+
+# Solution:
+1. Check logs: docker-compose logs
+2. Verify environment variables in .env file
+3. Check port conflicts: lsof -i :8080
+4. Ensure API keys are properly set
 ```
 
 #### Runtime Issues
@@ -834,29 +1226,47 @@ go build -o prompt-alchemy cmd/prompt-alchemy/main.go
 2. Start service: ollama serve
 3. Pull model: ollama pull gemma3:4b
 4. Test: curl http://localhost:11434/api/tags
+
+# Grok Setup
+1. Visit platform.grok.com
+2. Create account and get API key
+3. Test: curl -H "Authorization: Bearer YOUR_KEY" https://api.grok.com/v1/models
 ```
 
 ### Performance Optimization
 
 #### Speed Improvements
-- Use faster models (Flash vs Pro)
-- Reduce max_tokens for shorter responses
-- Enable parallel processing in config
-- Use local Ollama for development
-- Cache frequently used prompts
+- **Model Selection**: Use faster models (Flash vs Pro, GPT-4o-mini vs GPT-4)
+- **Token Limits**: Reduce max_tokens for shorter responses (256 for summaries, 1024 for code)
+- **Parallel Processing**: Enable `use_parallel: true` in config for concurrent generation
+- **Local Ollama**: Use for development to avoid API latency
+- **Prompt Caching**: Cache frequently used prompts to avoid regeneration
+- **Provider Fallbacks**: Configure multiple providers for automatic failover
+- **Phase Optimization**: Use selective phases (e.g., only coagulatio for final refinement)
 
 #### Cost Optimization  
-- Use cheaper models for development
-- Implement prompt caching
-- Monitor token usage
-- Use free tiers when available
-- Batch similar requests
+- **Development vs Production**: Use cheaper models for development (GPT-4o-mini, Gemini Flash)
+- **Prompt Caching**: Implement caching to avoid duplicate API calls
+- **Token Monitoring**: Track usage with `--verbose` flag and provider dashboards
+- **Free Tiers**: Utilize Google Gemini free tier for development
+- **Batch Operations**: Use batch_generate MCP tool for multiple requests
+- **Provider Selection**: Compare costs across providers (OpenRouter often cheaper)
+- **Smart Routing**: Use OpenRouter's auto-routing for cost optimization
 
 #### Memory Optimization
-- Limit concurrent requests
-- Clear old database entries
-- Monitor SQLite database size
-- Use streaming responses when available
+- **Concurrent Limits**: Set appropriate worker counts in batch operations
+- **Database Maintenance**: Regularly clean old entries with cleanup commands
+- **SQLite Optimization**: Monitor database size and implement rotation
+- **Streaming Responses**: Use streaming when available for large outputs
+- **Connection Pooling**: Reuse HTTP connections for multiple requests
+- **Embedding Optimization**: Use standardized dimensions (1536) for efficient storage
+
+#### Latency Optimization
+- **Geographic Proximity**: Choose providers with servers closest to your region
+- **Connection Reuse**: Implement HTTP keep-alive for multiple requests
+- **Timeout Configuration**: Set appropriate timeouts (30s for most, 60s for complex tasks)
+- **Network Optimization**: Use CDN or edge computing for global deployments
+- **Load Balancing**: Distribute requests across multiple provider instances
 
 ### Getting Help
 
@@ -882,23 +1292,23 @@ Include the following information:
 - **Discussions**: [Ask questions and share tips](https://github.com/jonwraymond/prompt-alchemy/discussions)
 - **Documentation**: [Complete documentation](https://jonwraymond.github.io/prompt-alchemy/)
 
-## The Alchemical Process
+## The Three-Phase Process
 
-Prompt Alchemy follows the ancient principles of transformation through three sacred phases:
+Prompt Alchemy uses a structured three-phase approach to systematically improve prompts:
 
-1. **Prima Materia (First Matter)** - The raw, unformed potential of your ideas
-   - *In practice*: Brainstorming and initial idea extraction
+1. **Prima Materia (Ideation Phase)** - Extract and explore core concepts
+   - *What it does*: Brainstorming and initial idea extraction
    - *Purpose*: Captures the core concept and explores possibilities
 
-2. **Solutio (Dissolution)** - Breaking down rigid structures into fluid, natural expression
-   - *In practice*: Converting ideas into conversational, human-readable language
+2. **Solutio (Refinement Phase)** - Convert ideas into natural language
+   - *What it does*: Converting ideas into conversational, human-readable language
    - *Purpose*: Makes prompts natural and accessible
 
-3. **Coagulatio (Crystallization)** - Solidifying the essence into its most potent form
-   - *In practice*: Refining for technical accuracy, precision, and clarity
+3. **Coagulatio (Finalization Phase)** - Polish to final, actionable form
+   - *What it does*: Refining for technical accuracy, precision, and clarity
    - *Purpose*: Creates the final, polished prompt ready for use
 
-Each phase can be powered by different AI providers, creating a unique alchemical blend optimized for different strengths.
+Each phase can use different AI providers, allowing you to optimize for different strengths (e.g., creativity vs. precision).
 
 ## Testing
 
@@ -1105,7 +1515,7 @@ go test -bench=. -benchmem -cpuprofile=cpu.prof ./...
 
 ## Architecture
 
-See [ARCHITECTURE.md](docs/architecture.md) for a detailed overview of the alchemical laboratory.
+See [ARCHITECTURE.md](docs/architecture.md) for a detailed overview of the system architecture.
 
 ## Contributing
 

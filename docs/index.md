@@ -78,7 +78,7 @@ Unlike manual prompt engineering, Prompt Alchemy provides a consistent, measurab
 
 ### Server Mode & Integration
 - [MCP Integration]({{ site.baseurl }}/mcp-integration) - Model Context Protocol server setup
-- [MCP API Reference]({{ site.baseurl }}/mcp-api-reference) - Detailed reference for all 15 MCP tools.
+- [MCP API Reference]({{ site.baseurl }}/mcp-api-reference) - Detailed reference for all 6 MCP tools.
 - [Learning Mode]({{ site.baseurl }}/learning-mode) - Adaptive learning configuration
 - [HTTP API Reference]({{ site.baseurl }}/http-api-reference) - RESTful API endpoints and models
 

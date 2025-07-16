@@ -72,6 +72,10 @@ func (m *MockOptimizerProvider) SupportsEmbeddings() bool {
 	return true
 }
 
+func (m *MockOptimizerProvider) SupportsStreaming() bool {
+	return false
+}
+
 func (m *MockOptimizerProvider) SetResponse(prompt, response string) {
 	m.responses[prompt] = response
 }
@@ -150,6 +154,10 @@ func (m *MockJudgeProvider) SupportsEmbeddings() bool {
 	return true
 }
 
+func (m *MockJudgeProvider) SupportsStreaming() bool {
+	return false
+}
+
 func (m *MockJudgeProvider) SetScore(prompt string, score float64) {
 	m.scores[prompt] = score
 }
@@ -162,11 +170,91 @@ func (m *MockJudgeProvider) SetError(prompt string, err error) {
 	m.errors[prompt] = err
 }
 
-func TestNewMetaPromptOptimizer(t *testing.T) {
+// MockStorage implements storage.StorageInterface for testing
+type MockStorage struct {
+	embeddingProvider string
+	embeddingModel    string
+	embeddingDims     int
+}
+
+func (m *MockStorage) Close() error                                                { return nil }
+func (m *MockStorage) SavePrompt(ctx context.Context, prompt *models.Prompt) error { return nil }
+func (m *MockStorage) SearchSimilarPrompts(ctx context.Context, embedding []float32, limit int) ([]*models.Prompt, error) {
+	return nil, nil
+}
+func (m *MockStorage) GetHighQualityHistoricalPrompts(ctx context.Context, limit int) ([]*models.Prompt, error) {
+	return nil, nil
+}
+func (m *MockStorage) SearchSimilarHighQualityPrompts(ctx context.Context, embedding []float32, minScore float64, limit int) ([]*models.Prompt, error) {
+	return nil, nil
+}
+func (m *MockStorage) SaveInteraction(ctx context.Context, interaction *models.UserInteraction) error {
+	return nil
+}
+func (m *MockStorage) SetEmbeddingConfig(provider, model string, dims int) {
+	m.embeddingProvider = provider
+	m.embeddingModel = model
+	m.embeddingDims = dims
+}
+func (m *MockStorage) GetEmbeddingConfig() (provider, model string, dims int) {
+	return m.embeddingProvider, m.embeddingModel, m.embeddingDims
+}
+
+// MockRegistry implements providers.RegistryInterface for testing
+type MockRegistry struct {
+	providers map[string]providers.Provider
+}
+
+func NewMockRegistry() *MockRegistry {
+	return &MockRegistry{
+		providers: make(map[string]providers.Provider),
+	}
+}
+
+func (m *MockRegistry) Get(name string) (providers.Provider, error) {
+	if provider, exists := m.providers[name]; exists {
+		return provider, nil
+	}
+	return nil, fmt.Errorf("provider %s not found", name)
+}
+
+func (m *MockRegistry) ListAvailable() []string {
+	var names []string
+	for name, provider := range m.providers {
+		if provider.IsAvailable() {
+			names = append(names, name)
+		}
+	}
+	return names
+}
+
+func (m *MockRegistry) ListEmbeddingCapableProviders() []string {
+	var names []string
+	for name, provider := range m.providers {
+		if provider.SupportsEmbeddings() {
+			names = append(names, name)
+		}
+	}
+	return names
+}
+
+// createTestOptimizer creates a new optimizer with mock dependencies for testing
+func createTestOptimizer() (*MetaPromptOptimizer, *MockOptimizerProvider, *MockJudgeProvider) {
 	provider := NewMockOptimizerProvider()
 	judgeProvider := NewMockJudgeProvider()
+	storage := &MockStorage{}
+	registry := NewMockRegistry()
 
-	optimizer := NewMetaPromptOptimizer(provider, judgeProvider)
+	// Register the providers in the registry so they can be found
+	registry.providers[provider.Name()] = provider
+	registry.providers[judgeProvider.Name()] = judgeProvider
+
+	optimizer := NewMetaPromptOptimizer(provider, judgeProvider, storage, registry)
+	return optimizer, provider, judgeProvider
+}
+
+func TestNewMetaPromptOptimizer(t *testing.T) {
+	optimizer, provider, _ := createTestOptimizer()
 
 	assert.NotNil(t, optimizer)
 	assert.Equal(t, provider, optimizer.provider)
@@ -174,9 +262,7 @@ func TestNewMetaPromptOptimizer(t *testing.T) {
 }
 
 func TestOptimizePromptSuccess(t *testing.T) {
-	provider := NewMockOptimizerProvider()
-	judgeProvider := NewMockJudgeProvider()
-	optimizer := NewMetaPromptOptimizer(provider, judgeProvider)
+	optimizer, _, _ := createTestOptimizer()
 
 	request := &OptimizationRequest{
 		OriginalPrompt:  "Write a function to calculate fibonacci",
@@ -214,9 +300,7 @@ func TestOptimizePromptSuccess(t *testing.T) {
 }
 
 func TestOptimizePromptTargetScoreReached(t *testing.T) {
-	provider := NewMockOptimizerProvider()
-	judgeProvider := NewMockJudgeProvider()
-	optimizer := NewMetaPromptOptimizer(provider, judgeProvider)
+	optimizer, _, judgeProvider := createTestOptimizer()
 
 	// Set high initial score to trigger early convergence
 	judgeProvider.SetScore("", 9.0)
@@ -244,9 +328,7 @@ func TestOptimizePromptTargetScoreReached(t *testing.T) {
 }
 
 func TestOptimizePromptMaxIterationsReached(t *testing.T) {
-	provider := NewMockOptimizerProvider()
-	judgeProvider := NewMockJudgeProvider()
-	optimizer := NewMetaPromptOptimizer(provider, judgeProvider)
+	optimizer, _, _ := createTestOptimizer()
 
 	request := &OptimizationRequest{
 		OriginalPrompt:  fibonacciPrompt,
@@ -270,9 +352,7 @@ func TestOptimizePromptMaxIterationsReached(t *testing.T) {
 }
 
 func TestOptimizePromptProviderError(t *testing.T) {
-	provider := NewMockOptimizerProvider()
-	judgeProvider := NewMockJudgeProvider()
-	optimizer := NewMetaPromptOptimizer(provider, judgeProvider)
+	optimizer, provider, _ := createTestOptimizer()
 
 	// Set provider to return error
 	provider.SetError("", errors.New("provider error"))
@@ -295,9 +375,7 @@ func TestOptimizePromptProviderError(t *testing.T) {
 }
 
 func TestOptimizePromptJudgeError(t *testing.T) {
-	provider := NewMockOptimizerProvider()
-	judgeProvider := NewMockJudgeProvider()
-	optimizer := NewMetaPromptOptimizer(provider, judgeProvider)
+	optimizer, _, judgeProvider := createTestOptimizer()
 
 	// Set judge to return error
 	judgeProvider.SetError("", errors.New("judge error"))
@@ -320,9 +398,7 @@ func TestOptimizePromptJudgeError(t *testing.T) {
 }
 
 func TestOptimizePromptImprovementTracking(t *testing.T) {
-	provider := NewMockOptimizerProvider()
-	judgeProvider := NewMockJudgeProvider()
-	optimizer := NewMetaPromptOptimizer(provider, judgeProvider)
+	optimizer, _, _ := createTestOptimizer()
 
 	request := &OptimizationRequest{
 		OriginalPrompt:  fibonacciPrompt,
@@ -359,9 +435,7 @@ func TestOptimizePromptImprovementTracking(t *testing.T) {
 }
 
 func TestOptimizePromptWithExamples(t *testing.T) {
-	provider := NewMockOptimizerProvider()
-	judgeProvider := NewMockJudgeProvider()
-	optimizer := NewMetaPromptOptimizer(provider, judgeProvider)
+	optimizer, _, _ := createTestOptimizer()
 
 	request := &OptimizationRequest{
 		OriginalPrompt:  "Write a sorting function",
@@ -393,9 +467,7 @@ func TestOptimizePromptWithExamples(t *testing.T) {
 }
 
 func TestOptimizePromptWithConstraints(t *testing.T) {
-	provider := NewMockOptimizerProvider()
-	judgeProvider := NewMockJudgeProvider()
-	optimizer := NewMetaPromptOptimizer(provider, judgeProvider)
+	optimizer, _, _ := createTestOptimizer()
 
 	request := &OptimizationRequest{
 		OriginalPrompt:  "Write a function",
@@ -416,9 +488,7 @@ func TestOptimizePromptWithConstraints(t *testing.T) {
 }
 
 func TestEvaluatePromptTestResponseGeneration(t *testing.T) {
-	provider := NewMockOptimizerProvider()
-	judgeProvider := NewMockJudgeProvider()
-	optimizer := NewMetaPromptOptimizer(provider, judgeProvider)
+	optimizer, _, _ := createTestOptimizer()
 
 	request := &OptimizationRequest{
 		OriginalPrompt:  "Write a test function",
@@ -444,9 +514,7 @@ func TestEvaluatePromptTestResponseGeneration(t *testing.T) {
 }
 
 func TestGenerateTestResponseWithExample(t *testing.T) {
-	provider := NewMockOptimizerProvider()
-	judgeProvider := NewMockJudgeProvider()
-	optimizer := NewMetaPromptOptimizer(provider, judgeProvider)
+	optimizer, _, _ := createTestOptimizer()
 
 	request := &OptimizationRequest{
 		Examples: []OptimizationExample{
@@ -466,9 +534,7 @@ func TestGenerateTestResponseWithExample(t *testing.T) {
 }
 
 func TestGenerateTestResponseWithoutExample(t *testing.T) {
-	provider := NewMockOptimizerProvider()
-	judgeProvider := NewMockJudgeProvider()
-	optimizer := NewMetaPromptOptimizer(provider, judgeProvider)
+	optimizer, _, _ := createTestOptimizer()
 
 	request := &OptimizationRequest{
 		TaskDescription: "Process data efficiently",
@@ -483,9 +549,7 @@ func TestGenerateTestResponseWithoutExample(t *testing.T) {
 }
 
 func TestGenerateTestResponseProviderError(t *testing.T) {
-	provider := NewMockOptimizerProvider()
-	judgeProvider := NewMockJudgeProvider()
-	optimizer := NewMetaPromptOptimizer(provider, judgeProvider)
+	optimizer, provider, _ := createTestOptimizer()
 
 	// Set provider to return error
 	provider.SetError("", errors.New("generation error"))
@@ -538,9 +602,7 @@ func TestGetOptimizationCriteriaDefaultGoals(t *testing.T) {
 
 // Benchmark tests for performance
 func BenchmarkOptimizePrompt(b *testing.B) {
-	provider := NewMockOptimizerProvider()
-	judgeProvider := NewMockJudgeProvider()
-	optimizer := NewMetaPromptOptimizer(provider, judgeProvider)
+	optimizer, _, _ := createTestOptimizer()
 
 	request := &OptimizationRequest{
 		OriginalPrompt:  "Write a function",
@@ -563,9 +625,7 @@ func BenchmarkOptimizePrompt(b *testing.B) {
 }
 
 func BenchmarkEvaluatePrompt(b *testing.B) {
-	provider := NewMockOptimizerProvider()
-	judgeProvider := NewMockJudgeProvider()
-	optimizer := NewMetaPromptOptimizer(provider, judgeProvider)
+	optimizer, _, _ := createTestOptimizer()
 
 	request := &OptimizationRequest{
 		TaskDescription: "Test task",

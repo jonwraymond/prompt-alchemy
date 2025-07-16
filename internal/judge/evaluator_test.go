@@ -85,6 +85,10 @@ func (m *MockJudgeProvider) SupportsEmbeddings() bool {
 	return true
 }
 
+func (m *MockJudgeProvider) SupportsStreaming() bool {
+	return false
+}
+
 func TestNewLLMJudge(t *testing.T) {
 	provider := NewMockJudgeProvider()
 	judge := NewLLMJudge(provider, testModelName)

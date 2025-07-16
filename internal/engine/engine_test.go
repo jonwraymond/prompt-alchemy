@@ -49,6 +49,8 @@ func (m *MockProvider) GetEmbedding(ctx context.Context, text string, registry p
 	return []float32{0.1, 0.2, 0.3}, nil
 }
 
+func (m *MockProvider) SupportsStreaming() bool { return false }
+
 func TestNewEngine(t *testing.T) {
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel)

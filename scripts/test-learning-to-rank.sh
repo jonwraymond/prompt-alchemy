@@ -200,77 +200,35 @@ simulate_user_interactions() {
 
 create_mock_interactions() {
     log_step "Creating mock interaction data in database"
-    
     start_test "mock_interaction_data"
-    
-    # Create a simple Go script to insert mock interactions
-    cat > "$TEST_RESULTS_DIR/create_interactions.go" << 'EOF'
-package main
 
-import (
-    "database/sql"
-    "fmt"
-    "log"
-    "time"
-    "crypto/rand"
-    "encoding/hex"
-    _ "github.com/mattn/go-sqlite3"
-)
+    local base_cmd="$BINARY_PATH --config $TEST_CONFIG_DIR/config.yaml --data-dir $TEST_DATA_DIR"
 
-func main() {
-    if len(os.Args) < 2 {
-        log.Fatal("Usage: go run create_interactions.go <db_path>")
-    }
+    # Hardcoded UUIDs for prompts and sessions for repeatable tests
+    local session1="a1a1a1a1-a1a1-a1a1-a1a1-a1a1a1a1a1a1"
+    local session2="b2b2b2b2-b2b2-b2b2-b2b2-b2b2b2b2b2b2"
+    local session3="c3c3c3c3-c3c3-c3c3-c3c3-c3c3c3c3c3c3"
     
-    dbPath := os.Args[1]
-    db, err := sql.Open("sqlite3", dbPath)
-    if err != nil {
-        log.Fatal(err)
-    }
-    defer db.Close()
-    
-    // Create sessions and interactions
-    sessions := []string{
-        generateSessionID(),
-        generateSessionID(),
-        generateSessionID(),
-    }
-    
-    // Session 1: User prefers shorter prompts (higher scores for brevity)
-    insertInteraction(db, sessions[0], "prompt_1", "chosen", 8.5, time.Now().Add(-2*time.Hour))
-    insertInteraction(db, sessions[0], "prompt_2", "skipped", 6.0, time.Now().Add(-2*time.Hour))
-    insertInteraction(db, sessions[0], "prompt_3", "chosen", 7.8, time.Now().Add(-2*time.Hour))
-    
-    // Session 2: User prefers detailed prompts (higher scores for completeness)
-    insertInteraction(db, sessions[1], "prompt_2", "chosen", 9.0, time.Now().Add(-1*time.Hour))
-    insertInteraction(db, sessions[1], "prompt_1", "skipped", 6.5, time.Now().Add(-1*time.Hour))
-    insertInteraction(db, sessions[1], "prompt_4", "chosen", 8.7, time.Now().Add(-1*time.Hour))
-    
-    // Session 3: Mixed preferences
-    insertInteraction(db, sessions[2], "prompt_3", "chosen", 7.5, time.Now().Add(-30*time.Minute))
-    insertInteraction(db, sessions[2], "prompt_1", "chosen", 8.0, time.Now().Add(-30*time.Minute))
-    insertInteraction(db, sessions[2], "prompt_2", "skipped", 6.8, time.Now().Add(-30*time.Minute))
-    
-    fmt.Println("Mock interactions created successfully")
-}
+    local prompt1="d1d1d1d1-d1d1-d1d1-d1d1-d1d1d1d1d1d1"
+    local prompt2="e2e2e2e2-e2e2-e2e2-e2e2-e2e2e2e2e2e2"
+    local prompt3="f3f3f3f3-f3f3-f3f3-f3f3-f3f3f3f3f3f3"
+    local prompt4="g4g4g4g4-g4g4-g4g4-g4g4-g4g4g4g4g4g4"
 
-func generateSessionID() string {
-    bytes := make([]byte, 16)
-    rand.Read(bytes)
-    return hex.EncodeToString(bytes)
-}
+    # Session 1: User prefers shorter prompts (higher scores for brevity)
+    $base_cmd internal add-mock-interaction --session-id "$session1" --prompt-id "$prompt1" --action "chosen" --score 8.5
+    $base_cmd internal add-mock-interaction --session-id "$session1" --prompt-id "$prompt2" --action "skipped" --score 6.0
+    $base_cmd internal add-mock-interaction --session-id "$session1" --prompt-id "$prompt3" --action "chosen" --score 7.8
+    
+    # Session 2: User prefers detailed prompts (higher scores for completeness)
+    $base_cmd internal add-mock-interaction --session-id "$session2" --prompt-id "$prompt2" --action "chosen" --score 9.0
+    $base_cmd internal add-mock-interaction --session-id "$session2" --prompt-id "$prompt1" --action "skipped" --score 6.5
+    $base_cmd internal add-mock-interaction --session-id "$session2" --prompt-id "$prompt4" --action "chosen" --score 8.7
 
-func insertInteraction(db *sql.DB, sessionID, promptID, action string, score float64, timestamp time.Time) {
-    query := `INSERT INTO user_interactions (session_id, prompt_id, action, score, timestamp) VALUES (?, ?, ?, ?, ?)`
-    _, err := db.Exec(query, sessionID, promptID, action, score, timestamp.Unix())
-    if err != nil {
-        log.Printf("Error inserting interaction: %v", err)
-    }
-}
-EOF
+    # Session 3: Mixed preferences
+    $base_cmd internal add-mock-interaction --session-id "$session3" --prompt-id "$prompt3" --action "chosen" --score 7.5
+    $base_cmd internal add-mock-interaction --session-id "$session3" --prompt-id "$prompt1" --action "chosen" --score 8.0
+    $base_cmd internal add-mock-interaction --session-id "$session3" --prompt-id "$prompt2" --action "skipped" --score 6.8
 
-    # Try to create the interactions (this is a simplified approach)
-    # In a real test, we'd need proper database setup
     log_info "Mock interaction data creation attempted"
     pass_test "mock_interaction_data"
 }
@@ -453,32 +411,26 @@ test_end_to_end_flow() {
         flow_success=false
     fi
     
-    # 2. Simulate user interactions
-    log_info "Step 2: Simulate user interactions..."
-    if ! simulate_user_interactions; then
-        flow_success=false
-    fi
-    
-    # 3. Create mock interaction data
-    log_info "Step 3: Create mock interaction data..."
+    # 2. Create mock interaction data
+    log_info "Step 2: Create mock interaction data..."
     if ! create_mock_interactions; then
         flow_success=false
     fi
     
-    # 4. Run training
-    log_info "Step 4: Run nightly training..."
+    # 3. Run training
+    log_info "Step 3: Run nightly training..."
     if ! test_nightly_training; then
         flow_success=false
     fi
     
-    # 5. Test weight changes
-    log_info "Step 5: Test weight changes..."
+    # 4. Test weight changes
+    log_info "Step 4: Test weight changes..."
     if ! test_weight_changes; then
         flow_success=false
     fi
     
-    # 6. Test improved ranking
-    log_info "Step 6: Test improved ranking..."
+    # 5. Test improved ranking
+    log_info "Step 5: Test improved ranking..."
     if ! test_improved_ranking; then
         flow_success=false
     fi

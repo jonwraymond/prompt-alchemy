@@ -47,14 +47,19 @@ providers:
     embedding_timeout: 5     # Embedding timeout in seconds
     generation_timeout: 120  # Generation timeout in seconds
 
+  grok:
+    api_key: "your-grok-api-key-here"
+    model: "grok-2-1212"
+    timeout: 30
+
 # Phase configurations - mix and match providers
 phases:
-  idea:
-    provider: "openai"        # Use ChatGPT for initial ideas
-  human:
-    provider: "claude"        # Use Claude for humanization
-  precision:
-    provider: "gemini"        # Use Gemini for optimization
+  prima-materia:
+    provider: "openai"        # Use ChatGPT for raw essence extraction
+  solutio:
+    provider: "claude"        # Use Claude for natural language flow
+  coagulatio:
+    provider: "gemini"        # Use Gemini for precision crystallization
 
 # Embedding configuration - STANDARDIZED for optimal search coverage
 embeddings:

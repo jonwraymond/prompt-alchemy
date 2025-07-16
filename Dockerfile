@@ -38,8 +38,8 @@ RUN mkdir -p /app/data /app/internal/storage
 # Set working directory
 WORKDIR /app
 
-# Set the entrypoint to run HTTP server mode with config
-ENTRYPOINT ["prompt-alchemy", "http-server", "--config", "/app/config.yaml", "--host", "0.0.0.0", "--port", "8080"]
+# Set the entrypoint to run HTTP API server mode with config
+ENTRYPOINT ["prompt-alchemy", "serve", "api", "--config", "/app/config.yaml", "--host", "0.0.0.0", "--port", "8080"]
 
 # Expose HTTP port for REST API
 EXPOSE 8080 

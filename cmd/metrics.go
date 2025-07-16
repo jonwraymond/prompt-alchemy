@@ -142,39 +142,14 @@ func runMetrics(cmd *cobra.Command, args []string) error {
 	}
 
 	// Get prompts for analysis
-	criteria := storage.SearchCriteria{
-		Phase:    metricsPhase,
-		Provider: metricsProvider,
-		Since:    sinceTime,
-		Limit:    metricsLimit,
-	}
-	logger.Debugf("Searching prompts with criteria: %+v", criteria)
-
-	prompts, err := store.SearchPrompts(criteria)
+	prompts, err := store.GetHighQualityHistoricalPrompts(cmd.Context(), metricsLimit)
 	if err != nil {
 		return fmt.Errorf("failed to fetch prompts: %w", err)
 	}
 	logger.Infof("Found %d prompts to analyze", len(prompts))
 
-	// Get metrics data (if available)
-	metricsCriteria := storage.MetricsCriteria{
-		Phase:    metricsPhase,
-		Provider: metricsProvider,
-		Since:    sinceTime,
-		Limit:    metricsLimit,
-	}
-	logger.Debugf("Fetching metrics with criteria: %+v", metricsCriteria)
-
-	metricsData, err := store.GetMetrics(metricsCriteria)
-	if err != nil {
-		// Metrics may not be available, continue without them
-		logger.WithError(err).Warn("Failed to fetch metrics data")
-		metricsData = []models.PromptMetrics{}
-	}
-	logger.Infof("Found %d metrics data points", len(metricsData))
-
 	// Analyze prompts and generate report
-	result := analyzePrompts(prompts, metricsData)
+	result := analyzePrompts(prompts, nil)
 
 	if metricsOutput == "json" {
 		return outputMetricsJSON(result)
@@ -183,9 +158,9 @@ func runMetrics(cmd *cobra.Command, args []string) error {
 	return outputMetricsText(result, metricsReport)
 }
 
-func analyzePrompts(prompts []models.Prompt, metrics []models.PromptMetrics) MetricsResult {
+func analyzePrompts(prompts []*models.Prompt, metrics []models.PromptMetrics) MetricsResult {
 	logger := log.GetLogger()
-	logger.Debugf("Analyzing %d prompts and %d metrics", len(prompts), len(metrics))
+	logger.Debugf("Analyzing %d prompts", len(prompts))
 	summary := MetricsSummary{
 		TotalPrompts: len(prompts),
 	}

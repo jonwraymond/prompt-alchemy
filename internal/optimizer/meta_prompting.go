@@ -8,6 +8,7 @@ import (
 
 	"github.com/jonwraymond/prompt-alchemy/internal/judge"
 	log "github.com/jonwraymond/prompt-alchemy/internal/log"
+	"github.com/jonwraymond/prompt-alchemy/internal/storage"
 	"github.com/jonwraymond/prompt-alchemy/pkg/models"
 	"github.com/jonwraymond/prompt-alchemy/pkg/providers"
 )
@@ -16,6 +17,8 @@ import (
 type MetaPromptOptimizer struct {
 	provider providers.Provider
 	judge    *judge.LLMJudge
+	storage  storage.StorageInterface
+	registry providers.RegistryInterface
 }
 
 // OptimizationRequest contains parameters for prompt optimization
@@ -61,10 +64,12 @@ type OptimizationIteration struct {
 }
 
 // NewMetaPromptOptimizer creates a new meta-prompt optimizer
-func NewMetaPromptOptimizer(provider providers.Provider, judgeProvider providers.Provider) *MetaPromptOptimizer {
+func NewMetaPromptOptimizer(provider providers.Provider, judgeProvider providers.Provider, storage storage.StorageInterface, registry providers.RegistryInterface) *MetaPromptOptimizer {
 	return &MetaPromptOptimizer{
 		provider: provider,
 		judge:    judge.NewLLMJudge(judgeProvider, ""),
+		storage:  storage,
+		registry: registry,
 	}
 }
 
@@ -78,6 +83,23 @@ func (o *MetaPromptOptimizer) OptimizePrompt(ctx context.Context, request *Optim
 		Iterations:  make([]OptimizationIteration, 0),
 		TotalTime:   0,
 		ConvergedAt: -1,
+	}
+
+	// Find similar successful optimizations from history
+	var historicalExamples []OptimizationExample
+	if o.storage != nil && o.registry != nil {
+		examples, err := o.findSimilarSuccessfulOptimizations(ctx, request.OriginalPrompt, request.TaskDescription)
+		if err != nil {
+			logger.WithError(err).Warn("Failed to find historical optimizations, continuing without them")
+		} else {
+			historicalExamples = examples
+			logger.Infof("Found %d similar successful optimizations from history", len(historicalExamples))
+		}
+	}
+
+	// Add historical examples to the request
+	if len(historicalExamples) > 0 {
+		request.Examples = append(request.Examples, historicalExamples...)
 	}
 
 	currentPrompt := request.OriginalPrompt
@@ -231,6 +253,16 @@ func (o *MetaPromptOptimizer) buildMetaPrompt(currentPrompt string, evaluation *
 	constraintsText := strings.Join(request.Constraints, "\n- ")
 	improvementsText := strings.Join(evaluation.Improvements, "\n- ")
 
+	// Separate historical examples from user-provided examples
+	var historicalExamples, userExamples []OptimizationExample
+	for _, example := range request.Examples {
+		if example.Quality >= 7.0 {
+			historicalExamples = append(historicalExamples, example)
+		} else {
+			userExamples = append(userExamples, example)
+		}
+	}
+
 	template := `You are an expert prompt engineer specializing in %s tasks. Your job is to improve prompts to achieve better performance.
 
 Current Prompt:
@@ -251,10 +283,9 @@ Constraints:
 - Only make necessary improvements
 - Ensure clarity and specificity
 
-Examples (if available):
-%s
+%s%s
 
-Please provide an improved version of the prompt that addresses the evaluation feedback. 
+Please provide an improved version of the prompt that addresses the evaluation feedback. Learn from the successful historical examples when applicable.
 
 FORMAT YOUR RESPONSE AS:
 REASONING: [Explain your specific changes and why they improve the prompt]
@@ -263,10 +294,21 @@ IMPROVED PROMPT:
 [Your improved prompt here]`
 
 	personaContext := string(request.PersonaType)
-	examplesText := o.formatExamples(request.Examples)
+
+	// Format historical examples section
+	historicalText := ""
+	if len(historicalExamples) > 0 {
+		historicalText = "Successful Historical Examples (similar high-quality prompts from the database):\n" + o.formatExamples(historicalExamples) + "\n\n"
+	}
+
+	// Format user examples section
+	userText := ""
+	if len(userExamples) > 0 {
+		userText = "User-Provided Examples:\n" + o.formatExamples(userExamples) + "\n\n"
+	}
 
 	return fmt.Sprintf(template, personaContext, currentPrompt, evaluation.OverallScore,
-		improvementsText, request.TaskDescription, constraintsText, examplesText)
+		improvementsText, request.TaskDescription, constraintsText, historicalText, userText)
 }
 
 // parseMetaPromptResponse extracts the improved prompt and reasoning from the response
@@ -340,4 +382,63 @@ func (o *MetaPromptOptimizer) GenerateOptimizedSystemPrompt(ctx context.Context,
 	}
 
 	return optimizedPrompt, nil
+}
+
+// findSimilarSuccessfulOptimizations searches for similar prompts with high scores in the vector database
+func (o *MetaPromptOptimizer) findSimilarSuccessfulOptimizations(ctx context.Context, originalPrompt, taskDescription string) ([]OptimizationExample, error) {
+	logger := log.GetLogger()
+	logger.Debug("Searching for similar successful optimizations")
+
+	// Combine prompt and task for embedding generation
+	searchText := originalPrompt + "\n\nTask: " + taskDescription
+
+	// Get embedding provider
+	var embeddingProvider providers.Provider
+	embeddingProviders := o.registry.ListEmbeddingCapableProviders()
+	if len(embeddingProviders) == 0 {
+		return nil, fmt.Errorf("no embedding-capable providers available")
+	}
+
+	embeddingProvider, err := o.registry.Get(embeddingProviders[0])
+	if err != nil {
+		return nil, fmt.Errorf("failed to get embedding provider: %w", err)
+	}
+
+	// Generate embedding for the search text
+	embedding, err := embeddingProvider.GetEmbedding(ctx, searchText, o.registry)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate embedding: %w", err)
+	}
+
+	// Search for similar high-quality prompts (minimum score of 7.0)
+	minScore := 7.0
+	limit := 5
+	similarPrompts, err := o.storage.SearchSimilarHighQualityPrompts(ctx, embedding, minScore, limit)
+	if err != nil {
+		return nil, fmt.Errorf("failed to search similar prompts: %w", err)
+	}
+
+	// Convert to optimization examples
+	examples := make([]OptimizationExample, 0, len(similarPrompts))
+	for _, prompt := range similarPrompts {
+		// Skip if it's the same prompt
+		if prompt.Content == originalPrompt {
+			continue
+		}
+
+		example := OptimizationExample{
+			Input:          prompt.OriginalInput,
+			ExpectedOutput: prompt.Content,
+			Quality:        prompt.RelevanceScore,
+		}
+		examples = append(examples, example)
+	}
+
+	logger.WithFields(map[string]interface{}{
+		"found_prompts":   len(similarPrompts),
+		"usable_examples": len(examples),
+		"min_score":       minScore,
+	}).Debug("Completed search for similar successful optimizations")
+
+	return examples, nil
 }

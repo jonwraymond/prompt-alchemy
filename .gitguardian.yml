@@ -1,0 +1,37 @@
+# GitGuardian configuration file
+# This file configures GitGuardian secret scanning
+
+# Version of the configuration file
+version: 2
+
+# Paths to ignore during secret scanning
+# These files contain example/test API keys used for testing sanitization functionality
+paths-ignore:
+  # Test files containing example API keys for testing log sanitization
+  - internal/log/sanitize_test.go
+  - internal/log/log_test.go
+  - "**/test/**"
+  - "**/*_test.go"
+
+# Specific secrets to ignore (example/test keys)
+secrets-ignore:
+  # Example Google API key used in tests
+  - name: "Test Google API Key"
+    match: "AIzaSyB1234567890abcdefghijklmnopqrstuv"
+    
+  # Example API keys pattern used in tests
+  - name: "Test API Keys"
+    match: "sk-test[0-9]{32}"
+    
+  # Example Anthropic test key
+  - name: "Test Anthropic Key"
+    match: "sk-ant-test[0-9]{32}"
+    
+  # Example Grok/xAI test key
+  - name: "Test Grok Key"
+    match: "xai-test[0-9]{32}"
+
+# Additional notes for security team
+# These are intentionally placed example keys in test files to verify
+# that our log sanitization correctly redacts real API keys.
+# No actual secrets are exposed.

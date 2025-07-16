@@ -49,14 +49,14 @@ func runProviders(cmd *cobra.Command, args []string) error {
 
 	// Create a tabwriter for nice formatting
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	if _, err := fmt.Fprintln(w, "Provider\tStatus\tGeneration\tEmbeddings\tModel"); err != nil {
+	if _, err := fmt.Fprintln(w, "Provider\tStatus\tGeneration\tEmbeddings\tModel\tEmbedding Model"); err != nil {
 		return fmt.Errorf("failed to write header: %w", err)
 	}
-	if _, err := fmt.Fprintln(w, "--------\t------\t----------\t----------\t-----"); err != nil {
+	if _, err := fmt.Fprintln(w, "--------\t------\t----------\t----------\t-----\t---------------"); err != nil {
 		return fmt.Errorf("failed to write separator: %w", err)
 	}
 
-	allProviders := []string{"openai", "openrouter", "anthropic", "google", "ollama"}
+	allProviders := []string{"openai", "openrouter", "anthropic", "google", "ollama", "grok"}
 
 	for _, providerName := range allProviders {
 		provider, err := registry.Get(providerName)
@@ -64,6 +64,7 @@ func runProviders(cmd *cobra.Command, args []string) error {
 		generation := "❌"
 		embeddings := "❌"
 		model := "N/A"
+		embeddingModel := "N/A"
 
 		if err == nil && provider.IsAvailable() {
 			status = "✅ Available"
@@ -71,8 +72,27 @@ func runProviders(cmd *cobra.Command, args []string) error {
 
 			if provider.SupportsEmbeddings() {
 				embeddings = "✅"
+				// Get embedding model for each provider
+				switch providerName {
+				case "openai":
+					embeddingModel = viper.GetString("providers.openai.embedding_model")
+					if embeddingModel == "" {
+						embeddingModel = "text-embedding-3-small"
+					}
+				case "openrouter":
+					embeddingModel = viper.GetString("providers.openrouter.embedding_model")
+					if embeddingModel == "" {
+						embeddingModel = "openai/text-embedding-3-small"
+					}
+				case "ollama":
+					embeddingModel = viper.GetString("providers.ollama.embedding_model")
+					if embeddingModel == "" {
+						embeddingModel = "nomic-embed-text"
+					}
+				}
 			} else {
 				embeddings = "❌ (fallback available)"
+				embeddingModel = "Uses fallback"
 			}
 
 			// Get configured model
@@ -87,6 +107,8 @@ func runProviders(cmd *cobra.Command, args []string) error {
 				model = viper.GetString("providers.google.model")
 			case "ollama":
 				model = viper.GetString("providers.ollama.model")
+			case "grok":
+				model = viper.GetString("providers.grok.model")
 			}
 
 			if model == "" {
@@ -94,7 +116,7 @@ func runProviders(cmd *cobra.Command, args []string) error {
 			}
 		}
 
-		if _, err := fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n", providerName, status, generation, embeddings, model); err != nil {
+		if _, err := fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\n", providerName, status, generation, embeddings, model, embeddingModel); err != nil {
 			return fmt.Errorf("failed to write provider info: %w", err)
 		}
 	}
@@ -139,9 +161,9 @@ func runProviders(cmd *cobra.Command, args []string) error {
 	fmt.Println()
 	fmt.Println("🎯 Current Phase Assignments")
 	fmt.Println("============================")
-	fmt.Printf("• Idea Phase: %s\n", viper.GetString("phases.idea.provider"))
-	fmt.Printf("• Human Phase: %s\n", viper.GetString("phases.human.provider"))
-	fmt.Printf("• Precision Phase: %s\n", viper.GetString("phases.precision.provider"))
+	fmt.Printf("• Prima Materia Phase: %s\n", viper.GetString("phases.prima-materia.provider"))
+	fmt.Printf("• Solutio Phase: %s\n", viper.GetString("phases.solutio.provider"))
+	fmt.Printf("• Coagulatio Phase: %s\n", viper.GetString("phases.coagulatio.provider"))
 
 	return nil
 }

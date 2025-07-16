@@ -46,8 +46,8 @@ func init() {
 	httpCmd.Flags().StringVar(&httpHost, "host", "localhost", "HTTP server host")
 	httpCmd.Flags().IntVar(&httpPort, "port", 3456, "HTTP server port")
 
-	viper.BindPFlag("http.host", httpCmd.Flags().Lookup("host"))
-	viper.BindPFlag("http.port", httpCmd.Flags().Lookup("port"))
+	_ = viper.BindPFlag("http.host", httpCmd.Flags().Lookup("host"))
+	_ = viper.BindPFlag("http.port", httpCmd.Flags().Lookup("port"))
 }
 
 func runHTTPServer(cmd *cobra.Command, args []string) error {
@@ -59,7 +59,7 @@ func runHTTPServer(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to initialize storage: %w", err)
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	// Initialize providers
 	registry := providers.NewRegistry()
@@ -72,7 +72,11 @@ func runHTTPServer(cmd *cobra.Command, args []string) error {
 
 	// Initialize ranking
 	ranker := ranking.NewRanker(store, registry, logger)
-	defer ranker.Close()
+	defer func() {
+		if err := ranker.Close(); err != nil {
+			logger.WithError(err).Warn("Failed to close ranker")
+		}
+	}()
 
 	// Initialize learning engine if enabled
 	var learner *learning.LearningEngine

@@ -161,3 +161,8 @@ func (p *OllamaProvider) IsAvailable() bool {
 func (p *OllamaProvider) SupportsEmbeddings() bool {
 	return true // Ollama supports embeddings with appropriate models
 }
+
+// SupportsStreaming checks if the provider supports streaming generation
+func (p *OllamaProvider) SupportsStreaming() bool {
+	return true // Ollama supports streaming
+}

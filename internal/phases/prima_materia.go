@@ -4,49 +4,57 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/jonwraymond/prompt-alchemy/internal/templates"
 	"github.com/jonwraymond/prompt-alchemy/pkg/models"
 )
 
 type PrimaMateria struct{}
 
 func (p *PrimaMateria) GetTemplate() string {
-	return `You are an alchemical prompt engineer, working with the Prima Materia - the raw, unformed potential. Extract and shape the essential elements from the user's vision into a comprehensive prompt that generates {{TYPE}} for {{AUDIENCE}}, using {{TONE}}, focusing on {{THEME}}.
-
-Requirements:
-- Extract the pure essence of the request
-- Shape raw ideas into structured form
-- Define the vessel (output format) clearly
-- Consider all elemental aspects
-
-Raw Material: {{INPUT}}`
+	return "prima_materia" // Return template name for new system
 }
 
 func (p *PrimaMateria) BuildSystemPrompt(opts models.GenerateOptions) string {
-	baseSystem := "You are a master alchemist of language, transforming raw ideas into golden prompts through ancient processes."
-	return baseSystem + " In this Prima Materia phase, extract the pure essence from raw materials to create the foundation stone of comprehensive, well-structured prompts."
+	tmpl, err := templates.LoadPhaseSystemPrompt("prima_materia")
+	if err != nil {
+		// Fallback to embedded system prompt
+		return "You are an expert at analyzing user requirements and creating well-structured prompts. Your specialty is transforming rough ideas and requests into comprehensive, organized prompts that effectively communicate the user's intentions and requirements."
+	}
+
+	systemPrompt, err := templates.ExecuteTemplate(tmpl, nil)
+	if err != nil {
+		// Fallback to embedded system prompt
+		return "You are an expert at analyzing user requirements and creating well-structured prompts. Your specialty is transforming rough ideas and requests into comprehensive, organized prompts that effectively communicate the user's intentions and requirements."
+	}
+	return systemPrompt
 }
 
 func (p *PrimaMateria) PreparePromptContent(input string, opts models.GenerateOptions) string {
-	template := p.GetTemplate()
+	templateName := p.GetTemplate()
 
-	replacements := map[string]string{
-		"{{INPUT}}":    input,
-		"{{TYPE}}":     extractType(input),
-		"{{AUDIENCE}}": extractAudience(input),
-		"{{TONE}}":     extractTone(input),
-		"{{THEME}}":    extractTheme(input),
+	// Create template context
+	context := &templates.PhaseContext{
+		Input:    input,
+		Context:  opts.Request.Context,
+		Phase:    "prima_materia",
+		Type:     extractType(input),
+		Audience: extractAudience(input),
+		Tone:     extractTone(input),
+		Theme:    extractTheme(input),
 	}
 
-	content := template
-	for placeholder, value := range replacements {
-		content = strings.ReplaceAll(content, placeholder, value)
+	// Add persona and target model if available
+	if opts.Persona != "" {
+		context.Persona = opts.Persona
+	}
+	if opts.TargetModel != "" {
+		context.TargetModel = opts.TargetModel
 	}
 
-	if len(opts.Request.Context) > 0 {
-		content += "\n\nAdditional Context:\n"
-		for _, ctx := range opts.Request.Context {
-			content += fmt.Sprintf("- %s\n", ctx)
-		}
+	content, err := templates.ExecutePhaseTemplate(templateName, context)
+	if err != nil {
+		// Fallback to simple content if template execution fails
+		return fmt.Sprintf("Analyze the following user input and create a comprehensive, well-structured prompt:\n\nUser Input: %s", input)
 	}
 
 	return content

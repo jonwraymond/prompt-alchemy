@@ -21,9 +21,9 @@ This is the first stable release of Prompt-Alchemy, a sophisticated AI prompt ge
 - **Ollama**: Local AI support for offline development
 
 #### 🎯 Phased Prompt Generation
-- **Idea Phase**: Creative brainstorming and initial concept generation
-- **Human Phase**: Human-like refinement and natural language enhancement
-- **Precision Phase**: Technical precision and task-specific optimization
+- **Prima Materia**: Extract raw essence and initial concept generation
+- **Solutio**: Dissolve into natural, flowing language
+- **Coagulatio**: Crystallize into precise, production-ready form
 - **Configurable Pipeline**: Mix and match phases for custom workflows
 
 #### 🎭 AI Personas
@@ -61,7 +61,7 @@ This is the first stable release of Prompt-Alchemy, a sophisticated AI prompt ge
 
 #### 📡 MCP Server Mode
 - **Model Context Protocol**: Full MCP server implementation
-- **18 Available Tools**: Complete functionality exposure via MCP
+- **6 Available Tools**: Essential functionality exposure via MCP
 - **Batch Operations**: MCP support for bulk prompt generation
 - **Configuration Management**: Runtime config validation and testing
 - **Provider Testing**: Connectivity and functionality verification
@@ -120,31 +120,19 @@ This is the first stable release of Prompt-Alchemy, a sophisticated AI prompt ge
 | `migrate` | Database operations | Schema updates and data migration |
 | `version` | System information | Version details and build info |
 
-### 🎯 MCP Tools (18 Available)
+### 🎯 MCP Tools (6 Available)
 
 #### Core Generation Tools
-- `generate_prompts` - Multi-phase prompt generation
-- `batch_generate_prompts` - Bulk processing with worker pools
+- `generate_prompts` - Multi-phase prompt generation with phased approach
+- `batch_generate` - Bulk processing with worker pools
 - `optimize_prompt` - AI-powered prompt enhancement
 - `search_prompts` - Text and semantic search capabilities
 
 #### Data Management Tools
-- `update_prompt` - Modify existing prompt content and metadata
-- `delete_prompt` - Safe prompt deletion
-- `get_prompt_by_id` - Detailed prompt retrieval
-- `track_prompt_relationship` - Relationship and ancestry tracking
-
-#### Analytics & Monitoring Tools
-- `get_metrics` - Performance analytics and usage statistics
-- `get_database_stats` - Database health and lifecycle information
-- `run_lifecycle_maintenance` - Automated cleanup and optimization
+- `get_prompt` - Detailed prompt retrieval by ID
 
 #### System Management Tools
-- `get_providers` - Available provider information
-- `test_providers` - Provider connectivity and functionality testing
-- `get_config` - Current configuration and system status
-- `validate_config` - Configuration validation with auto-fixes
-- `get_version` - Version and build information
+- `list_providers` - Available provider information and status
 
 ### 🔧 Installation & Setup
 
@@ -179,13 +167,13 @@ providers:
     model: "claude-4-sonnet-20250522"
 
 phases:
-  idea:
+  prima-materia:
     provider: "openrouter"
     temperature: 0.9
-  human:
+  solutio:
     provider: "anthropic"
     temperature: 0.7
-  precision:
+  coagulatio:
     provider: "openai"
     temperature: 0.5
 ```

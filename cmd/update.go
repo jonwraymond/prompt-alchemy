@@ -68,7 +68,7 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 	}()
 
 	// Get existing prompt
-	prompt, err := store.GetPrompt(promptID)
+	prompt, err := store.GetPromptByID(cmd.Context(), promptID)
 	if err != nil {
 		return fmt.Errorf("failed to get prompt: %w", err)
 	}
@@ -113,7 +113,7 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 	}
 
 	// Update the prompt
-	err = store.UpdatePrompt(prompt)
+	err = store.SavePrompt(cmd.Context(), prompt)
 	if err != nil {
 		return fmt.Errorf("failed to update prompt: %w", err)
 	}

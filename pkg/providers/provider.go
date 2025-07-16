@@ -15,6 +15,11 @@ const (
 	ProviderGoogle     = "google"
 	ProviderOllama     = "ollama"
 	ProviderOpenRouter = "openrouter"
+	ProviderGrok       = "grok"
+)
+
+const (
+	DefaultRetries = 3
 )
 
 // Default configuration constants
@@ -26,6 +31,12 @@ const (
 	DefaultMaxFlashTokens    = 8192 // Gemini 2.5 Flash supports 8k output tokens
 	DefaultMaxTokens         = 256
 	DefaultMaxTemperature    = 2.0
+	DefaultGoogleModel       = "gemini-1.5-flash"
+
+	DefaultGrokModel = "grok-4"
+
+	DefaultOllamaModel          = "llama3"
+	DefaultOllamaEmbeddingModel = "nomic-embed-text"
 )
 
 // Provider defines the interface for LLM providers
@@ -44,18 +55,22 @@ type Provider interface {
 
 	// SupportsEmbeddings checks if the provider supports embedding generation
 	SupportsEmbeddings() bool
+
+	// SupportsStreaming checks if the provider supports streaming generation
+	SupportsStreaming() bool
 }
 
-// GenerateRequest contains the request parameters for prompt generation
+// GenerateRequest represents a request to generate a prompt
 type GenerateRequest struct {
+	SystemPrompt string
 	Prompt       string
+	Examples     []Example
 	Temperature  float64
 	MaxTokens    int
-	SystemPrompt string
-	Examples     []Example
+	Stream       bool
 }
 
-// Example represents an example for few-shot learning
+// Example represents a few-shot learning example
 type Example struct {
 	Input  string
 	Output string
@@ -68,27 +83,37 @@ type GenerateResponse struct {
 	Model      string
 }
 
+// GenerateResponseChunk represents a chunk of a streamed generation response
+type GenerateResponseChunk struct {
+	ContentDelta string
+	TokensUsed   int
+	Model        string
+	Done         bool
+	Error        error
+}
+
 // Config contains provider configuration
 type Config struct {
 	APIKey          string
 	BaseURL         string
 	Model           string
-	MaxRetries      int
+	EmbeddingModel  string
 	Timeout         int
-	FallbackModels  []string               // OpenRouter fallback models
-	ProviderRouting map[string]interface{} // OpenRouter provider routing config
+	Retries         int
+	FallbackModels  []string
+	ProviderRouting map[string]interface{}
 
 	// Google-specific configuration
-	SafetyThreshold string  `mapstructure:"safety_threshold"` // Default: "BLOCK_MEDIUM_AND_ABOVE"
-	MaxProTokens    int     `mapstructure:"max_pro_tokens"`   // Default: 1024
-	MaxFlashTokens  int     `mapstructure:"max_flash_tokens"` // Default: 512
-	DefaultTokens   int     `mapstructure:"default_tokens"`   // Default: 256
-	MaxTemperature  float64 `mapstructure:"max_temperature"`  // Default: 2.0
+	SafetyThreshold string  `mapstructure:"safety_threshold"`
+	MaxProTokens    int     `mapstructure:"max_pro_tokens"`
+	MaxFlashTokens  int     `mapstructure:"max_flash_tokens"`
+	DefaultTokens   int     `mapstructure:"default_tokens"`
+	MaxTemperature  float64 `mapstructure:"max_temperature"`
 
 	// Ollama-specific configuration
-	DefaultEmbeddingModel string `mapstructure:"default_embedding_model"` // Default: "nomic-embed-text"
-	EmbeddingTimeout      int    `mapstructure:"embedding_timeout"`       // Default: 5 seconds
-	GenerationTimeout     int    `mapstructure:"generation_timeout"`      // Default: 120 seconds
+	DefaultEmbeddingModel string `mapstructure:"default_embedding_model"`
+	EmbeddingTimeout      int    `mapstructure:"embedding_timeout"`
+	GenerationTimeout     int    `mapstructure:"generation_timeout"`
 }
 
 // RegistryInterface defines the methods needed for ranking (subset of full Registry).

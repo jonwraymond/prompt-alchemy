@@ -160,11 +160,14 @@ type PhaseConfig struct {
 
 // GenerateOptions contains options for prompt generation
 type GenerateOptions struct {
-	Request        PromptRequest
-	PhaseConfigs   []PhaseConfig
-	UseParallel    bool
-	IncludeContext bool
-	Persona        string
-	TargetModel    string
-	AutoSelect     bool `json:"auto_select,omitempty"`
+	Request             PromptRequest
+	PhaseConfigs        []PhaseConfig
+	UseParallel         bool
+	IncludeContext      bool
+	Persona             string
+	TargetModel         string
+	AutoSelect          bool    `json:"auto_select,omitempty"`
+	Optimize            bool    `json:"optimize,omitempty"`
+	OptimizeTargetScore float64 `json:"optimize_target_score,omitempty"`
+	OptimizeMaxIter     int     `json:"optimize_max_iterations,omitempty"`
 }

@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"github.com/jonwraymond/prompt-alchemy/internal/optimizer"
+	"github.com/jonwraymond/prompt-alchemy/internal/storage"
+	"github.com/jonwraymond/prompt-alchemy/pkg/client"
 	"github.com/jonwraymond/prompt-alchemy/pkg/models"
 	"github.com/jonwraymond/prompt-alchemy/pkg/providers"
 
@@ -20,8 +22,8 @@ var (
 	optimizeTargetModel         string
 	optimizeProvider            string
 	optimizeJudgeProvider       string
-	optimizeMaxIter             int
-	optimizeTargetScore         float64
+	optimizeCmdMaxIter          int
+	optimizeCmdTargetScore      float64
 	optimizeEmbeddingDimensions int
 )
 
@@ -44,8 +46,8 @@ func init() {
 	optimizeCmd.Flags().StringVarP(&optimizePrompt, "prompt", "p", "", "Prompt to optimize (required)")
 	optimizeCmd.Flags().StringVar(&optimizePersona, "persona", "code", "AI persona to use (code, writing, analysis, generic)")
 	optimizeCmd.Flags().StringVar(&optimizeTargetModel, "target-model", "", "Target model for optimization (auto-detected if not specified)")
-	optimizeCmd.Flags().IntVar(&optimizeMaxIter, "max-iterations", 5, "Maximum optimization iterations")
-	optimizeCmd.Flags().Float64Var(&optimizeTargetScore, "target-score", 8.5, "Target quality score (1-10)")
+	optimizeCmd.Flags().IntVar(&optimizeCmdMaxIter, "max-iterations", 5, "Maximum optimization iterations")
+	optimizeCmd.Flags().Float64Var(&optimizeCmdTargetScore, "target-score", 8.5, "Target quality score (1-10)")
 	optimizeCmd.Flags().StringVarP(&optimizeTask, "task", "t", "", "Task description for testing (required)")
 	optimizeCmd.Flags().StringVar(&optimizeProvider, "provider", "", "Provider to use for optimization")
 	optimizeCmd.Flags().StringVar(&optimizeJudgeProvider, "judge-provider", "", "Provider to use for evaluation (defaults to main provider)")
@@ -136,8 +138,37 @@ func runOptimize(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Create optimizer
-	opt := optimizer.NewMetaPromptOptimizer(optimizationProvider, judgeProvider)
+	// Initialize storage for historical learning
+	var store storage.StorageInterface
+	if !viper.GetBool("client.mode") && !client.IsServerMode() {
+		s, err := storage.NewStorage(viper.GetString("data_dir"), logger)
+		if err != nil {
+			logger.WithError(err).Warn("Failed to initialize storage, continuing without historical learning")
+		} else {
+			store = s
+			defer func() {
+				if err := store.Close(); err != nil {
+					logger.WithError(err).Warn("Failed to close storage")
+				}
+			}()
+
+			// Set embedding configuration from config if available
+			embeddingProvider := viper.GetString("embeddings.provider")
+			embeddingModel := viper.GetString("embeddings.model")
+			embeddingDims := viper.GetInt("embeddings.dimensions")
+			if embeddingProvider != "" && embeddingModel != "" && embeddingDims > 0 {
+				s.SetEmbeddingConfig(embeddingProvider, embeddingModel, embeddingDims)
+				logger.WithFields(map[string]interface{}{
+					"provider": embeddingProvider,
+					"model":    embeddingModel,
+					"dims":     embeddingDims,
+				}).Info("Set embedding configuration from config")
+			}
+		}
+	}
+
+	// Create optimizer with storage and registry for historical learning
+	opt := optimizer.NewMetaPromptOptimizer(optimizationProvider, judgeProvider, store, registry)
 
 	// Create optimization request
 	request := &optimizer.OptimizationRequest{
@@ -147,8 +178,8 @@ func runOptimize(cmd *cobra.Command, args []string) error {
 		Constraints:     []string{"Maintain clarity", "Preserve intent", "Improve effectiveness"},
 		ModelFamily:     modelFamily,
 		PersonaType:     personaType,
-		MaxIterations:   optimizeMaxIter,
-		TargetScore:     optimizeTargetScore,
+		MaxIterations:   optimizeCmdMaxIter,
+		TargetScore:     optimizeCmdTargetScore,
 		OptimizationGoals: map[string]float64{
 			"factual_accuracy": 0.3,
 			"code_quality":     0.3,
@@ -234,6 +265,8 @@ func displayOptimizationResults(result *optimizer.OptimizationResult, persona *m
 	fmt.Println("✓ Model-specific optimization strategies")
 	fmt.Println("✓ Persona-based prompt adaptation")
 	fmt.Println("✓ Iterative self-improvement loop")
+	fmt.Println("✓ Vector similarity search for historical learning")
+	fmt.Println("✓ In-memory vector store integration")
 	if modelFamily != models.ModelFamilyGeneric {
 		fmt.Printf("✓ %s-specific prompting idioms\n", modelFamily)
 	}
