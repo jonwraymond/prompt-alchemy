@@ -364,6 +364,9 @@ func getEmbeddingModelName(providerName string) string {
 		return "none"
 	case providers.ProviderGoogle:
 		return "text-embedding-004"
+	case providers.ProviderGrok:
+		// Grok doesn't have native embeddings, falls back to OpenAI
+		return "none"
 	case providers.ProviderOllama:
 		return "nomic-embed-text"
 	default:
@@ -408,6 +411,8 @@ func calculateCost(provider, model string, tokens int) float64 {
 		}
 	case providers.ProviderGoogle:
 		costPerToken = 0.000002 // Gemini Pro pricing
+	case providers.ProviderGrok:
+		costPerToken = 0.000002 // Grok pricing (approximate)
 	case providers.ProviderOllama:
 		costPerToken = 0.0 // Local models are free
 	}
