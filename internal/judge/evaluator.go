@@ -132,6 +132,8 @@ func (j *LLMJudge) buildEvaluationPrompt(request *PromptEvaluationRequest) strin
 		return j.buildGPTEvaluationPrompt(request, criteriaList)
 	case models.ModelFamilyGemini:
 		return j.buildGeminiEvaluationPrompt(request, criteriaList)
+	case models.ModelFamilyGrok:
+		return j.buildGrokEvaluationPrompt(request, criteriaList)
 	default:
 		return j.buildGenericEvaluationPrompt(request, criteriaList)
 	}
@@ -241,6 +243,43 @@ func (j *LLMJudge) buildGeminiEvaluationPrompt(request *PromptEvaluationRequest,
 	}
 
 	return fmt.Sprintf("I need your help evaluating an AI-generated response for %s tasks. As an expert evaluator, please assess the quality objectively.\n\nHere's why this evaluation matters: I want to improve prompt quality and ensure the AI provides valuable, accurate responses. Please evaluate as if you're an expert in %s.\n\nEvaluation criteria to consider:\n%s\n\nThe original prompt was:\n\"%s\"\n\nThe AI generated this response:\n\"%s\"\n\n%s\n\nPlease evaluate this response by:\n1. Explaining your reasoning for each criterion\n2. Providing specific scores (1-10 scale)\n3. Suggesting concrete improvements\n4. Noting any evaluation biases you detect\n\nPlease format your response as valid JSON:\n{\n  \"overall_score\": 0.0,\n  \"criteria_scores\": {\"criterion_name\": 0.0},\n  \"reasoning\": \"Your detailed reasoning\",\n  \"improvements\": [\"Specific suggestions\"],\n  \"bias_notes\": [\"Any biases detected\"]\n}", personaContext, personaContext, criteria, request.OriginalPrompt, request.GeneratedResponse, referenceSection)
+}
+
+// buildGrokEvaluationPrompt creates Grok-optimized evaluation prompt
+func (j *LLMJudge) buildGrokEvaluationPrompt(request *PromptEvaluationRequest, criteria string) string {
+	personaContext := string(request.PersonaType)
+	referenceSection := ""
+	if request.ReferenceAnswer != "" {
+		referenceSection = fmt.Sprintf("\n\nReference answer:\n%s", request.ReferenceAnswer)
+	}
+
+	return fmt.Sprintf(`Task: Evaluate AI-generated response for %s
+
+Evaluation criteria:
+%s
+
+Original prompt:
+%s
+
+Generated response:
+%s
+%s
+
+Instructions:
+1. Analyze each criterion systematically
+2. Score each criterion 1-10
+3. Calculate overall score
+4. Provide specific improvements
+5. Note any biases
+
+Format as JSON only:
+{
+  "overall_score": 0.0,
+  "criteria_scores": {"criterion": 0.0},
+  "reasoning": "Direct analysis",
+  "improvements": ["Specific suggestions"],
+  "bias_notes": ["Any biases"]
+}`, personaContext, criteria, request.OriginalPrompt, request.GeneratedResponse, referenceSection)
 }
 
 // buildGenericEvaluationPrompt creates a fallback evaluation prompt

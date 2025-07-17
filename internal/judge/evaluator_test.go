@@ -145,6 +145,7 @@ func TestEvaluatePromptDifferentModelFamilies(t *testing.T) {
 		{"Claude", models.ModelFamilyClaude, "<instructions>"},
 		{"GPT", models.ModelFamilyGPT, "# Evaluation Instructions"},
 		{"Gemini", models.ModelFamilyGemini, "I need your help evaluating"},
+		{"Grok", models.ModelFamilyGrok, "Task: Evaluate AI-generated response"},
 		{"Generic", models.ModelFamily("unknown"), "Evaluate the following"},
 	}
 
