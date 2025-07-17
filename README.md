@@ -50,6 +50,86 @@
 - **📈 Detailed Metadata**: Complete generation records including costs and timing
 - **🕒 Automated Scheduling**: Easy setup of nightly training jobs via cron/launchd
 
+## AI Integration Examples
+
+### 🤖 Claude Desktop
+```json
+// ~/Library/Application Support/Claude/claude_desktop_config.json
+{
+  "mcpServers": {
+    "prompt-alchemy": {
+      "command": "prompt-alchemy",
+      "args": ["serve", "mcp"]
+    }
+  }
+}
+```
+**Usage**: Ask Claude to "generate prompts for creating a REST API" or "optimize this prompt for better results"
+
+### 💻 Claude Code (claude.ai/code)
+```json
+// ~/.claude/mcp_server_config.json
+{
+  "mcpServers": {
+    "prompt-alchemy": {
+      "command": "/usr/local/bin/prompt-alchemy",
+      "args": ["serve", "mcp"],
+      "alwaysAllow": ["generate_prompts", "optimize_prompt"]
+    }
+  }
+}
+```
+
+### 🎯 Cursor IDE
+```json
+// Cursor Settings → AI → MCP Servers
+{
+  "prompt-alchemy": {
+    "command": "prompt-alchemy",
+    "args": ["serve", "mcp"],
+    "triggers": ["@prompt", "@optimize"]
+  }
+}
+```
+**Usage**: Type `@prompt create a React component` in your code
+
+### 🧠 Google Gemini (via Bridge)
+```python
+# Using MCP-Gemini Bridge
+import google.generativeai as genai
+
+model = genai.GenerativeModel('gemini-pro')
+response = model.generate_content(
+    "Generate prompts for user authentication",
+    tools=[{"function_declarations": [{
+        "name": "generate_prompts",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "input": {"type": "string"},
+                "count": {"type": "integer"}
+            }
+        }
+    }]}]
+)
+```
+
+### 🤖 Grok (xAI)
+```python
+# Direct API integration with Grok optimization
+import requests
+
+response = requests.post("http://localhost:8080/api/v1/prompts/optimize", json={
+    "prompt": "Write Python code",
+    "task": "Create async task queue",
+    "target_model": "grok-2",
+    "persona": "code"
+})
+optimized_prompt = response.json()["optimized_prompt"]
+```
+
+For detailed integration guides, see [MCP Setup Documentation](./MCP_SETUP.md) and [Integration Examples](./INTEGRATION_EXAMPLES.md).
+
 ## System Requirements
 
 ### Minimum Requirements
