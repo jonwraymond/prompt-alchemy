@@ -24,6 +24,7 @@ const (
 	ModelFamilyClaude  ModelFamily = "claude"
 	ModelFamilyGPT     ModelFamily = "gpt"
 	ModelFamilyGemini  ModelFamily = "gemini"
+	ModelFamilyGrok    ModelFamily = "grok"
 	ModelFamilyGeneric ModelFamily = "generic"
 )
 
@@ -95,6 +96,8 @@ func DetectModelFamily(modelName string) ModelFamily {
 		return ModelFamilyGPT
 	case strings.Contains(modelLower, "gemini") || strings.Contains(modelLower, "google"):
 		return ModelFamilyGemini
+	case strings.Contains(modelLower, "grok") || strings.Contains(modelLower, "xai"):
+		return ModelFamilyGrok
 	default:
 		return ModelFamilyGeneric
 	}
@@ -163,6 +166,16 @@ func getBuiltInPersonas() map[PersonaType]*Persona {
 						"base": "{task}",
 					},
 				},
+				ModelFamilyGrok: {
+					StructuringMethod:    "direct_approach",
+					ReasoningElicitation: "Let me work through this systematically:",
+					ToolIntegration:      "direct_tools",
+					ExampleStyle:         "Example:",
+					KeyDirectives:        []string{"Be direct and concise", "Focus on practical solutions", "Provide clear reasoning"},
+					Templates: map[string]string{
+						"base": "Task: {task}\n\n{reasoning_prompt}\n\nContext: {context}\n\nRequirements:\n{requirements}",
+					},
+				},
 				ModelFamilyGeneric: {
 					StructuringMethod:    "clear_sections",
 					ReasoningElicitation: "Let me approach this systematically:",
@@ -211,6 +224,16 @@ func getBuiltInPersonas() map[PersonaType]*Persona {
 					KeyDirectives:        []string{"Be natural and engaging", "Adapt to audience", "Iterate and refine"},
 					Templates: map[string]string{
 						"base": "{task}",
+					},
+				},
+				ModelFamilyGrok: {
+					StructuringMethod:    "straightforward",
+					ReasoningElicitation: "Let me craft this content clearly and effectively:",
+					ToolIntegration:      "direct_writing",
+					ExampleStyle:         "Here's an example:",
+					KeyDirectives:        []string{"Be clear and direct", "Focus on key messages", "Avoid unnecessary complexity"},
+					Templates: map[string]string{
+						"base": "Writing Task: {task}\n\n{reasoning_prompt}\n\nContext: {context}\n\nRequirements:\n{requirements}",
 					},
 				},
 				ModelFamilyGeneric: {
@@ -263,6 +286,16 @@ func getBuiltInPersonas() map[PersonaType]*Persona {
 						"base": "{task}",
 					},
 				},
+				ModelFamilyGrok: {
+					StructuringMethod:    "analytical",
+					ReasoningElicitation: "Let me analyze this step by step:",
+					ToolIntegration:      "analytical_tools",
+					ExampleStyle:         "Analysis example:",
+					KeyDirectives:        []string{"Be methodical and precise", "Focus on data-driven insights", "Provide actionable conclusions"},
+					Templates: map[string]string{
+						"base": "Analysis Task: {task}\n\n{reasoning_prompt}\n\nContext: {context}\n\nRequirements:\n{requirements}",
+					},
+				},
 				ModelFamilyGeneric: {
 					StructuringMethod:    "clear_sections",
 					ReasoningElicitation: "Let me approach this analysis methodically:",
@@ -307,6 +340,8 @@ func (p *Persona) getDefaultTemplate(family ModelFamily) string {
 		return "# Instructions\n{system_prompt}\n\n## Task\n{task}\n\n{reasoning_prompt}\n\n## Context\n{context}"
 	case ModelFamilyGemini:
 		return "{task}"
+	case ModelFamilyGrok:
+		return "Task: {task}\n\n{reasoning_prompt}\n\nContext: {context}"
 	default:
 		return "System: {system_prompt}\n\nTask: {task}\n\n{reasoning_prompt}\n\nContext: {context}"
 	}

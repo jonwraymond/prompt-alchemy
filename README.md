@@ -114,6 +114,20 @@ response = model.generate_content(
 )
 ```
 
+### 🤖 Grok (xAI)
+```python
+# Direct API integration with Grok optimization
+import requests
+
+response = requests.post("http://localhost:8080/api/v1/prompts/optimize", json={
+    "prompt": "Write Python code",
+    "task": "Create async task queue",
+    "target_model": "grok-2",
+    "persona": "code"
+})
+optimized_prompt = response.json()["optimized_prompt"]
+```
+
 For detailed integration guides, see [MCP Setup Documentation](./MCP_SETUP.md) and [Integration Examples](./INTEGRATION_EXAMPLES.md).
 
 ## System Requirements

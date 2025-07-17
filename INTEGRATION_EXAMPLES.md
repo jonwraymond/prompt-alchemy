@@ -7,6 +7,7 @@ This guide provides comprehensive integration examples for popular AI developmen
 - [Claude Desktop](#claude-desktop)
 - [Claude Code](#claude-code)
 - [Cursor IDE](#cursor-ide)
+- [Grok (xAI)](#grok-xai)
 - [Google Gemini](#google-gemini)
 - [VS Code Extension](#vs-code-extension)
 - [JetBrains IDEs](#jetbrains-ides)
@@ -283,6 +284,106 @@ Create `.cursor/prompt-alchemy.json` in your project:
     }
   }
 }
+```
+
+## Grok (xAI)
+
+Grok can be integrated through the API or using MCP bridges similar to other providers.
+
+### Direct API Integration
+
+```python
+import requests
+import json
+
+class PromptAlchemyGrok:
+    def __init__(self, pa_api_url="http://localhost:8080"):
+        self.pa_api = pa_api_url
+        
+    def generate_with_grok_optimization(self, task_description):
+        # Generate prompts optimized for Grok
+        response = requests.post(
+            f"{self.pa_api}/api/v1/prompts/generate",
+            json={
+                "input": task_description,
+                "count": 3,
+                "persona": "code",
+                "target_model": "grok-2"
+            }
+        )
+        prompts = response.json()["prompts"]
+        
+        # Select the best prompt
+        best_prompt = max(prompts, key=lambda p: p["score"])
+        return best_prompt["final_prompt"]
+    
+    def optimize_for_grok(self, prompt, task):
+        # Optimize specifically for Grok's direct style
+        response = requests.post(
+            f"{self.pa_api}/api/v1/prompts/optimize",
+            json={
+                "prompt": prompt,
+                "task": task,
+                "target_model": "grok-2",
+                "persona": "code",
+                "max_iterations": 3
+            }
+        )
+        return response.json()["optimized_prompt"]
+
+# Usage
+pa_grok = PromptAlchemyGrok()
+
+# Generate Grok-optimized prompts
+grok_prompt = pa_grok.generate_with_grok_optimization(
+    "Create a Python function for data validation"
+)
+
+# Optimize existing prompt for Grok
+optimized = pa_grok.optimize_for_grok(
+    "Write code",
+    "Implement async task queue with Redis backend"
+)
+```
+
+### Using xAI SDK
+
+```python
+import xai
+from prompt_alchemy_client import PromptAlchemyClient
+
+class GrokPromptAlchemy:
+    def __init__(self, xai_api_key, pa_client):
+        self.xai_client = xai.Client(api_key=xai_api_key)
+        self.pa_client = pa_client
+    
+    def generate_and_execute(self, task):
+        # Generate Grok-optimized prompt
+        prompt = self.pa_client.generate_prompts(
+            input=task,
+            persona="code",
+            target_model="grok-2",
+            count=1
+        )[0]
+        
+        # Execute with Grok
+        response = self.xai_client.chat.completions.create(
+            model="grok-2-1212",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7
+        )
+        
+        return response.choices[0].message.content
+
+# Usage
+grok_pa = GrokPromptAlchemy(
+    xai_api_key=os.environ["XAI_API_KEY"],
+    pa_client=PromptAlchemyClient("http://localhost:8080")
+)
+
+result = grok_pa.generate_and_execute(
+    "Create a microservice for user authentication"
+)
 ```
 
 ## Google Gemini
