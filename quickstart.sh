@@ -91,11 +91,12 @@ else
     exit 1
 fi
 
-# Display Claude Desktop configuration
+# Display configuration instructions
 echo ""
 echo -e "${GREEN}🎉 Success! Prompt Alchemy is ready!${NC}"
 echo ""
-echo "To use with Claude Desktop, add this to your config:"
+echo "=== For Claude Desktop ==="
+echo "Add this to your config:"
 echo ""
 echo '{'
 echo '  "mcpServers": {'
@@ -106,10 +107,16 @@ echo '    }'
 echo '  }'
 echo '}'
 echo ""
-echo "Claude Desktop config locations:"
+echo "Config locations:"
 echo "  - macOS: ~/Library/Application Support/Claude/claude_desktop_config.json"
 echo "  - Windows: %APPDATA%\\Claude\\claude_desktop_config.json"
 echo "  - Linux: ~/.config/Claude/claude_desktop_config.json"
+echo ""
+echo "=== For Claude Code (claude.ai/code) ==="
+echo "Run this command:"
+echo "  claude mcp add prompt-alchemy-docker -s user docker -- exec -i prompt-alchemy-mcp prompt-alchemy serve mcp"
+echo ""
+echo "Then restart Claude Code to load the configuration."
 echo ""
 echo "Useful commands:"
 echo "  - View logs: docker logs prompt-alchemy-mcp"

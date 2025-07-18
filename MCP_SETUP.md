@@ -364,34 +364,22 @@ Claude Desktop supports MCP servers natively. Add to your Claude Desktop configu
 
 Claude Code integrates with MCP servers for enhanced development capabilities.
 
-**Configuration:** Add to `~/.claude/mcp_server_config.json`:
-```json
-{
-  "mcpServers": {
-    "prompt-alchemy": {
-      "command": "/usr/local/bin/prompt-alchemy",
-      "args": ["serve", "mcp"],
-      "description": "AI prompt generation and optimization",
-      "alwaysAllow": ["generate_prompts", "optimize_prompt", "search_prompts"]
-    }
-  }
-}
+**Configuration via CLI (Recommended):**
+
+For Docker setup:
+```bash
+claude mcp add prompt-alchemy-docker -s user docker -- exec -i prompt-alchemy-mcp prompt-alchemy serve mcp
 ```
 
-**Docker Configuration:**
-```json
-{
-  "mcpServers": {
-    "prompt-alchemy": {
-      "command": "docker",
-      "args": ["exec", "-i", "prompt-alchemy-mcp", "prompt-alchemy", "serve", "mcp"],
-      "description": "AI prompt generation via Docker",
-      "restartOnFailure": true,
-      "timeout": 30000
-    }
-  }
-}
+For local installation:
+```bash
+claude mcp add prompt-alchemy -s user /usr/local/bin/prompt-alchemy serve mcp
 ```
+
+**Note:** After adding the MCP server, restart Claude Code to load the configuration.
+
+**Alternative Manual Configuration:** 
+If you prefer manual configuration, you can edit the MCP settings directly, but using the CLI is recommended for proper integration.
 
 **Usage Examples in Claude Code:**
 ```python

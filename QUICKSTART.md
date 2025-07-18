@@ -32,7 +32,9 @@ cp .env.example .env
 ./quickstart.sh
 ```
 
-#### 3️⃣ Configure Claude Desktop
+#### 3️⃣ Configure Your Claude Client
+
+**For Claude Desktop:**
 Add this to your Claude Desktop config:
 ```json
 {
@@ -49,6 +51,14 @@ Add this to your Claude Desktop config:
 - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
 - Linux: `~/.config/Claude/claude_desktop_config.json`
+
+**For Claude Code (claude.ai/code):**
+Run this command:
+```bash
+claude mcp add prompt-alchemy-docker -s user docker -- exec -i prompt-alchemy-mcp prompt-alchemy serve mcp
+```
+
+Then restart Claude Code to load the new configuration.
 
 That's it! You're ready to use Prompt Alchemy! 🎉
 
