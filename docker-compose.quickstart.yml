@@ -1,0 +1,61 @@
+# Quickstart Docker Compose for Prompt Alchemy
+# This file provides the easiest way to get started with Prompt Alchemy
+
+services:
+  # MCP Server for Claude Desktop / AI Agents
+  prompt-alchemy-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile.quickstart
+    image: prompt-alchemy:quickstart
+    container_name: prompt-alchemy-mcp
+    # Keep container running for MCP requests
+    command: ["sh", "-c", "while true; do sleep 30; done"]
+    volumes:
+      - ./data:/app/data
+    env_file:
+      - .env
+    environment:
+      # Map environment variables to the format expected by the app
+      - PROMPT_ALCHEMY_PROVIDERS_OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - PROMPT_ALCHEMY_PROVIDERS_ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - PROMPT_ALCHEMY_PROVIDERS_GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      - PROMPT_ALCHEMY_PROVIDERS_GROK_API_KEY=${GROK_API_KEY:-}
+      - PROMPT_ALCHEMY_PROVIDERS_OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      # Use default configuration
+      - PROMPT_ALCHEMY_CONFIG=/app/config.yaml
+    healthcheck:
+      test: ["CMD", "prompt-alchemy", "version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # HTTP API Server (optional)
+  prompt-alchemy-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.quickstart
+    image: prompt-alchemy:quickstart
+    container_name: prompt-alchemy-api
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/app/data
+    env_file:
+      - .env
+    environment:
+      # Map environment variables to the format expected by the app
+      - PROMPT_ALCHEMY_PROVIDERS_OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - PROMPT_ALCHEMY_PROVIDERS_ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - PROMPT_ALCHEMY_PROVIDERS_GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      - PROMPT_ALCHEMY_PROVIDERS_GROK_API_KEY=${GROK_API_KEY:-}
+      - PROMPT_ALCHEMY_PROVIDERS_OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      # Use default configuration
+      - PROMPT_ALCHEMY_CONFIG=/app/config.yaml
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    profiles:
+      - api

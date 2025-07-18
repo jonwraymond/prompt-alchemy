@@ -1,26 +1,56 @@
-# Prompt Alchemy Quickstart Guide
+# 🚀 Prompt Alchemy Quick Start
 
-Get up and running with Prompt Alchemy in under 5 minutes! Choose Docker (recommended) or Local installation.
+Get Prompt Alchemy running in under 2 minutes!
 
-## 🚀 Deployment Options
+## 🎯 Fastest Setup (Under 2 Minutes!)
 
-| Mode | Docker | Local |
-|------|--------|-------|
-| **API Server** | `./start-api.sh` | `prompt-alchemy serve api` |
-| **MCP Server** | `./start-mcp.sh` | `prompt-alchemy serve mcp` |
-| **Hybrid Mode** | `./start-hybrid.sh` | `prompt-alchemy serve hybrid` |
-| **With Ollama** | `./start-ollama.sh` | Manual setup |
+### Prerequisites
+- Docker Desktop installed ([Download here](https://www.docker.com/products/docker-desktop))
+- At least one AI provider API key
 
-## 📋 Prerequisites
+### Three Simple Steps
 
-### For Docker (Recommended)
-- Docker and Docker Compose installed
-- API keys for your preferred AI providers
+#### 1️⃣ Clone and Configure
+```bash
+# Clone the repository
+git clone https://github.com/jonwraymond/prompt-alchemy.git
+cd prompt-alchemy
 
-### For Local Installation
-- Go 1.21+ installed
-- API keys for your preferred AI providers
-- Optional: Ollama for local AI
+# Copy and edit the environment file
+cp .env.example .env
+# Edit .env and add at least ONE API key
+```
+
+**Get API Keys (choose one):**
+- **OpenAI**: https://platform.openai.com/api-keys
+- **Anthropic**: https://console.anthropic.com/settings/keys
+- **Google**: https://aistudio.google.com/apikey
+- **Grok**: https://console.x.ai/
+
+#### 2️⃣ Run Quick Start
+```bash
+./quickstart.sh
+```
+
+#### 3️⃣ Configure Claude Desktop
+Add this to your Claude Desktop config:
+```json
+{
+  "mcpServers": {
+    "prompt-alchemy": {
+      "command": "docker",
+      "args": ["exec", "-i", "prompt-alchemy-mcp", "prompt-alchemy", "serve", "mcp"]
+    }
+  }
+}
+```
+
+**Config locations:**
+- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+- Linux: `~/.config/Claude/claude_desktop_config.json`
+
+That's it! You're ready to use Prompt Alchemy! 🎉
 
 ## 🔧 Configuration
 
