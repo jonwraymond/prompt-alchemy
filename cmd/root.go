@@ -169,7 +169,6 @@ func init() {
 	rootCmd.AddCommand(updateCmd)
 	rootCmd.AddCommand(migrateCmd)
 	rootCmd.AddCommand(versionCmd)
-	rootCmd.AddCommand(httpCmd)
 	// nightlyCmd and scheduleCmd are registered in their own init() functions
 	// Add new document command
 	rootCmd.AddCommand(documentCmd)

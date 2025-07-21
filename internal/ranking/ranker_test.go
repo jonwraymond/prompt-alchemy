@@ -10,64 +10,31 @@ import (
 	"github.com/jonwraymond/prompt-alchemy/pkg/providers"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
-type mockProvider struct {
-	mock.Mock
-}
-
-func (m *mockProvider) Generate(ctx context.Context, req providers.GenerateRequest) (*providers.GenerateResponse, error) {
-	args := m.Called(ctx, req)
-	return args.Get(0).(*providers.GenerateResponse), args.Error(1)
-}
-
-func (m *mockProvider) GetEmbedding(ctx context.Context, text string, registry providers.RegistryInterface) ([]float32, error) {
-	args := m.Called(ctx, text, registry)
-	return args.Get(0).([]float32), args.Error(1)
-}
-
-func (m *mockProvider) Name() string             { return "mock" }
-func (m *mockProvider) IsAvailable() bool        { return true }
-func (m *mockProvider) SupportsEmbeddings() bool { return true }
-
-type mockRegistry struct {
-	mock.Mock
-}
-
-func (m *mockRegistry) Get(name string) (providers.Provider, error) {
-	args := m.Called(name)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(providers.Provider), args.Error(1)
-}
-
-func (m *mockRegistry) ListAvailable() []string {
-	args := m.Called()
-	return args.Get(0).([]string)
-}
-
-func (m *mockRegistry) ListEmbeddingCapableProviders() []string {
-	return m.Called().Get(0).([]string)
-}
-
 func TestCalculateSemanticSimilarity(t *testing.T) {
-	mockReg := new(mockRegistry)
+	mockProv := new(providers.MockProvider)
+	registry := providers.NewRegistry()
+	registry.Register("mock", mockProv)
+
 	r := &Ranker{
 		embedProvider: "mock",
-		registry:      mockReg,
+		registry:      registry,
 		logger:        logrus.New(),
 	}
 	ctx := context.Background()
 
-	mockProv := new(mockProvider)
-	mockReg.On("Get", "mock").Return(mockProv, nil)
-
 	emb1 := []float32{1, 0, 0}
 	emb2 := []float32{0, 1, 0}
-	mockProv.On("GetEmbedding", ctx, "text1", mockReg).Return(emb1, nil)
-	mockProv.On("GetEmbedding", ctx, "text2", mockReg).Return(emb2, nil)
+	mockProv.GetEmbeddingFunc = func(ctx context.Context, text string, registry providers.RegistryInterface) ([]float32, error) {
+		if text == "text1" {
+			return emb1, nil
+		}
+		if text == "text2" {
+			return emb2, nil
+		}
+		return nil, nil
+	}
 
 	score := r.calculateSemanticSimilarity(ctx, "text1", "text2")
 	assert.Equal(t, 0.5, score) // Cosine 0 → 0.5
@@ -85,18 +52,16 @@ func TestCalculateLengthRatio(t *testing.T) {
 }
 
 func TestRankPrompts(t *testing.T) {
-	// Create mock registry and provider
-	reg := new(mockRegistry)
-	mockProv := new(mockProvider)
-
-	// Set up expectations for embedding capability check
-	reg.On("ListEmbeddingCapableProviders").Return([]string{"openai"})
+	// Create mock provider and real registry
+	mockProv := new(providers.MockProvider)
+	registry := providers.NewRegistry()
+	registry.Register("openai", mockProv)
 
 	// Create ranker with proper mocks
 	logger := logrus.New()
 	r := &Ranker{
 		storage:        &storage.Storage{}, // Mock if needed
-		registry:       reg,
+		registry:       registry,
 		logger:         logger,
 		embedProvider:  "openai",
 		tempWeight:     0.2,
@@ -116,10 +81,17 @@ func TestRankPrompts(t *testing.T) {
 	}}
 
 	// Mock embeddings for "original" and prompts
-	reg.On("Get", "openai").Return(mockProv, nil)
-	mockProv.On("GetEmbedding", mock.Anything, "original", reg).Return([]float32{1, 0}, nil)
-	mockProv.On("GetEmbedding", mock.Anything, "similar", reg).Return([]float32{0.9, 0.1}, nil)
-	mockProv.On("GetEmbedding", mock.Anything, "different", reg).Return([]float32{0, 1}, nil)
+	mockProv.GetEmbeddingFunc = func(ctx context.Context, text string, registry providers.RegistryInterface) ([]float32, error) {
+		switch text {
+		case "original":
+			return []float32{1, 0}, nil
+		case "similar":
+			return []float32{0.9, 0.1}, nil
+		case "different":
+			return []float32{0, 1}, nil
+		}
+		return nil, nil
+	}
 
 	rankings, err := r.RankPrompts(context.Background(), prompts, "original")
 	assert.NoError(t, err)

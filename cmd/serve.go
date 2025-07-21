@@ -6,10 +6,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/signal"
 	"strings"
 	"sync"
+	"syscall"
 
 	"github.com/jonwraymond/prompt-alchemy/internal/engine"
+	"github.com/jonwraymond/prompt-alchemy/internal/http"
 	"github.com/jonwraymond/prompt-alchemy/internal/learning"
 	"github.com/jonwraymond/prompt-alchemy/internal/optimizer"
 	"github.com/jonwraymond/prompt-alchemy/internal/ranking"
@@ -77,124 +80,176 @@ type MCPServer struct {
 }
 
 var serveCmd = &cobra.Command{
-	Use:   "serve [mode]",
+	Use:   "serve",
 	Short: "Start Prompt Alchemy server",
-	Long: `Start a Prompt Alchemy server in different modes.
+	Long: `Start a Prompt Alchemy server with configurable protocols.
 
-Available modes:
-  api     - HTTP REST API server
-  mcp     - Model Context Protocol server (stdin/stdout)
-  hybrid  - Both API and MCP servers simultaneously
+Use flags to enable different server modes:
+- --api: Enable the HTTP REST API server.
+- --mcp: Enable the Model Context Protocol server (stdin/stdout).
 
-If no mode is specified, defaults to MCP mode for backward compatibility.
+If no flags are provided, defaults to MCP mode for backward compatibility.
 
 Examples:
-  # Start HTTP API server
-  prompt-alchemy serve api --port 8080
+  # Start both HTTP API and MCP servers
+  prompt-alchemy serve --api --mcp --port 8080
 
-  # Start MCP server
-  prompt-alchemy serve mcp
+  # Start only the HTTP API server
+  prompt-alchemy serve --api --port 8080
 
-  # Start both servers
-  prompt-alchemy serve hybrid --port 8080`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		// Default to MCP mode if no subcommand
-		if len(args) == 0 {
-			return runServe(cmd, args)
-		}
-		return cmd.Help()
-	},
+  # Start only the MCP server (default behavior)
+  prompt-alchemy serve
+  prompt-alchemy serve --mcp`,
+	RunE: runServe,
 }
 
 func init() {
 	rootCmd.AddCommand(serveCmd)
+	serveCmd.Flags().Bool("api", false, "Enable the HTTP API server")
+	serveCmd.Flags().Bool("mcp", false, "Enable the MCP server on stdin/stdout")
+	serveCmd.Flags().Int("port", 8080, "Port for HTTP API server")
+	serveCmd.Flags().String("host", "localhost", "Host for HTTP API server")
 }
 
 func runServe(cmd *cobra.Command, args []string) error {
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	// Initialize logger
 	logger := setupLogger()
 
-	// Reload viper to ensure configuration is properly loaded
-	viper.SetConfigFile(viper.ConfigFileUsed())
-	if err := viper.ReadInConfig(); err != nil {
-		logger.WithError(err).Warn("Failed to reload config")
-	}
-
-	// Initialize storage
+	// Initialize shared resources
 	store, err := storage.NewStorage(viper.GetString("data_dir"), logger)
 	if err != nil {
 		return fmt.Errorf("failed to initialize storage: %w", err)
 	}
 	defer func() { _ = store.Close() }()
 
-	// Initialize provider registry
 	registry := providers.NewRegistry()
 	if err := registerProviders(registry, logger); err != nil {
 		return fmt.Errorf("failed to register providers: %w", err)
 	}
 
-	// Initialize engine
-	engine := engine.NewEngine(registry, logger)
-
-	// Initialize ranker
+	eng := engine.NewEngine(registry, logger)
 	ranker := ranking.NewRanker(store, registry, logger)
 
-	// Initialize learner (optional)
 	var learner *learning.LearningEngine
 	if viper.GetBool("learning_mode") {
 		learner = learning.NewLearningEngine(store, logger)
+		learner.StartBackgroundLearning(ctx)
 	}
 
-	// Create server
-	writer := bufio.NewWriter(os.Stdout)
-	server := &MCPServer{
-		storage:  store,
-		registry: registry,
-		engine:   engine,
-		ranker:   ranker,
-		learner:  learner,
-		logger:   logger,
-		reader:   bufio.NewReader(os.Stdin),
-		writer:   writer,
-		encoder:  json.NewEncoder(writer),
+	// Determine which servers to run
+	runAPI, _ := cmd.Flags().GetBool("api")
+	runMCP, _ := cmd.Flags().GetBool("mcp")
+
+	// Default to MCP if no flags are set
+	if !runAPI && !runMCP {
+		runMCP = true
 	}
 
-	// Start server
-	return server.serve(ctx)
+	var wg sync.WaitGroup
+
+	// Handle graceful shutdown
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-sigChan
+		logger.Info("Shutdown signal received, canceling context...")
+		cancel()
+	}()
+
+	// Start HTTP server if enabled
+	if runAPI {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			port, _ := cmd.Flags().GetInt("port")
+			host, _ := cmd.Flags().GetString("host")
+			viper.Set("http.port", port)
+			viper.Set("http.host", host)
+
+			httpServer := http.NewSimpleServer(store, registry, eng, ranker, learner, logger)
+			logger.WithField("port", port).Info("Starting HTTP API server")
+			if err := httpServer.Start(ctx); err != nil {
+				logger.WithError(err).Error("HTTP server error")
+				cancel() // Trigger shutdown of other servers
+			}
+		}()
+	}
+
+	// Start MCP server if enabled
+	if runMCP {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			mcpServer := &MCPServer{
+				storage:  store,
+				registry: registry,
+				engine:   eng,
+				ranker:   ranker,
+				learner:  learner,
+				logger:   logger,
+				reader:   bufio.NewReader(os.Stdin),
+				writer:   bufio.NewWriter(os.Stdout),
+				encoder:  json.NewEncoder(bufio.NewWriter(os.Stdout)),
+			}
+			logger.Info("Starting MCP server")
+			if err := mcpServer.serve(ctx); err != nil {
+				logger.WithError(err).Error("MCP server error")
+				cancel() // Trigger shutdown of other servers
+			}
+		}()
+	}
+
+	wg.Wait()
+	logger.Info("All servers have shut down.")
+	return nil
 }
 
 func (s *MCPServer) serve(ctx context.Context) error {
-	s.logger.Info("Starting MCP server")
+	s.logger.Info("MCP server listening for requests")
+
+	// Create a channel to signal when ReadString returns
+	lineChan := make(chan string)
+	errChan := make(chan error)
+
+	go func() {
+		for {
+			line, err := s.reader.ReadString('\n')
+			if err != nil {
+				errChan <- err
+				return
+			}
+			lineChan <- line
+		}
+	}()
 
 	for {
-		// Read request
-		line, err := s.reader.ReadString('\n')
-		if err != nil {
+		select {
+		case <-ctx.Done():
+			s.logger.Info("MCP server shutting down due to context cancellation")
+			return nil
+		case line := <-lineChan:
+			line = strings.TrimSpace(line)
+			if line == "" {
+				continue
+			}
+
+			var req MCPRequest
+			if err := json.Unmarshal([]byte(line), &req); err != nil {
+				s.logger.WithError(err).Error("Failed to parse MCP request")
+				s.sendError(nil, -32700, "Parse error", "")
+				continue
+			}
+			s.handleRequest(ctx, &req)
+		case err := <-errChan:
 			if err.Error() == "EOF" {
-				s.logger.Info("MCP server shutting down")
+				s.logger.Info("MCP server stdin closed, shutting down")
 				return nil
 			}
-			s.logger.WithError(err).Error("Failed to read request")
-			continue
+			s.logger.WithError(err).Error("Failed to read from stdin")
+			return err
 		}
-
-		line = strings.TrimSpace(line)
-		if line == "" {
-			continue
-		}
-
-		// Parse request
-		var req MCPRequest
-		if err := json.Unmarshal([]byte(line), &req); err != nil {
-			s.logger.WithError(err).Error("Failed to parse request")
-			s.sendError(nil, -32700, "Parse error", "")
-			continue
-		}
-
-		// Handle request
-		s.handleRequest(ctx, &req)
 	}
 }
 

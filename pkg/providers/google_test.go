@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -122,49 +123,75 @@ func TestGoogleProvider_Generate(t *testing.T) {
 
 func TestGoogleProvider_GetEmbedding(t *testing.T) {
 	tests := []struct {
-		name     string
-		config   Config
-		text     string
-		registry RegistryInterface
-		wantErr  bool
-		errMsg   string
+		name           string
+		config         Config
+		text           string
+		registrySetup  func() RegistryInterface
+		wantErr        bool
+		wantErrMessage string
 	}{
 		{
-			name: "no client initialized",
-			config: Config{
-				APIKey: "",
+			name:   "no client initialized",
+			config: Config{APIKey: ""},
+			text:   "test",
+			registrySetup: func() RegistryInterface {
+				return NewRegistry()
 			},
-			text:     "test text",
-			registry: nil,
-			wantErr:  true,
-			errMsg:   "Google client not initialized",
+			wantErr:        true,
+			wantErrMessage: "google client not initialized",
 		},
 		{
-			name: "with client but no registry",
-			config: Config{
-				APIKey: "test-key",
+			name:   "no fallback provider",
+			config: Config{APIKey: "test-key"},
+			text:   "test",
+			registrySetup: func() RegistryInterface {
+				return NewRegistry()
 			},
-			text:     "test text",
-			registry: nil,
-			wantErr:  true,
-			errMsg:   "Google provider does not support embeddings directly",
+			wantErr:        true,
+			wantErrMessage: "no fallback provider available",
+		},
+		{
+			name:   "fallback provider success",
+			config: Config{APIKey: "test-key"},
+			text:   "test",
+			registrySetup: func() RegistryInterface {
+				registry := NewRegistry()
+				mockProvider := &MockProvider{
+					GetEmbeddingFunc: func(ctx context.Context, text string, registry RegistryInterface) ([]float32, error) {
+						return []float32{0.1, 0.2}, nil
+					},
+					SupportsEmbeddingsFunc: func() bool { return true },
+					IsAvailableFunc:        func() bool { return true },
+				}
+				registry.Register("mock-embedding-provider", mockProvider)
+				return registry
+			},
+			wantErr: false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			provider := NewGoogleProvider(tt.config)
+			registry := tt.registrySetup()
 
-			ctx := context.Background()
-			embedding, err := provider.GetEmbedding(ctx, tt.text, tt.registry)
+			// Manually set a fallback since config doesn't handle it in tests
+			if tt.name == "fallback provider success" {
+				viper.Set("providers.openai.model", "mock-embedding-provider")
+			}
+
+			embedding, err := provider.GetEmbedding(context.Background(), tt.text, registry)
+
 			if tt.wantErr {
 				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.wantErrMessage)
 				assert.Nil(t, embedding)
-				assert.Contains(t, err.Error(), tt.errMsg)
 			} else {
 				assert.NoError(t, err)
 				assert.NotNil(t, embedding)
+				assert.Equal(t, []float32{0.1, 0.2}, embedding)
 			}
+			viper.Set("providers.openai.model", "") // reset
 		})
 	}
 }

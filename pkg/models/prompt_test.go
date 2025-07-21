@@ -62,9 +62,9 @@ func TestPhase_String(t *testing.T) {
 		phase    Phase
 		expected string
 	}{
-		{PhaseIdea, "idea"},
-		{PhaseHuman, "human"},
-		{PhasePrecision, "precision"},
+		{PhasePrimaMaterial, "prima-materia"},
+		{PhaseSolutio, "solutio"},
+		{PhaseCoagulatio, "coagulatio"},
 	}
 
 	for _, tt := range tests {
@@ -76,9 +76,9 @@ func TestPhase_String(t *testing.T) {
 
 func TestPhase_Values(t *testing.T) {
 	// Test valid phase values
-	assert.Equal(t, "idea", string(PhaseIdea))
-	assert.Equal(t, "human", string(PhaseHuman))
-	assert.Equal(t, "precision", string(PhasePrecision))
+	assert.Equal(t, "prima-materia", string(PhasePrimaMaterial))
+	assert.Equal(t, "solutio", string(PhaseSolutio))
+	assert.Equal(t, "coagulatio", string(PhaseCoagulatio))
 }
 
 func TestPersonaType_Values(t *testing.T) {
