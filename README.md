@@ -58,13 +58,32 @@
 {
   "mcpServers": {
     "prompt-alchemy": {
-      "command": "prompt-alchemy",
+      "command": "/path/to/prompt-alchemy",
       "args": ["serve", "mcp"]
     }
   }
 }
 ```
 **Usage**: Ask Claude to "generate prompts for creating a REST API" or "optimize this prompt for better results"
+
+**Docker Setup** (Recommended for isolation):
+```json
+{
+  "mcpServers": {
+    "prompt-alchemy-docker": {
+      "command": "docker",
+      "args": [
+        "run", "--rm", "-i",
+        "-v", "${HOME}/.prompt-alchemy:/app/data",
+        "-e", "PROMPT_ALCHEMY_PROVIDERS_OPENAI_API_KEY=${OPENAI_API_KEY}",
+        "-e", "PROMPT_ALCHEMY_PROVIDERS_ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}",
+        "-e", "PROMPT_ALCHEMY_PROVIDERS_GOOGLE_API_KEY=${GOOGLE_API_KEY}",
+        "prompt-alchemy-mcp:latest"
+      ]
+    }
+  }
+}
+```
 
 ### 💻 Claude Code (claude.ai/code)
 ```json
@@ -92,6 +111,21 @@
 }
 ```
 **Usage**: Type `@prompt create a React component` in your code
+
+**Advanced Setup with Environment Variables**:
+```json
+{
+  "prompt-alchemy": {
+    "command": "prompt-alchemy",
+    "args": ["serve", "mcp"],
+    "env": {
+      "PROMPT_ALCHEMY_PROVIDERS_OPENAI_API_KEY": "${OPENAI_API_KEY}",
+      "PROMPT_ALCHEMY_SELF_LEARNING_ENABLED": "true"
+    },
+    "triggers": ["@prompt", "@optimize", "@alchemy"]
+  }
+}
+```
 
 ### 🧠 Google Gemini (via Bridge)
 ```python
@@ -271,6 +305,49 @@ git clone https://github.com/jonwraymond/prompt-alchemy.git
 cd prompt-alchemy
 make build
 prompt-alchemy serve api
+```
+
+### Docker Management Scripts
+
+Easy-to-use scripts for managing the MCP server:
+
+- **start-mcp-docker.sh**: Start the MCP server using Docker
+- **stop-mcp.sh**: Stop the running MCP server
+- **logs-mcp.sh**: View logs for the MCP server
+
+```bash
+# Start MCP server with Docker
+./start-mcp-docker.sh
+
+# View logs
+./logs-mcp.sh
+
+# View last 50 lines
+./logs-mcp.sh -n 50
+
+# Stop the server
+./stop-mcp.sh
+```
+
+### Docker Compose Usage
+
+For production deployments, use Docker Compose:
+
+```bash
+# Start with docker-compose
+docker-compose up -d
+
+# Use the quickstart configuration
+docker-compose -f docker-compose.quickstart.yml up -d
+
+# Start with HTTP API enabled
+docker-compose -f docker-compose.quickstart.yml --profile with-api up -d
+
+# View logs
+docker-compose logs -f prompt-alchemy-mcp
+
+# Stop all services
+docker-compose down
 ```
 
 ## Configuration
@@ -988,6 +1065,95 @@ prompt-alchemy search --output table "authentication" --limit 10
 ```
 
 Displays results in a formatted table with columns for ID, content preview, score, tags, and timestamps.
+
+## Best Practices for Managing Persistent Containers
+
+### Docker Volume Management
+
+Always use Docker volumes to persist your data across container restarts:
+
+```bash
+# Recommended: Use named volumes
+docker run -v ~/.prompt-alchemy:/app/data prompt-alchemy-mcp:latest
+
+# This ensures:
+# - Database persistence (prompts.db)
+# - Vector embeddings persistence
+# - Learning data accumulation
+# - Configuration persistence
+```
+
+### Container Lifecycle Management
+
+```bash
+# Rebuild after updates
+docker build -f Dockerfile.mcp -t prompt-alchemy-mcp:latest .
+
+# Clean up old containers
+docker container prune
+
+# Clean up unused images
+docker image prune -a
+
+# Monitor resource usage
+docker stats prompt-alchemy-mcp-server
+```
+
+### Environment Configuration
+
+1. **Use .env files** for sensitive data:
+```bash
+# .env file
+OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-ant-...
+GOOGLE_API_KEY=AIza...
+```
+
+2. **Never commit .env files** to version control
+3. **Use environment-specific configs**:
+   - `.env.development`
+   - `.env.production`
+   - `.env.local`
+
+### Backup Strategy
+
+```bash
+# Backup your data regularly
+tar -czf prompt-alchemy-backup-$(date +%Y%m%d).tar.gz ~/.prompt-alchemy/
+
+# Restore from backup
+tar -xzf prompt-alchemy-backup-20240315.tar.gz -C ~/
+```
+
+### Monitoring and Logging
+
+```bash
+# Real-time log monitoring
+docker logs -f prompt-alchemy-mcp-server
+
+# Export logs for analysis
+docker logs prompt-alchemy-mcp-server > prompt-alchemy-$(date +%Y%m%d).log
+
+# Check container health
+docker inspect prompt-alchemy-mcp-server | jq '.[0].State.Health'
+```
+
+### Security Best Practices
+
+1. **Run containers with least privilege**:
+```bash
+docker run --read-only --tmpfs /tmp prompt-alchemy-mcp:latest
+```
+
+2. **Limit resources**:
+```bash
+docker run --memory="512m" --cpus="1.0" prompt-alchemy-mcp:latest
+```
+
+3. **Use secrets management** for production:
+   - Docker Secrets
+   - Kubernetes Secrets
+   - HashiCorp Vault
 
 ## Troubleshooting
 

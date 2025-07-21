@@ -1,61 +1,51 @@
-# Quickstart Docker Compose for Prompt Alchemy
-# This file provides the easiest way to get started with Prompt Alchemy
+version: '3.8'
 
 services:
-  # MCP Server for Claude Desktop / AI Agents
+  # Quickstart MCP Server - minimal configuration
   prompt-alchemy-mcp:
     build:
       context: .
-      dockerfile: Dockerfile.quickstart
-    image: prompt-alchemy:quickstart
-    container_name: prompt-alchemy-mcp
-    # Keep container running for MCP requests
-    command: ["sh", "-c", "while true; do sleep 30; done"]
+      dockerfile: Dockerfile.mcp
+    image: prompt-alchemy-mcp:latest
+    container_name: prompt-alchemy-mcp-quickstart
     volumes:
-      - ./data:/app/data
-    env_file:
-      - .env
+      - ~/.prompt-alchemy:/app/data
     environment:
-      # Map environment variables to the format expected by the app
-      - PROMPT_ALCHEMY_PROVIDERS_OPENAI_API_KEY=${OPENAI_API_KEY:-}
-      - PROMPT_ALCHEMY_PROVIDERS_ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
-      - PROMPT_ALCHEMY_PROVIDERS_GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
-      - PROMPT_ALCHEMY_PROVIDERS_GROK_API_KEY=${GROK_API_KEY:-}
-      - PROMPT_ALCHEMY_PROVIDERS_OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
-      # Use default configuration
-      - PROMPT_ALCHEMY_CONFIG=/app/config.yaml
-    healthcheck:
-      test: ["CMD", "prompt-alchemy", "version"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      # API Keys - set these in your .env file
+      - PROMPT_ALCHEMY_PROVIDERS_OPENAI_API_KEY=${OPENAI_API_KEY}
+      - PROMPT_ALCHEMY_PROVIDERS_ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - PROMPT_ALCHEMY_PROVIDERS_GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      
+      # Default configuration
+      - PROMPT_ALCHEMY_EMBEDDINGS_PROVIDER=openai
+      - PROMPT_ALCHEMY_EMBEDDINGS_MODEL=text-embedding-3-small
+      - PROMPT_ALCHEMY_SELF_LEARNING_ENABLED=true
+      - LOG_LEVEL=info
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
 
-  # HTTP API Server (optional)
+  # Optional: Simple HTTP API for testing
   prompt-alchemy-api:
     build:
       context: .
-      dockerfile: Dockerfile.quickstart
-    image: prompt-alchemy:quickstart
-    container_name: prompt-alchemy-api
+      dockerfile: Dockerfile.mcp
+    image: prompt-alchemy-mcp:latest
+    container_name: prompt-alchemy-api-quickstart
     ports:
       - "8080:8080"
     volumes:
-      - ./data:/app/data
-    env_file:
-      - .env
+      - ~/.prompt-alchemy:/app/data
     environment:
-      # Map environment variables to the format expected by the app
-      - PROMPT_ALCHEMY_PROVIDERS_OPENAI_API_KEY=${OPENAI_API_KEY:-}
-      - PROMPT_ALCHEMY_PROVIDERS_ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
-      - PROMPT_ALCHEMY_PROVIDERS_GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
-      - PROMPT_ALCHEMY_PROVIDERS_GROK_API_KEY=${GROK_API_KEY:-}
-      - PROMPT_ALCHEMY_PROVIDERS_OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
-      # Use default configuration
-      - PROMPT_ALCHEMY_CONFIG=/app/config.yaml
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      - PROMPT_ALCHEMY_PROVIDERS_OPENAI_API_KEY=${OPENAI_API_KEY}
+      - PROMPT_ALCHEMY_PROVIDERS_ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - PROMPT_ALCHEMY_PROVIDERS_GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - LOG_LEVEL=info
+    command: ["prompt-alchemy", "serve", "http", "--port", "8080"]
     profiles:
-      - api
+      - with-api
+
+# Usage:
+# 1. Create .env file with your API keys
+# 2. Run MCP only: docker-compose -f docker-compose.quickstart.yml up
+# 3. Run with API: docker-compose -f docker-compose.quickstart.yml --profile with-api up
