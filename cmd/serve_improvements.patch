@@ -1,0 +1,254 @@
+--- serve.go.original
++++ serve.go.improved
+@@ -235,6 +235,7 @@ func (s *MCPServer) handleToolsList(req *MCPRequest) {
+ 			Name:        "generate_prompts",
+ 			Description: "Generate AI prompts using phased approach",
+ 			InputSchema: map[string]interface{}{
++				"$schema": "http://json-schema.org/draft-07/schema#",
+ 				"type": "object",
+ 				"properties": map[string]interface{}{
+ 					"input": map[string]interface{}{
+@@ -256,6 +257,31 @@ func (s *MCPServer) handleToolsList(req *MCPRequest) {
+ 						"description": "AI persona",
+ 						"default":     "code",
+ 					},
++					"temperature": map[string]interface{}{
++						"type":        "number",
++						"description": "Temperature for generation (0.0-1.0)",
++						"default":     0.7,
++						"minimum":     0.0,
++						"maximum":     1.0,
++					},
++					"max_tokens": map[string]interface{}{
++						"type":        "integer",
++						"description": "Maximum tokens in response",
++						"default":     2000,
++						"minimum":     100,
++						"maximum":     8000,
++					},
++					"optimize": map[string]interface{}{
++						"type":        "boolean",
++						"description": "Apply optimization after generation",
++						"default":     false,
++					},
++					"phase_selection": map[string]interface{}{
++						"type":        "string",
++						"description": "Selection strategy: 'best' (best from each phase), 'cascade' (use best as input to next), 'all' (return all)",
++						"default":     "best",
++						"enum":        []string{"best", "cascade", "all"},
++					},
+ 				},
+ 				"required": []string{"input"},
+ 			},
+@@ -462,6 +488,26 @@ func (s *MCPServer) handleGeneratePrompts(ctx context.Context, id interface{}, a
+ 		persona = p
+ 	}
+ 
++	temperature := 0.7
++	if t, ok := argsMap["temperature"].(float64); ok {
++		temperature = t
++	}
++
++	maxTokens := 2000
++	if mt, ok := argsMap["max_tokens"].(float64); ok {
++		maxTokens = int(mt)
++	}
++
++	optimize := false
++	if o, ok := argsMap["optimize"].(bool); ok {
++		optimize = o
++	}
++
++	phaseSelection := "best"
++	if ps, ok := argsMap["phase_selection"].(string); ok {
++		phaseSelection = ps
++	}
++
+ 	// Convert phases string to slice
+ 	phaseList := strings.Split(phases, ",")
+ 	modelPhases := make([]models.Phase, len(phaseList))
+@@ -470,12 +516,32 @@ func (s *MCPServer) handleGeneratePrompts(ctx context.Context, id interface{}, a
+ 		modelPhases[i] = models.Phase(trimmed)
+ 		s.logger.WithField("phase", trimmed).Debug("Parsed phase from request")
+ 	}
++
++	// Enhanced logging for debugging
++	s.logger.WithFields(logrus.Fields{
++		"input":           input,
++		"phases":          phases,
++		"count":           count,
++		"persona":         persona,
++		"temperature":     temperature,
++		"optimize":        optimize,
++		"phase_selection": phaseSelection,
++	}).Info("MCP: Starting prompt generation")
++
++	// Apply self-learning enhancement if available
++	enhancedInput := input
++	if s.storage != nil {
++		enhancer := engine.NewHistoryEnhancer(s.logger, s.storage, s.registry)
++		enhancedContext, err := enhancer.EnhanceWithHistory(ctx, input, 5)
++		if err == nil && enhancedContext != nil {
++			enhancedInput = enhancer.FormatEnhancedInput(enhancedContext)
++			s.logger.WithField("enhanced", true).Info("MCP: Input enhanced with historical data")
++		}
++	}
+ 
+ 	// Create request
+ 	promptReq := models.PromptRequest{
+-		Input:       input,
++		Input:       enhancedInput,
+ 		Phases:      modelPhases,
+ 		Count:       count,
+-		Temperature: 0.7,
+-		MaxTokens:   2000,
++		Temperature: temperature,
++		MaxTokens:   maxTokens,
+ 		SessionID:   uuid.New(),
+@@ -515,6 +581,7 @@ func (s *MCPServer) handleGeneratePrompts(ctx context.Context, id interface{}, a
+ 		UseParallel:    false,
+ 		IncludeContext: true,
+ 		Persona:        persona,
++		Optimize:       optimize,
+ 	}
+ 
+@@ -523,13 +590,79 @@ func (s *MCPServer) handleGeneratePrompts(ctx context.Context, id interface{}, a
+ 		"phaseConfigs": phaseConfigs,
+ 	}).Debug("Calling engine.Generate")
+ 
+-	result, err := s.engine.Generate(ctx, opts)
+-	if err != nil {
+-		s.sendToolError(id, fmt.Sprintf("Generation failed: %v", err))
+-		return
++	// Apply phase selection strategy
++	var finalPrompts []models.Prompt
++	var allPrompts []models.Prompt
++
++	switch phaseSelection {
++	case "best":
++		// Generate for each phase and select best
++		for _, phase := range modelPhases {
++			phaseOpts := opts
++			phaseOpts.Request.Phases = []models.Phase{phase}
++			
++			s.logger.WithField("phase", phase).Info("MCP: Generating variants for phase")
++			
++			result, err := s.engine.Generate(ctx, phaseOpts)
++			if err != nil {
++				s.logger.WithError(err).Errorf("MCP: Failed to generate phase %s", phase)
++				continue
++			}
++			
++			allPrompts = append(allPrompts, result.Prompts...)
++			
++			// Select best from this phase
++			if len(result.Prompts) > 0 {
++				best := result.Prompts[0] // TODO: Use proper ranking
++				finalPrompts = append(finalPrompts, best)
++				s.logger.WithFields(logrus.Fields{
++					"phase":     phase,
++					"selected":  best.ID.String(),
++					"from":      len(result.Prompts),
++				}).Info("MCP: Selected best prompt from phase")
++			}
++		}
++		
++	case "cascade":
++		// Use output from each phase as input to next
++		currentInput := enhancedInput
++		for _, phase := range modelPhases {
++			phaseOpts := opts
++			phaseOpts.Request.Input = currentInput
++			phaseOpts.Request.Phases = []models.Phase{phase}
++			
++			s.logger.WithField("phase", phase).Info("MCP: Cascade generation for phase")
++			
++			result, err := s.engine.Generate(ctx, phaseOpts)
++			if err != nil {
++				s.logger.WithError(err).Errorf("MCP: Failed to generate phase %s", phase)
++				break
++			}
++			
++			allPrompts = append(allPrompts, result.Prompts...)
++			
++			if len(result.Prompts) > 0 {
++				best := result.Prompts[0] // TODO: Use proper ranking
++				finalPrompts = append(finalPrompts, best)
++				currentInput = best.Content // Use for next phase
++			}
++		}
++		
++	default: // "all"
++		// Return all generated prompts (current behavior)
++		result, err := s.engine.Generate(ctx, opts)
++		if err != nil {
++			s.sendToolError(id, fmt.Sprintf("Generation failed: %v", err))
++			return
++		}
++		finalPrompts = result.Prompts
++		allPrompts = result.Prompts
+ 	}
+ 
++	s.logger.WithFields(logrus.Fields{
++		"total_generated": len(allPrompts),
++		"final_prompts":   len(finalPrompts),
++		"strategy":        phaseSelection,
++	}).Info("MCP: Generation complete")
++
+ 	// Format response
+-	prompts := make([]map[string]interface{}, len(result.Prompts))
+-	for i, p := range result.Prompts {
++	prompts := make([]map[string]interface{}, len(finalPrompts))
++	for i, p := range finalPrompts {
+ 		prompts[i] = map[string]interface{}{
+@@ -542,7 +675,14 @@ func (s *MCPServer) handleGeneratePrompts(ctx context.Context, id interface{}, a
+ 
+ 	content := MCPContent{
+ 		Type: "text",
+-		Text: fmt.Sprintf("Generated %d prompts:\n\n%s", len(prompts), formatPrompts(prompts)),
++		Text: fmt.Sprintf("Generated %d prompts total, selected %d final prompts using '%s' strategy:\n\n%s", 
++			len(allPrompts), len(finalPrompts), phaseSelection, formatPrompts(prompts)),
+ 	}
+ 
+ 	toolResult := MCPToolResult{
+@@ -550,6 +690,9 @@ func (s *MCPServer) handleGeneratePrompts(ctx context.Context, id interface{}, a
+ 		Metadata: map[string]interface{}{
+ 			"prompts": prompts,
+ 			"count":   len(prompts),
++			"total_generated": len(allPrompts),
++			"strategy": phaseSelection,
++			"optimized": optimize,
+ 		},
+ 	}
+ 
+@@ -824,7 +967,7 @@ func (s *MCPServer) handleOptimizePrompt(ctx context.Context, id interface{}, ar
+ 		Text: fmt.Sprintf("Optimization complete!\n\nOriginal prompt:\n%s\n\nOptimized prompt:\n%s\n\nFinal score: %.1f/10\nImprovement: %.1f\nIterations: %d",
+ 			prompt,
+ 			result.OptimizedPrompt,
+-			result.FinalScore,
++			result.FinalScore * 10.0, // Fix scoring display
+ 			result.Improvement,
+ 			len(result.Iterations)),
+ 	}
+@@ -835,8 +978,8 @@ func (s *MCPServer) handleOptimizePrompt(ctx context.Context, id interface{}, ar
+ 			"original_prompt":  prompt,
+ 			"optimized_prompt": result.OptimizedPrompt,
+-			"original_score":   result.OriginalScore,
+-			"final_score":      result.FinalScore,
++			"original_score":   result.OriginalScore * 10.0, // Convert to out of 10
++			"final_score":      result.FinalScore * 10.0,    // Convert to out of 10
+ 			"improvement":      result.Improvement,
+ 			"iterations":       iterations,
+ 			"total_iterations": len(result.Iterations),
+@@ -913,6 +1056,11 @@ func (s *MCPServer) handleBatchGenerate(ctx context.Context, id interface{}, arg
+ 	var results []BatchResult
+ 	var mu sync.Mutex
+ 
++	s.logger.WithFields(logrus.Fields{
++		"batch_size": len(batchInputs),
++		"workers":    workers,
++	}).Info("MCP: Starting batch generation")
++
+ 	// Process batch with workers
+ 	inputChan := make(chan BatchInput, len(batchInputs))
+ 	resultChan := make(chan BatchResult, len(batchInputs))
