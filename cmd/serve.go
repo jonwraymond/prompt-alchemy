@@ -235,7 +235,7 @@ func (s *MCPServer) handleToolsList(req *MCPRequest) {
 	tools := []MCPTool{
 		{
 			Name:        "generate_prompts",
-			Description: "Generate AI prompts using phased approach",
+			Description: "Generate refined AI prompts through a systematic three-phase alchemical process. Use this when you need to create new prompts from raw ideas or improve existing concepts. The tool transforms vague ideas into precise, effective prompts optimized for AI models. Supports different strategies: 'best' selects top prompts from each phase, 'cascade' progressively refines through phases, 'all' returns everything. Ideal for creating prompts for coding, writing, analysis, or any AI task.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
@@ -285,7 +285,7 @@ func (s *MCPServer) handleToolsList(req *MCPRequest) {
 		},
 		{
 			Name:        "search_prompts",
-			Description: "Search existing prompts",
+			Description: "Search through your stored prompt library to find previously generated or optimized prompts. Use this to avoid regenerating similar prompts and to learn from past successful patterns. The search uses both text matching and semantic similarity (via embeddings) to find relevant prompts. Returns prompts with metadata including scores, phases used, and creation dates. Useful for finding inspiration or reusing effective prompts for similar tasks.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
@@ -304,7 +304,7 @@ func (s *MCPServer) handleToolsList(req *MCPRequest) {
 		},
 		{
 			Name:        "get_prompt",
-			Description: "Get a specific prompt by ID",
+			Description: "Retrieve the complete details of a specific prompt using its unique ID. Use this when you have a prompt ID from search results or previous generations and need to access its full content, metadata, and generation history. Returns comprehensive information including the prompt text, phase details, provider used, generation parameters, and performance metrics. Essential for examining successful prompts in detail or sharing specific prompts.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
@@ -318,7 +318,7 @@ func (s *MCPServer) handleToolsList(req *MCPRequest) {
 		},
 		{
 			Name:        "list_providers",
-			Description: "List available AI providers",
+			Description: "List all configured and available AI providers (OpenAI, Anthropic, Google, Grok, OpenRouter, Ollama). Use this to check which providers are properly configured with valid API keys, their supported models, and current status. Helps in troubleshooting connection issues and choosing the best provider for specific tasks. Shows provider capabilities, rate limits, and whether they support embeddings. Essential for understanding your available AI resources before generating prompts.",
 			InputSchema: map[string]interface{}{
 				"type":       "object",
 				"properties": map[string]interface{}{},
@@ -326,7 +326,7 @@ func (s *MCPServer) handleToolsList(req *MCPRequest) {
 		},
 		{
 			Name:        "optimize_prompt",
-			Description: "Optimize a prompt using AI-powered meta-prompting",
+			Description: "Optimize an existing prompt using advanced AI-powered meta-prompting techniques. Use this to iteratively improve prompt quality through multiple refinement cycles until reaching a target quality score. The AI judge evaluates prompts based on clarity, specificity, and effectiveness for the intended task. Supports targeting specific models and personas. Ideal for critical prompts that need maximum effectiveness. Can transform mediocre prompts into highly effective ones through systematic improvement.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
@@ -365,7 +365,7 @@ func (s *MCPServer) handleToolsList(req *MCPRequest) {
 		},
 		{
 			Name:        "batch_generate",
-			Description: "Generate multiple prompts in batch mode",
+			Description: "Generate multiple prompts efficiently in parallel batch processing mode. Use this when you need to create prompts for multiple related tasks or variations of a concept. Processes inputs concurrently using worker pools for optimal performance. Each input can have its own configuration (phases, count, persona). Returns organized results with success/error tracking. Perfect for generating prompt sets for testing, creating variations for A/B testing, or processing lists of ideas. Supports progress tracking for long operations.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
