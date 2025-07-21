@@ -1,0 +1,52 @@
+# Docker configuration for Prompt Alchemy MCP Server
+log_level: info
+data_dir: /app/data
+
+# Provider configurations - API keys will be overridden by environment
+providers:
+  openai:
+    api_key: ""  # Set via PROMPT_ALCHEMY_PROVIDERS_OPENAI_API_KEY env var
+    model: gpt-4o-mini
+    timeout: 60
+    
+  anthropic:
+    api_key: ""  # Set via PROMPT_ALCHEMY_PROVIDERS_ANTHROPIC_API_KEY env var
+    model: claude-3-haiku-20240307
+    timeout: 60
+    
+  google:
+    api_key: ""  # Set via PROMPT_ALCHEMY_PROVIDERS_GOOGLE_API_KEY env var
+    model: gemini-1.5-flash
+    timeout: 60
+    
+  grok:
+    api_key: ""  # Set via PROMPT_ALCHEMY_PROVIDERS_GROK_API_KEY env var
+    model: grok-4
+    timeout: 60
+
+# Default phase assignments
+phases:
+  prima-materia:
+    provider: openai
+    temperature: 0.8
+    max_tokens: 2000
+  solutio:
+    provider: openai
+    temperature: 0.7
+    max_tokens: 2000
+  coagulatio:
+    provider: openai
+    temperature: 0.6
+    max_tokens: 2000
+
+# Self-learning configuration
+self_learning:
+  enabled: true
+  min_relevance_score: 0.7
+  max_examples: 3
+
+# Embeddings configuration
+embeddings:
+  provider: openai
+  model: text-embedding-3-small
+  dimensions: 1536

@@ -1,0 +1,59 @@
+# MCP Server Dockerfile for Prompt Alchemy
+# This creates an image optimized for running as an MCP server
+
+# Stage 1: Build the Go binary
+FROM golang:1.24 AS builder
+
+# Set working directory
+WORKDIR /app
+
+# Copy go.mod and go.sum for dependency caching
+COPY go.mod go.sum ./
+
+# Download dependencies
+RUN go mod download
+
+# Copy the rest of the source code
+COPY . .
+
+# Build the binary with CGO enabled for SQLite support
+RUN CGO_ENABLED=1 GOOS=linux go build -o prompt-alchemy ./cmd/prompt-alchemy
+
+# Stage 2: Create the final image
+FROM debian:12-slim
+
+# Install ca-certificates for HTTPS requests
+RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
+
+# Copy the binary from the builder stage
+COPY --from=builder /app/prompt-alchemy /usr/local/bin/prompt-alchemy
+
+# Copy schema file to expected location
+COPY --from=builder /app/internal/storage/schema.sql /app/internal/storage/schema.sql
+
+# Create necessary directories with proper permissions
+RUN mkdir -p /app/data /app/internal/storage /app/.prompt-alchemy && \
+    chmod -R 755 /app
+
+# Copy configuration file
+COPY config.docker.yaml /app/config.yaml
+
+# Set working directory
+WORKDIR /app
+
+# Set environment variables for MCP mode
+ENV PROMPT_ALCHEMY_MODE=mcp
+ENV PROMPT_ALCHEMY_LOG_LEVEL=info
+ENV PROMPT_ALCHEMY_DATA_DIR=/app/data
+
+# Create volume for persistent data
+VOLUME ["/app/data"]
+
+# MCP server runs on stdio, no ports needed
+# Run as MCP server by default with config
+CMD ["prompt-alchemy", "serve", "mcp", "--config", "/app/config.yaml"]
+
+# Add labels for better container management
+LABEL org.opencontainers.image.title="Prompt Alchemy MCP Server"
+LABEL org.opencontainers.image.description="AI prompt generation MCP server for Claude"
+LABEL org.opencontainers.image.source="https://github.com/jonwraymond/prompt-alchemy"

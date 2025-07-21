@@ -73,6 +73,7 @@ type MCPServer struct {
 	logger   *logrus.Logger
 	reader   *bufio.Reader
 	writer   *bufio.Writer
+	encoder  *json.Encoder
 }
 
 var serveCmd = &cobra.Command{
@@ -115,6 +116,12 @@ func runServe(cmd *cobra.Command, args []string) error {
 	// Initialize logger
 	logger := setupLogger()
 
+	// Reload viper to ensure configuration is properly loaded
+	viper.SetConfigFile(viper.ConfigFileUsed())
+	if err := viper.ReadInConfig(); err != nil {
+		logger.WithError(err).Warn("Failed to reload config")
+	}
+
 	// Initialize storage
 	store, err := storage.NewStorage(viper.GetString("data_dir"), logger)
 	if err != nil {
@@ -141,6 +148,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 	}
 
 	// Create server
+	writer := bufio.NewWriter(os.Stdout)
 	server := &MCPServer{
 		storage:  store,
 		registry: registry,
@@ -149,7 +157,8 @@ func runServe(cmd *cobra.Command, args []string) error {
 		learner:  learner,
 		logger:   logger,
 		reader:   bufio.NewReader(os.Stdin),
-		writer:   bufio.NewWriter(os.Stdout),
+		writer:   writer,
+		encoder:  json.NewEncoder(writer),
 	}
 
 	// Start server
@@ -241,13 +250,34 @@ func (s *MCPServer) handleToolsList(req *MCPRequest) {
 					},
 					"count": map[string]interface{}{
 						"type":        "integer",
-						"description": "Number of variants",
+						"description": "Number of variants per phase",
 						"default":     3,
 					},
 					"persona": map[string]interface{}{
 						"type":        "string",
-						"description": "AI persona",
+						"description": "AI persona (code, writing, analysis, generic)",
 						"default":     "code",
+					},
+					"temperature": map[string]interface{}{
+						"type":        "number",
+						"description": "Temperature for generation (0.0-1.0)",
+						"default":     0.7,
+					},
+					"max_tokens": map[string]interface{}{
+						"type":        "integer",
+						"description": "Maximum tokens in response",
+						"default":     2000,
+					},
+					"optimize": map[string]interface{}{
+						"type":        "boolean",
+						"description": "Apply optimization after generation",
+						"default":     false,
+					},
+					"phase_selection": map[string]interface{}{
+						"type":        "string",
+						"description": "Selection strategy: 'best' (best from each phase), 'cascade' (use best as input to next), 'all' (return all)",
+						"default":     "best",
+						"enum":        []string{"best", "cascade", "all"},
 					},
 				},
 				"required": []string{"input"},
@@ -455,41 +485,263 @@ func (s *MCPServer) handleGeneratePrompts(ctx context.Context, id interface{}, a
 		persona = p
 	}
 
+	temperature := 0.7
+	if t, ok := argsMap["temperature"].(float64); ok {
+		temperature = t
+	}
+
+	maxTokens := 2000
+	if mt, ok := argsMap["max_tokens"].(float64); ok {
+		maxTokens = int(mt)
+	}
+
+	optimize := false
+	if o, ok := argsMap["optimize"].(bool); ok {
+		optimize = o
+	}
+
+	phaseSelection := "best"
+	if ps, ok := argsMap["phase_selection"].(string); ok {
+		phaseSelection = ps
+	}
+
+	// Extract progress token if provided
+	var progressToken interface{}
+	if pt, ok := argsMap["progressToken"]; ok {
+		progressToken = pt
+	}
+
+	// Enhanced logging for debugging
+	s.logger.WithFields(logrus.Fields{
+		"input":           input,
+		"phases":          phases,
+		"count":           count,
+		"persona":         persona,
+		"temperature":     temperature,
+		"optimize":        optimize,
+		"phase_selection": phaseSelection,
+	}).Info("MCP: Starting prompt generation")
+
 	// Convert phases string to slice
 	phaseList := strings.Split(phases, ",")
 	modelPhases := make([]models.Phase, len(phaseList))
 	for i, p := range phaseList {
-		modelPhases[i] = models.Phase(strings.TrimSpace(p))
+		trimmed := strings.TrimSpace(p)
+		modelPhases[i] = models.Phase(trimmed)
+		s.logger.WithField("phase", trimmed).Debug("Parsed phase from request")
+	}
+
+	// Apply self-learning enhancement if available
+	enhancedInput := input
+	if s.storage != nil && len(modelPhases) > 0 {
+		// Get embedding provider
+		available := s.registry.ListAvailable()
+		var embedder providers.Provider
+		for _, providerName := range available {
+			p, err := s.registry.Get(providerName)
+			if err == nil && p.SupportsEmbeddings() {
+				embedder = p
+				break
+			}
+		}
+
+		if embedder != nil {
+			enhancer := engine.NewHistoryEnhancer(s.storage, embedder)
+			enhancedContext, err := enhancer.EnhanceWithHistory(ctx, input, modelPhases[0])
+			if err == nil && enhancedContext != nil {
+				// Format enhanced input with insights
+				var insights []string
+				if len(enhancedContext.SimilarPrompts) > 0 {
+					insights = append(insights, fmt.Sprintf("Found %d similar historical prompts", len(enhancedContext.SimilarPrompts)))
+				}
+				if len(enhancedContext.ExtractedPatterns) > 0 {
+					insights = append(insights, "Patterns: "+strings.Join(enhancedContext.ExtractedPatterns[:min(3, len(enhancedContext.ExtractedPatterns))], ", "))
+				}
+				if enhancedContext.HistoricalInsights != "" {
+					insights = append(insights, enhancedContext.HistoricalInsights)
+				}
+
+				if len(insights) > 0 {
+					enhancedInput = fmt.Sprintf("%s\n\n[Enhanced with historical insights: %s]", input, strings.Join(insights, "; "))
+					s.logger.WithField("enhanced", true).Info("MCP: Input enhanced with historical data")
+				}
+			}
+		}
 	}
 
 	// Create request
 	promptReq := models.PromptRequest{
-		Input:       input,
+		Input:       enhancedInput,
 		Phases:      modelPhases,
 		Count:       count,
-		Temperature: 0.7,
-		MaxTokens:   2000,
+		Temperature: temperature,
+		MaxTokens:   maxTokens,
 		SessionID:   uuid.New(),
+	}
+
+	// Build phase configs - for MCP, use openai as default provider for all phases
+	// This is a simplification for the MCP server
+	phaseConfigs := make([]models.PhaseConfig, len(modelPhases))
+	defaultProvider := "openai"
+
+	// Log available providers
+	available := s.registry.ListAvailable()
+	s.logger.WithField("available_providers", available).Debug("Available providers in registry")
+
+	// Check if openai is available, otherwise use first available provider
+	if !contains(available, defaultProvider) && len(available) > 0 {
+		defaultProvider = available[0]
+		s.logger.WithField("fallback_provider", defaultProvider).Info("OpenAI not available, using fallback provider")
+	}
+
+	for i, phase := range modelPhases {
+		phaseConfigs[i] = models.PhaseConfig{
+			Phase:    phase,
+			Provider: defaultProvider,
+		}
+		s.logger.WithFields(logrus.Fields{
+			"index":    i,
+			"phase":    string(phase),
+			"provider": defaultProvider,
+		}).Debug("Phase provider configuration")
 	}
 
 	// Generate prompts
 	opts := models.GenerateOptions{
 		Request:        promptReq,
-		PhaseConfigs:   []models.PhaseConfig{},
+		PhaseConfigs:   phaseConfigs,
 		UseParallel:    false,
 		IncludeContext: true,
 		Persona:        persona,
+		Optimize:       optimize,
 	}
 
-	result, err := s.engine.Generate(ctx, opts)
-	if err != nil {
+	s.logger.WithFields(logrus.Fields{
+		"phases":       modelPhases,
+		"phaseConfigs": phaseConfigs,
+	}).Debug("Calling engine.Generate")
+
+	// Apply phase selection strategy
+	var finalPrompts []models.Prompt
+	var allPrompts []models.Prompt
+
+	// Wrap generation with progress tracking if token provided
+	generateFunc := func() error {
+		switch phaseSelection {
+		case "best":
+			// Generate for each phase and select best
+			for i, phase := range modelPhases {
+				phaseOpts := opts
+				phaseOpts.Request.Phases = []models.Phase{phase}
+
+				// Update progress
+				if progressToken != nil {
+					tracker := NewProgressTracker(s.encoder)
+					if i == 0 {
+						tracker.Start(progressToken, "Generating prompts")
+					}
+					percentage := float64(i) / float64(len(modelPhases)) * 100
+					tracker.Update(progressToken, fmt.Sprintf("Processing %s phase", phase), percentage)
+				}
+
+				s.logger.WithField("phase", phase).Info("MCP: Generating variants for phase")
+
+				result, err := s.engine.Generate(ctx, phaseOpts)
+				if err != nil {
+					s.logger.WithError(err).Errorf("MCP: Failed to generate phase %s", phase)
+					continue
+				}
+
+				allPrompts = append(allPrompts, result.Prompts...)
+
+				// Select best from this phase using AI judge
+				if len(result.Prompts) > 0 {
+					best := s.selectBestPrompt(ctx, result.Prompts, phase, input, persona)
+					finalPrompts = append(finalPrompts, best)
+					s.logger.WithFields(logrus.Fields{
+						"phase":    phase,
+						"selected": best.ID.String(),
+						"from":     len(result.Prompts),
+					}).Info("MCP: Selected best prompt from phase")
+				}
+			}
+
+		case "cascade":
+			// Use output from each phase as input to next
+			currentInput := enhancedInput
+			for i, phase := range modelPhases {
+				phaseOpts := opts
+				phaseOpts.Request.Input = currentInput
+				phaseOpts.Request.Phases = []models.Phase{phase}
+
+				// Update progress
+				if progressToken != nil {
+					tracker := NewProgressTracker(s.encoder)
+					if i == 0 {
+						tracker.Start(progressToken, "Cascade prompt generation")
+					}
+					percentage := float64(i) / float64(len(modelPhases)) * 100
+					tracker.Update(progressToken, fmt.Sprintf("Refining through %s phase", phase), percentage)
+				}
+
+				s.logger.WithField("phase", phase).Info("MCP: Cascade generation for phase")
+
+				result, err := s.engine.Generate(ctx, phaseOpts)
+				if err != nil {
+					s.logger.WithError(err).Errorf("MCP: Failed to generate phase %s", phase)
+					break
+				}
+
+				allPrompts = append(allPrompts, result.Prompts...)
+
+				if len(result.Prompts) > 0 {
+					best := s.selectBestPrompt(ctx, result.Prompts, phase, currentInput, persona)
+					finalPrompts = append(finalPrompts, best)
+					currentInput = best.Content // Use for next phase
+				}
+			}
+
+		default: // "all"
+			// Return all generated prompts (current behavior)
+			if progressToken != nil {
+				tracker := NewProgressTracker(s.encoder)
+				tracker.Start(progressToken, "Generating all prompts")
+			}
+
+			result, err := s.engine.Generate(ctx, opts)
+			if err != nil {
+				return err
+			}
+
+			s.logger.WithField("count", len(result.Prompts)).Info("MCP: Generated prompts")
+			finalPrompts = result.Prompts
+			allPrompts = result.Prompts
+		}
+
+		// Complete progress
+		if progressToken != nil {
+			tracker := NewProgressTracker(s.encoder)
+			tracker.End(progressToken, fmt.Sprintf("Generated %d prompts", len(finalPrompts)))
+		}
+
+		return nil
+	}
+
+	// Execute generation with error handling
+	if err := generateFunc(); err != nil {
 		s.sendToolError(id, fmt.Sprintf("Generation failed: %v", err))
 		return
 	}
 
+	s.logger.WithFields(logrus.Fields{
+		"total_generated": len(allPrompts),
+		"final_prompts":   len(finalPrompts),
+		"strategy":        phaseSelection,
+	}).Info("MCP: Generation complete")
+
 	// Format response
-	prompts := make([]map[string]interface{}, len(result.Prompts))
-	for i, p := range result.Prompts {
+	prompts := make([]map[string]interface{}, len(finalPrompts))
+	for i, p := range finalPrompts {
 		prompts[i] = map[string]interface{}{
 			"id":       p.ID.String(),
 			"content":  p.Content,
@@ -501,14 +753,18 @@ func (s *MCPServer) handleGeneratePrompts(ctx context.Context, id interface{}, a
 
 	content := MCPContent{
 		Type: "text",
-		Text: fmt.Sprintf("Generated %d prompts:\n\n%s", len(prompts), formatPrompts(prompts)),
+		Text: fmt.Sprintf("Generated %d prompts total, selected %d final prompts using '%s' strategy:\n\n%s",
+			len(allPrompts), len(finalPrompts), phaseSelection, formatPrompts(prompts)),
 	}
 
 	toolResult := MCPToolResult{
 		Content: []MCPContent{content},
 		Metadata: map[string]interface{}{
-			"prompts": prompts,
-			"count":   len(prompts),
+			"prompts":         prompts,
+			"count":           len(prompts),
+			"total_generated": len(allPrompts),
+			"strategy":        phaseSelection,
+			"optimized":       optimize,
 		},
 	}
 
@@ -771,12 +1027,31 @@ func (s *MCPServer) handleOptimizePrompt(ctx context.Context, id interface{}, ar
 	// Format response
 	iterations := make([]map[string]interface{}, len(result.Iterations))
 	for i, iter := range result.Iterations {
+		// Check if score needs to be converted to out of 10
+		score := iter.Score
+		if score <= 1.0 {
+			score = score * 10.0
+		}
 		iterations[i] = map[string]interface{}{
 			"iteration": iter.Iteration,
 			"prompt":    iter.Prompt,
-			"score":     iter.Score,
+			"score":     score,
 			"reasoning": iter.ChangeReasoning,
 		}
+	}
+
+	// Convert scores to out of 10 if needed
+	finalScore := result.FinalScore
+	if finalScore <= 1.0 {
+		finalScore = finalScore * 10.0
+	}
+	originalScore := result.OriginalScore
+	if originalScore <= 1.0 {
+		originalScore = originalScore * 10.0
+	}
+	improvement := result.Improvement
+	if result.FinalScore <= 1.0 && result.OriginalScore <= 1.0 {
+		improvement = improvement * 10.0
 	}
 
 	content := MCPContent{
@@ -784,8 +1059,8 @@ func (s *MCPServer) handleOptimizePrompt(ctx context.Context, id interface{}, ar
 		Text: fmt.Sprintf("Optimization complete!\n\nOriginal prompt:\n%s\n\nOptimized prompt:\n%s\n\nFinal score: %.1f/10\nImprovement: %.1f\nIterations: %d",
 			prompt,
 			result.OptimizedPrompt,
-			result.FinalScore,
-			result.Improvement,
+			finalScore,
+			improvement,
 			len(result.Iterations)),
 	}
 
@@ -794,9 +1069,9 @@ func (s *MCPServer) handleOptimizePrompt(ctx context.Context, id interface{}, ar
 		Metadata: map[string]interface{}{
 			"original_prompt":  prompt,
 			"optimized_prompt": result.OptimizedPrompt,
-			"original_score":   result.OriginalScore,
-			"final_score":      result.FinalScore,
-			"improvement":      result.Improvement,
+			"original_score":   originalScore,
+			"final_score":      finalScore,
+			"improvement":      improvement,
 			"iterations":       iterations,
 			"total_iterations": len(result.Iterations),
 		},
@@ -822,6 +1097,12 @@ func (s *MCPServer) handleBatchGenerate(ctx context.Context, id interface{}, arg
 	workers := 3
 	if w, ok := argsMap["workers"].(float64); ok {
 		workers = int(w)
+	}
+
+	// Extract progress token if provided
+	var progressToken interface{}
+	if pt, ok := argsMap["progressToken"]; ok {
+		progressToken = pt
 	}
 
 	// Parse batch inputs
@@ -870,6 +1151,17 @@ func (s *MCPServer) handleBatchGenerate(ctx context.Context, id interface{}, arg
 	resultsChan := make(chan map[string]interface{}, len(batchInputs))
 	errorsChan := make(chan error, len(batchInputs))
 
+	// Initialize progress tracking
+	var tracker *ProgressTracker
+	if progressToken != nil {
+		tracker = NewProgressTracker(s.encoder)
+		tracker.Start(progressToken, fmt.Sprintf("Processing %d prompts", len(batchInputs)))
+	}
+
+	// Track completed items for progress
+	completedCount := 0
+	completedMutex := &sync.Mutex{}
+
 	// Create worker pool
 	workChan := make(chan BatchInput, len(batchInputs))
 	var wg sync.WaitGroup
@@ -894,9 +1186,24 @@ func (s *MCPServer) handleBatchGenerate(ctx context.Context, id interface{}, arg
 					MaxTokens:   2000,
 				}
 
+				// Build phase configs
+				phaseConfigs := make([]models.PhaseConfig, len(modelPhases))
+				defaultProvider := "openai"
+				available := s.registry.ListAvailable()
+				if !contains(available, defaultProvider) && len(available) > 0 {
+					defaultProvider = available[0]
+				}
+
+				for j, phase := range modelPhases {
+					phaseConfigs[j] = models.PhaseConfig{
+						Phase:    phase,
+						Provider: defaultProvider,
+					}
+				}
+
 				opts := models.GenerateOptions{
 					Request:        req,
-					PhaseConfigs:   []models.PhaseConfig{},
+					PhaseConfigs:   phaseConfigs,
 					UseParallel:    false,
 					IncludeContext: true,
 					Persona:        input.Persona,
@@ -904,7 +1211,8 @@ func (s *MCPServer) handleBatchGenerate(ctx context.Context, id interface{}, arg
 
 				result, err := s.engine.Generate(ctx, opts)
 				if err != nil {
-					errorsChan <- err
+					s.logger.WithError(err).WithField("input_id", input.ID).Error("Batch generation failed for input")
+					errorsChan <- fmt.Errorf("input %s: %v", input.ID, err)
 					continue
 				}
 
@@ -926,6 +1234,15 @@ func (s *MCPServer) handleBatchGenerate(ctx context.Context, id interface{}, arg
 					"prompts": prompts,
 					"count":   len(prompts),
 				}
+
+				// Update progress
+				if tracker != nil {
+					completedMutex.Lock()
+					completedCount++
+					percentage := float64(completedCount) / float64(len(batchInputs)) * 100
+					tracker.Update(progressToken, fmt.Sprintf("Completed %d/%d prompts", completedCount, len(batchInputs)), percentage)
+					completedMutex.Unlock()
+				}
 			}
 		}()
 	}
@@ -941,15 +1258,30 @@ func (s *MCPServer) handleBatchGenerate(ctx context.Context, id interface{}, arg
 	close(resultsChan)
 	close(errorsChan)
 
-	// Collect results
-	for result := range resultsChan {
-		results = append(results, result)
-	}
+	// Collect results and errors in goroutines
+	var resultsDone sync.WaitGroup
+	resultsDone.Add(2)
 
-	// Check for errors
+	go func() {
+		defer resultsDone.Done()
+		for result := range resultsChan {
+			results = append(results, result)
+		}
+	}()
+
 	var errors []string
-	for err := range errorsChan {
-		errors = append(errors, err.Error())
+	go func() {
+		defer resultsDone.Done()
+		for err := range errorsChan {
+			errors = append(errors, err.Error())
+		}
+	}()
+
+	resultsDone.Wait()
+
+	// Complete progress tracking
+	if tracker != nil {
+		tracker.End(progressToken, fmt.Sprintf("Processed %d prompts with %d errors", len(results), len(errors)))
 	}
 
 	content := MCPContent{
@@ -1044,6 +1376,62 @@ func formatPrompts(prompts []map[string]interface{}) string {
 	return result.String()
 }
 
+func (s *MCPServer) selectBestPrompt(ctx context.Context, prompts []models.Prompt, phase models.Phase, taskDesc string, persona string) models.Prompt {
+	if len(prompts) == 1 {
+		return prompts[0]
+	}
+
+	// Try to use AI judge if we have a provider
+	var judgeProvider providers.Provider
+	available := s.registry.ListAvailable()
+	for _, providerName := range available {
+		p, err := s.registry.Get(providerName)
+		if err == nil {
+			judgeProvider = p
+			break
+		}
+	}
+
+	if judgeProvider != nil {
+		judge := NewPromptJudge(judgeProvider, s.logger)
+		criteria := JudgeCriteria{
+			TaskDescription:  taskDesc,
+			Persona:          persona,
+			DesiredQualities: []string{"clarity", "completeness", "relevance to " + string(phase) + " phase"},
+		}
+
+		selected, err := judge.SelectBest(ctx, prompts, criteria)
+		if err == nil {
+			s.logger.WithFields(logrus.Fields{
+				"selected_id": selected.ID.String(),
+				"phase":       phase,
+			}).Debug("AI judge selected best prompt")
+			return selected
+		}
+		s.logger.WithError(err).Warn("AI judge failed, using fallback")
+	}
+
+	// Fallback: use ranker if available
+	if s.ranker != nil {
+		rankings, err := s.ranker.RankPrompts(ctx, prompts, taskDesc)
+		if err == nil && len(rankings) > 0 {
+			// Find highest scoring prompt
+			var bestIdx int
+			var bestScore float64
+			for i, ranking := range rankings {
+				if ranking.Score > bestScore {
+					bestScore = ranking.Score
+					bestIdx = i
+				}
+			}
+			return prompts[bestIdx]
+		}
+	}
+
+	// Final fallback: return first prompt
+	return prompts[0]
+}
+
 func contains(slice []string, item string) bool {
 	for _, s := range slice {
 		if s == item {
@@ -1055,6 +1443,8 @@ func contains(slice []string, item string) bool {
 
 func setupLogger() *logrus.Logger {
 	logger := logrus.New()
+	// CRITICAL: Set output to stderr for MCP compatibility
+	logger.SetOutput(os.Stderr)
 	logger.SetFormatter(&logrus.TextFormatter{
 		FullTimestamp: true,
 	})

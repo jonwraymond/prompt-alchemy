@@ -221,8 +221,35 @@ func (e *Engine) generateSinglePrompt(ctx context.Context, phase models.Phase, p
 	// Build the system prompt based on phase
 	systemPrompt := handler.BuildSystemPrompt(opts)
 
-	// Prepare the prompt content
-	promptContent := handler.PreparePromptContent(input, opts)
+	// Enhance input with historical data if storage is available
+	enhancedInput := input
+	if e.storage != nil {
+		// Try to get an embedding provider
+		embeddingProvider := providers.GetEmbeddingProvider(provider, e.registry)
+		if embeddingProvider.SupportsEmbeddings() {
+			storageImpl, ok := e.storage.(*storage.Storage)
+			if ok {
+				historyEnhancer := NewHistoryEnhancer(storageImpl, embeddingProvider)
+				enhancedContext, err := historyEnhancer.EnhanceWithHistory(ctx, input, phase)
+				if err != nil {
+					e.logger.WithError(err).Warn("Failed to enhance with historical data, using original input")
+				} else if enhancedContext != nil {
+					// Use enhanced prompt that includes historical insights
+					enhancedInput = historyEnhancer.BuildEnhancedPrompt(input, enhancedContext, phase)
+					e.logger.WithFields(logrus.Fields{
+						"original_length": len(input),
+						"enhanced_length": len(enhancedInput),
+						"patterns_found":  len(enhancedContext.ExtractedPatterns),
+						"examples_found":  len(enhancedContext.BestExamples),
+						"insights_found":  len(enhancedContext.LearningInsights),
+					}).Info("Successfully enhanced prompt with historical data")
+				}
+			}
+		}
+	}
+
+	// Prepare the prompt content with enhanced input
+	promptContent := handler.PreparePromptContent(enhancedInput, opts)
 	e.logger.Debugf("Prompt content for provider: %s", promptContent)
 
 	// Generate using the provider

@@ -33,6 +33,8 @@ type EnhancedContext struct {
 	ExtractedPatterns   []string
 	SuggestedApproaches []string
 	HistoricalInsights  string
+	BestExamples        []*models.Prompt // Top-scoring examples for reference
+	LearningInsights    []string         // Actionable insights from historical data
 }
 
 // EnhanceWithHistory enhances the input with historical context using RAG
@@ -84,6 +86,12 @@ func (h *HistoryEnhancer) EnhanceWithHistory(ctx context.Context, input string, 
 	approaches := h.extractApproaches(similarPrompts, phase)
 	insights := h.generateInsights(similarPrompts, nil, highQualityPrompts)
 
+	// Generate learning insights from historical data
+	learningInsights := h.generateLearningInsights(similarPrompts, highQualityPrompts, phase)
+
+	// Select best examples (combine high-quality and most similar)
+	bestExamples := h.selectBestExamples(similarPrompts, highQualityPrompts, 3)
+
 	enhancementResult := &EnhancedContext{
 		OriginalInput:       input,
 		SimilarPrompts:      similarPrompts,
@@ -91,6 +99,8 @@ func (h *HistoryEnhancer) EnhanceWithHistory(ctx context.Context, input string, 
 		ExtractedPatterns:   patterns,
 		SuggestedApproaches: approaches,
 		HistoricalInsights:  insights,
+		BestExamples:        bestExamples,
+		LearningInsights:    learningInsights,
 	}
 
 	logger.WithFields(map[string]interface{}{
@@ -282,6 +292,115 @@ func (h *HistoryEnhancer) BuildEnhancedPrompt(input string, context *EnhancedCon
 	}
 
 	return enhanced.String()
+}
+
+// generateLearningInsights creates actionable insights from historical data
+func (h *HistoryEnhancer) generateLearningInsights(similar []*models.Prompt, highQuality []*models.Prompt, phase models.Phase) []string {
+	insights := make([]string, 0)
+
+	// Combine all prompts for analysis
+	allPrompts := append(similar, highQuality...)
+	if len(allPrompts) == 0 {
+		return insights
+	}
+
+	// Analyze provider effectiveness
+	providerStats := make(map[string]int)
+	for _, p := range allPrompts {
+		providerStats[p.Provider]++
+	}
+
+	bestProvider := ""
+	maxCount := 0
+	for provider, count := range providerStats {
+		if count > maxCount {
+			bestProvider = provider
+			maxCount = count
+		}
+	}
+
+	if bestProvider != "" {
+		insights = append(insights, fmt.Sprintf("Provider '%s' has been most successful for %s phase (%d/%d prompts)",
+			bestProvider, phase, maxCount, len(allPrompts)))
+	}
+
+	// Analyze average token usage
+	totalTokens := 0
+	tokenCount := 0
+	for _, p := range allPrompts {
+		if p.ActualTokens > 0 {
+			totalTokens += p.ActualTokens
+			tokenCount++
+		}
+	}
+
+	if tokenCount > 0 {
+		avgTokens := totalTokens / tokenCount
+		insights = append(insights, fmt.Sprintf("Average successful prompt length: %d tokens", avgTokens))
+	}
+
+	// Analyze temperature patterns
+	totalTemp := 0.0
+	tempCount := 0
+	for _, p := range allPrompts {
+		if p.Temperature > 0 {
+			totalTemp += p.Temperature
+			tempCount++
+		}
+	}
+
+	if tempCount > 0 {
+		avgTemp := totalTemp / float64(tempCount)
+		insights = append(insights, fmt.Sprintf("Average successful temperature: %.2f", avgTemp))
+	}
+
+	// Analyze persona usage
+	personaStats := make(map[string]int)
+	for _, p := range allPrompts {
+		if p.PersonaUsed != "" {
+			personaStats[p.PersonaUsed]++
+		}
+	}
+
+	for persona, count := range personaStats {
+		if float64(count)/float64(len(allPrompts)) > 0.3 {
+			insights = append(insights, fmt.Sprintf("Persona '%s' is frequently used (%.0f%% of prompts)",
+				persona, float64(count)/float64(len(allPrompts))*100))
+		}
+	}
+
+	return insights
+}
+
+// selectBestExamples selects the highest-scoring prompts as examples
+func (h *HistoryEnhancer) selectBestExamples(similar []*models.Prompt, highQuality []*models.Prompt, limit int) []*models.Prompt {
+	// Create a map to avoid duplicates
+	seen := make(map[string]bool)
+	examples := make([]*models.Prompt, 0, limit)
+
+	// First add high-quality prompts
+	for _, p := range highQuality {
+		if len(examples) >= limit {
+			break
+		}
+		if !seen[p.ID.String()] {
+			examples = append(examples, p)
+			seen[p.ID.String()] = true
+		}
+	}
+
+	// Then add similar prompts if space remains
+	for _, p := range similar {
+		if len(examples) >= limit {
+			break
+		}
+		if !seen[p.ID.String()] && p.RelevanceScore > 0.7 {
+			examples = append(examples, p)
+			seen[p.ID.String()] = true
+		}
+	}
+
+	return examples
 }
 
 // extractThemes extracts key themes from prompts
