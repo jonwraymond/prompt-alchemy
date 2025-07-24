@@ -1,0 +1,126 @@
+/* Modern Header with Rainbow Glow Effect */
+
+/* Import modern fonts */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Bebas+Neue&family=Righteous&display=swap');
+
+/* Main title styling */
+.main-title {
+    font-family: 'Orbitron', 'Bebas Neue', sans-serif !important;
+    font-weight: 900 !important;
+    font-size: 4rem !important;
+    letter-spacing: 0.15em !important;
+    text-transform: uppercase !important;
+    margin: 0 0 0.5rem 0 !important;
+    position: relative !important;
+    z-index: 10 !important;
+}
+
+/* Individual letter styling */
+.main-title .letter {
+    display: inline-block;
+    position: relative;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    /* Base text gradient */
+    background: linear-gradient(135deg, var(--liquid-gold), var(--liquid-silver));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Rainbow glow effect on hover */
+.main-title .letter:hover {
+    transform: scale(1.1) translateY(-2px);
+    filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.8));
+}
+
+/* Rainbow glow animation using pseudo-elements */
+.main-title .letter::before {
+    content: attr(data-letter);
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    
+    /* Rainbow gradient text */
+    background: linear-gradient(
+        45deg,
+        #ff0080 0%,
+        #ff8c00 20%,
+        #ffd700 40%,
+        #00ff00 60%,
+        #00ffff 80%,
+        #ff00ff 100%
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    
+    /* Soft diffused glow */
+    filter: blur(8px);
+}
+
+/* Active rainbow glow on hover */
+.main-title .letter:hover::before {
+    opacity: 1;
+    animation: rainbow-shift 2s ease-in-out infinite;
+}
+
+/* Rainbow shadow layers for depth */
+.main-title .letter::after {
+    content: attr(data-letter);
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: -2;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    
+    /* Multi-layer shadow effect */
+    text-shadow: 
+        0 0 10px rgba(255, 0, 128, 0.5),
+        0 0 20px rgba(255, 140, 0, 0.4),
+        0 0 30px rgba(255, 215, 0, 0.3),
+        0 0 40px rgba(0, 255, 0, 0.2),
+        0 0 50px rgba(0, 255, 255, 0.2),
+        0 0 60px rgba(255, 0, 255, 0.2);
+}
+
+.main-title .letter:hover::after {
+    opacity: 0.7;
+}
+
+/* Rainbow shift animation */
+@keyframes rainbow-shift {
+    0%, 100% {
+        filter: blur(8px) hue-rotate(0deg);
+    }
+    50% {
+        filter: blur(10px) hue-rotate(180deg);
+    }
+}
+
+/* Responsive sizing */
+@media (max-width: 768px) {
+    .main-title {
+        font-size: 2.5rem !important;
+        letter-spacing: 0.1em !important;
+    }
+}
+
+/* Subtitle enhancement */
+.main-subtitle {
+    font-family: 'Space Grotesk', sans-serif !important;
+    font-size: 1.25rem !important;
+    opacity: 0.9 !important;
+    letter-spacing: 0.05em !important;
+    margin-top: 1rem !important;
+    transition: all 0.3s ease !important;
+}
+
+/* Subtle glow on subtitle when hovering title */
+.main-title:hover ~ .main-subtitle {
+    text-shadow: 0 0 15px rgba(212, 175, 55, 0.5);
+} 

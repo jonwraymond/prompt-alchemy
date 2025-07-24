@@ -3095,3 +3095,38 @@ console.log('  • dotted-connection: Standby paths (static dotted)');
 console.log('  • input-relationship: Input flow (golden waves from input)');
 console.log('  • output-relationship: Output flow (golden waves to output)');
 console.log('  • ready-to-flow: Ready state (pulsing dotted)');
+
+// Initialize global instance when DOM is ready
+function initializeUnifiedHexFlow() {
+    console.log('🚀 Initializing UnifiedHexFlow global instance...');
+    
+    if (typeof UnifiedHexFlow === 'undefined') {
+        console.error('❌ UnifiedHexFlow class not available!');
+        return false;
+    }
+    
+    if (window.unifiedHexFlow) {
+        console.log('⚠️ UnifiedHexFlow instance already exists');
+        return true;
+    }
+    
+    try {
+        window.unifiedHexFlow = new UnifiedHexFlow();
+        console.log('✅ UnifiedHexFlow global instance created successfully');
+        return true;
+    } catch (error) {
+        console.error('❌ Failed to create UnifiedHexFlow instance:', error);
+        return false;
+    }
+}
+
+// Auto-initialize when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeUnifiedHexFlow);
+} else {
+    // DOM is already ready
+    initializeUnifiedHexFlow();
+}
+
+// Make initialization function globally available
+window.initializeUnifiedHexFlow = initializeUnifiedHexFlow;
