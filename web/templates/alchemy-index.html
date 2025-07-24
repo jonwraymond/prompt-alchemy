@@ -2884,6 +2884,86 @@
     
     <script src="/static/js/hex-flow-unified.js?v={{.Timestamp}}"></script>
     
+    <!-- ULTRA FORCE HEX GRID CREATION -->
+    <script>
+        // Ultra-aggressive hex grid creation
+        setTimeout(() => {
+            console.log('🔥 ULTRA FORCE: Creating hex grid immediately...');
+            
+            // Ensure elements exist
+            const svg = document.getElementById('hex-flow-board');
+            let nodesGroup = document.getElementById('hex-nodes');
+            
+            if (!svg) {
+                console.error('❌ SVG not found!');
+                return;
+            }
+            
+            if (!nodesGroup) {
+                nodesGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                nodesGroup.id = 'hex-nodes';
+                svg.appendChild(nodesGroup);
+            }
+            
+            // Clear and create nodes
+            nodesGroup.innerHTML = '';
+            
+            // Create test nodes to verify it works
+            const testNodes = [
+                { id: 'hub', x: 500, y: 350, color: '#ff6b35', title: 'Hub' },
+                { id: 'prima', x: 500, y: 250, color: '#ff6b6b', title: 'Prima' },
+                { id: 'solutio', x: 600, y: 350, color: '#4ecdc4', title: 'Solutio' },
+                { id: 'coagulatio', x: 400, y: 350, color: '#45b7d1', title: 'Coagulatio' },
+                { id: 'input', x: 300, y: 350, color: '#ffcc33', title: 'Input' },
+                { id: 'output', x: 700, y: 350, color: '#ffd700', title: 'Output' }
+            ];
+            
+            testNodes.forEach(nodeData => {
+                const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                group.setAttribute('class', 'hex-node ultra-force');
+                group.setAttribute('data-id', nodeData.id);
+                group.setAttribute('transform', `translate(${nodeData.x}, ${nodeData.y})`);
+                
+                const hex = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                const size = 30;
+                const points = [];
+                for (let i = 0; i < 6; i++) {
+                    const angle = (Math.PI / 3) * i;
+                    points.push(`${size * Math.cos(angle)},${size * Math.sin(angle)}`);
+                }
+                hex.setAttribute('points', points.join(' '));
+                hex.setAttribute('fill', nodeData.color);
+                hex.setAttribute('fill-opacity', '0.7');
+                hex.setAttribute('stroke', nodeData.color);
+                hex.setAttribute('stroke-width', '2');
+                
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('text-anchor', 'middle');
+                text.setAttribute('dy', '0.35em');
+                text.setAttribute('fill', 'white');
+                text.setAttribute('font-size', '10');
+                text.textContent = nodeData.title;
+                
+                group.appendChild(hex);
+                group.appendChild(text);
+                nodesGroup.appendChild(group);
+            });
+            
+            console.log('🎉 ULTRA FORCE: Created', testNodes.length, 'hex nodes');
+            
+            // Try to create UnifiedHexFlow instance after DOM is ready
+            if (typeof UnifiedHexFlow !== 'undefined' && !window.unifiedHexFlow) {
+                try {
+                    window.unifiedHexFlow = new UnifiedHexFlow();
+                    console.log('✅ UnifiedHexFlow instance created');
+                } catch (e) {
+                    console.log('⚠️ UnifiedHexFlow creation skipped:', e.message);
+                }
+            }
+            
+        }, 1000);
+    </script>
+    
     <!-- Force initialization check -->
     <script>
         // Ensure hex flow is initialized after all scripts load
