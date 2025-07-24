@@ -2914,6 +2914,9 @@
         // Production code only - no test functions
     </script>
     
+    <!-- Radial Layout Override - Most aggressive fix, loads first -->
+    <script src="/static/js/radial-layout-override.js?v={{.Timestamp}}"></script>
+    
     <!-- Patcher must load BEFORE hex-flow-unified.js to intercept positioning -->
     <script src="/static/js/unified-hex-flow-patcher.js?v={{.Timestamp}}"></script>
     <script src="/static/js/hex-flow-unified.js?v={{.Timestamp}}"></script>
@@ -2930,6 +2933,7 @@
     <link rel="stylesheet" href="/static/css/tattoo-alchemy-output.css?v={{.Timestamp}}">
     <link rel="stylesheet" href="/static/css/call-transfer-animation.css?v={{.Timestamp}}">
     <link rel="stylesheet" href="/static/css/premium-tooltip.css?v={{.Timestamp}}">
+    <link rel="stylesheet" href="/static/css/position-fix-override.css?v={{.Timestamp}}">
     <!-- API Error Handler - Load First -->
     <script src="/static/js/api-error-handler.js?v={{.Timestamp}}"></script>
     
@@ -3290,5 +3294,8 @@
     
     <!-- Position Enforcer - Runs last to ensure all nodes stay in correct positions -->
     <script src="/static/js/position-enforcer.js?v={{.Timestamp}}"></script>
+    
+    <!-- Positioning Diagnostic - Debug tool to understand why positions aren't working -->
+    <script src="/static/js/positioning-diagnostic.js?v={{.Timestamp}}"></script>
 </body>
 </html>

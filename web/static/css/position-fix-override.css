@@ -1,0 +1,91 @@
+/* Position Fix Override - Aggressive CSS to prevent transform issues */
+
+/* Remove ALL transforms from the SVG container */
+#hex-flow-board,
+.hex-flow-board {
+    transform: none !important;
+    transform-origin: initial !important;
+    transition: none !important;
+}
+
+/* Ensure SVG takes full space without any scaling */
+#hex-flow-board {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* Remove any transforms from parent containers */
+.hex-flow-container,
+.hex-flow-wrapper,
+.hex-flow-main {
+    transform: none !important;
+    transform-origin: initial !important;
+    transition: none !important;
+}
+
+/* Ensure hex nodes don't have unwanted transforms */
+.hex-node {
+    transition: none !important;
+}
+
+/* Override any zoom/pan transforms */
+.hex-flow-board[style*="transform"] {
+    transform: none !important;
+}
+
+/* Prevent any CSS animations that might move nodes */
+.hex-node,
+.hex-node * {
+    animation: none !important;
+}
+
+/* Only allow transform attribute for positioning */
+.hex-node[transform] {
+    /* Transform attribute is allowed for translate positioning */
+}
+
+/* Debug styles to verify positions */
+.hex-node[data-id="hub"] {
+    /* Should be at 500, 350 */
+}
+
+.hex-node[data-id="input"] {
+    /* Should be at 150, 350 */
+}
+
+.hex-node[data-id="output"] {
+    /* Should be at 850, 350 */
+}
+
+/* Ensure nodes are visible */
+.hex-node {
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
+/* Remove any 3D transforms */
+* {
+    transform-style: flat !important;
+    perspective: none !important;
+}
+
+/* Specific overrides for known problem areas */
+.hex-flow-board g[transform*="scale"],
+.hex-flow-board g[transform*="rotate"] {
+    transform: none !important;
+}
+
+/* Ensure viewBox is respected */
+#hex-flow-board[viewBox="0 0 1000 700"] {
+    /* This is correct, don't change */
+}
+
+/* Emergency visibility fix */
+.hex-node polygon,
+.hex-node path {
+    fill-opacity: 1 !important;
+    stroke-opacity: 1 !important;
+}
