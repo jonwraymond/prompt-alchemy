@@ -75,22 +75,40 @@ body::before {
 
 .main-title {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 3rem;
+  font-size: 4rem; /* Increased font size */
   font-weight: 700;
   margin: 0 0 0.5rem 0;
-  letter-spacing: -0.025em;
+  letter-spacing: 0.1em; /* Adjusted letter spacing */
   text-align: center;
+  display: flex; /* Use flexbox for centering */
+  justify-content: center; /* Center horizontally */
 }
 
 .main-title .letter {
   display: inline-block;
-  transition: text-shadow 0.3s ease-in-out;
+  transition: text-shadow 0.3s ease-in-out, transform 0.3s ease-in-out;
   color: white;
   -webkit-text-fill-color: white;
+  opacity: 0;
+  animation: fragment-appear 0.8s ease-out forwards;
+  animation-delay: calc(var(--index) * 0.05s);
 }
 
+@keyframes fragment-appear {
+  from {
+    opacity: 0;
+    transform: translateY(20px) rotate(10deg);
+    filter: blur(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) rotate(0deg);
+    filter: blur(0);
+  }
+}
 
 .main-title .letter:hover {
+  transform: scale(1.1); /* Add a slight scale effect on hover */
   text-shadow: 0 0 8px rgba(255, 0, 150, 1),
                0 0 15px rgba(0, 150, 255, 0.9),
                0 0 22px rgba(150, 0, 255, 0.8),

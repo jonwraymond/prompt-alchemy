@@ -10,29 +10,7 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@100;200;300;400;500;600;700;800&display=swap');
 
-/* Deconstructed Title Animation */
-.alchemy-title {
-  font-family: 'Space Grotesk', sans-serif;
-  font-weight: 700;
-  font-size: clamp(3rem, 8vw, 6rem);
-  letter-spacing: -0.05em;
-  line-height: 0.9;
-  position: relative;
-  margin: 0;
-  padding: 2rem 0;
-}
 
-.alchemy-title span {
-  display: inline-block;
-  position: relative;
-  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.alchemy-title span:hover {
-  transform: translateY(-8px) rotate(-5deg);
-  color: var(--liquid-gold);
-  text-shadow: 0 10px 20px rgba(251, 191, 36, 0.3);
-}
 
 /* Fragmented Text Effect */
 .fragmented-text {
