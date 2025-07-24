@@ -32,6 +32,10 @@
     cursor: pointer !important;
     transition: all 0.3s ease !important;
     z-index: 1 !important;
+    opacity: 1 !important;
+    animation: none !important;
+    transform: none !important;
+    filter: none !important;
 }
 
 /* Rainbow glow effect on hover */

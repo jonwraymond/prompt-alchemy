@@ -3013,6 +3013,8 @@
                         path.setAttribute('stroke-width', '1');
                         path.setAttribute('stroke-opacity', '0.6');
                         path.setAttribute('stroke-dasharray', '2,2');
+                        path.setAttribute('class', 'hex-path');
+                        path.setAttribute('data-connection', `${conn.from}-${conn.to}`);
                         pathsGroup.appendChild(path);
                     }
                 });
@@ -3025,6 +3027,44 @@
                 try {
                     window.unifiedHexFlow = new UnifiedHexFlow();
                     console.log('✅ UnifiedHexFlow instance created');
+                    
+                    // ULTRA FIX: Register our nodes with the animation system
+                    fullNodes.forEach(nodeData => {
+                        const element = document.querySelector(`[data-id="${nodeData.id}"]`);
+                        if (element) {
+                            // Register node in the animation system's nodes Map
+                            window.unifiedHexFlow.nodes.set(nodeData.id, {
+                                id: nodeData.id,
+                                x: nodeData.x,
+                                y: nodeData.y,
+                                nodeConfig: nodeData,
+                                element: element
+                            });
+                        }
+                    });
+                    
+                    // ULTRA FIX: Register connections for animation
+                    const connectionKeys = [
+                        'hub-prima', 'hub-solutio', 'hub-coagulatio',
+                        'prima-solutio', 'solutio-coagulatio',
+                        'input-hub', 'hub-output',
+                        'prima-parse', 'solutio-flow', 'coagulatio-validate'
+                    ];
+                    
+                    connectionKeys.forEach(key => {
+                        const pathElement = document.querySelector(`path[data-connection="${key}"]`);
+                        if (pathElement) {
+                            const [from, to] = key.split('-');
+                            window.unifiedHexFlow.connections.set(key, {
+                                from: from,
+                                to: to,
+                                path: pathElement
+                            });
+                        }
+                    });
+                    
+                    console.log('🎯 ULTRA FIX: Registered', window.unifiedHexFlow.nodes.size, 'nodes and', window.unifiedHexFlow.connections.size, 'connections for animation');
+                    
                 } catch (e) {
                     console.log('⚠️ UnifiedHexFlow creation skipped:', e.message);
                 }
