@@ -2404,12 +2404,7 @@ class UnifiedHexFlow {
             });
         });
         
-        // Remove any elements in particles group
-        if (this.particlesGroup) {
-            while (this.particlesGroup.firstChild) {
-                this.particlesGroup.removeChild(this.particlesGroup.firstChild);
-            }
-        }
+        // Particle system removed - no cleanup needed
     }
     
     /**

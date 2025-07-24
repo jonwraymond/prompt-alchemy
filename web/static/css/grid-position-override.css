@@ -1,0 +1,44 @@
+/* Grid Position Override - Prevent any transforms that cause clustering */
+
+/* Remove ALL transforms from the SVG board */
+#hex-flow-board {
+    transform: none !important;
+    transform-origin: initial !important;
+}
+
+/* Ensure hex nodes can only use translate transforms */
+.hex-node {
+    transform-origin: center center !important;
+}
+
+/* Prevent any scaling or rotation on the board */
+.hex-flow-board {
+    transform: none !important;
+}
+
+/* Override any zoom transforms */
+.hex-flow-container,
+.hex-flow-wrapper,
+.hex-flow-main {
+    transform: none !important;
+    overflow: visible !important;
+}
+
+/* Ensure nodes stay visible */
+.hex-node[data-id] {
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
+/* Force correct positioning for specific problem nodes */
+.hex-node[data-id="hub"] {
+    /* Should be at center: 500, 350 */
+}
+
+.hex-node[data-id="input"] {
+    /* Should be at left: 150, 350 */
+}
+
+.hex-node[data-id="output"] {
+    /* Should be at right: 850, 350 */
+}

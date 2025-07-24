@@ -2914,6 +2914,9 @@
         // Production code only - no test functions
     </script>
     
+    <!-- Force Grid Positions - Must load FIRST to override radial layout -->
+    <script src="/static/js/force-grid-positions.js?v={{.Timestamp}}"></script>
+    
     <!-- Hex Position Manager - Clean production positioning -->
     <script src="/static/js/hex-position-manager.js?v={{.Timestamp}}"></script>
     <script src="/static/js/hex-flow-unified.js?v={{.Timestamp}}"></script>
@@ -2928,6 +2931,7 @@
     <link rel="stylesheet" href="/static/css/tattoo-alchemy-output.css?v={{.Timestamp}}">
     <link rel="stylesheet" href="/static/css/call-transfer-animation.css?v={{.Timestamp}}">
     <link rel="stylesheet" href="/static/css/premium-tooltip.css?v={{.Timestamp}}">
+    <link rel="stylesheet" href="/static/css/grid-position-override.css?v={{.Timestamp}}">
     <!-- API Error Handler - Load First -->
     <script src="/static/js/api-error-handler.js?v={{.Timestamp}}"></script>
     
