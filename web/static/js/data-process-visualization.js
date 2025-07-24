@@ -232,14 +232,14 @@ class DataProcessVisualization {
             // Add to SVG
             svg.appendChild(particle);
             
-            // Animate particle from source to destination
+            // Animate particle from source to destination  
             this.animateParticleMovement(particle, fromPos, toPos, duration, () => {
                 particle.remove();
                 resolve();
             });
             
-            // Create connection line animation
-            this.animateConnectionLine(fromId, toId, duration);
+            // Create connection line animation with proper process type
+            this.animateConnectionLine(fromId, toId, duration, processType);
         });
     }
     
@@ -310,29 +310,37 @@ class DataProcessVisualization {
         animate.beginElement();
     }
     
-    animateConnectionLine(fromId, toId, duration) {
-        // Find connection path
+    animateConnectionLine(fromId, toId, duration, processType = 'processing') {
+        // Use the advanced line animator if available
+        if (window.connectionLineAnimator) {
+            return window.connectionLineAnimator.animateConnection(fromId, toId, processType, duration);
+        }
+        
+        // Fallback to simple animation
         const connectionKey = this.findConnectionKey(fromId, toId);
-        if (!connectionKey) return;
+        if (!connectionKey) return Promise.resolve();
         
         const path = document.querySelector(`[data-connection="${connectionKey}"]`);
-        if (!path) return;
+        if (!path) return Promise.resolve();
         
-        // Create temporary line animation
-        const originalStroke = path.getAttribute('stroke');
-        const originalWidth = path.getAttribute('stroke-width');
-        
-        // Animate line
-        path.setAttribute('stroke', '#00ff88');
-        path.setAttribute('stroke-width', '4');
-        path.style.filter = 'drop-shadow(0 0 8px #00ff88)';
-        
-        // Reset after animation
-        setTimeout(() => {
-            path.setAttribute('stroke', originalStroke);
-            path.setAttribute('stroke-width', originalWidth);
-            path.style.filter = '';
-        }, duration);
+        return new Promise((resolve) => {
+            // Create temporary line animation
+            const originalStroke = path.getAttribute('stroke');
+            const originalWidth = path.getAttribute('stroke-width');
+            
+            // Animate line
+            path.setAttribute('stroke', '#00ff88');
+            path.setAttribute('stroke-width', '4');
+            path.style.filter = 'drop-shadow(0 0 8px #00ff88)';
+            
+            // Reset after animation
+            setTimeout(() => {
+                path.setAttribute('stroke', originalStroke);
+                path.setAttribute('stroke-width', originalWidth);
+                path.style.filter = '';
+                resolve();
+            }, duration);
+        });
     }
     
     findConnectionKey(fromId, toId) {
