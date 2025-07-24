@@ -9,7 +9,7 @@
     <script>
         // EMERGENCY FIX: Disable HTMX retries to stop timeout loop
         document.addEventListener('DOMContentLoaded', function() {
-            htmx.config.timeout = 5000;
+            htmx.config.timeout = 30000;
             htmx.config.retryDelay = 0;
             htmx.config.historyCacheSize = 0;
             
@@ -28,13 +28,13 @@
     <link rel="stylesheet" href="/static/css/modern-alchemy.css">
     <link rel="stylesheet" href="/static/css/hex-flow-board.css">
     <link rel="stylesheet" href="/static/css/hex-flow-board-unified.css">
+    <link rel="stylesheet" href="/static/css/hex-glass-effects.css">
+    <link rel="stylesheet" href="/static/css/hex-pulse-glow.css">
     <!-- Emergency Fix CSS - Remove after diagnosis -->
     <link rel="stylesheet" href="/static/css/hex-grid-fix.css">
     <!-- Modern Header with Rainbow Glow -->
     <link rel="stylesheet" href="/static/css/header-rainbow-glow.css">
-    <script src="/static/js/hex-flow-unified.js" defer></script>
     <script src="/static/js/header-check.js" defer></script>
-    <script src="/static/js/header-debug.js" defer></script>
     
     <!-- Emergency inline styles to force display -->
     <style>
@@ -531,7 +531,6 @@
                                      stroke-width="0.5" 
                                      opacity="0.3"/>
                         </pattern>
-                        <rect width="100%" height="100%" fill="url(#hexGrid)" />
                         
                         <g id="connection-paths"></g>
                         
@@ -623,13 +622,13 @@
                             <div class="legend-section">
                                 <div class="legend-section-title">Connection Lines</div>
                                 <div class="legend-item">
-                                    <div class="legend-line-demo">
+                                    <div class="legend-line">
                                         <svg width="24" height="6" viewBox="0 0 24 6">
                                             <line x1="2" y1="3" x2="22" y2="3" 
                                                   stroke="#2ecc71" 
                                                   stroke-width="2" 
                                                   stroke-dasharray="6,4"
-                                                  class="demo-active-processing">
+                                                  class="line-active-processing">
                                             </line>
                                         </svg>
                                     </div>
@@ -639,14 +638,14 @@
                                     </div>
                                 </div>
                                 <div class="legend-item">
-                                    <div class="legend-line-demo">
+                                    <div class="legend-line">
                                         <svg width="24" height="6" viewBox="0 0 24 6">
                                             <line x1="2" y1="3" x2="22" y2="3" 
                                                   stroke="#6c757d" 
                                                   stroke-width="2" 
                                                   stroke-dasharray="3,3"
                                                   opacity="0.6"
-                                                  class="demo-standby">
+                                                  class="line-standby">
                                             </line>
                                         </svg>
                                     </div>
@@ -656,13 +655,13 @@
                                     </div>
                                 </div>
                                 <div class="legend-item">
-                                    <div class="legend-line-demo">
+                                    <div class="legend-line">
                                         <svg width="24" height="6" viewBox="0 0 24 6">
                                             <line x1="2" y1="3" x2="22" y2="3" 
                                                   stroke="#ffcc33" 
                                                   stroke-width="2" 
                                                   stroke-dasharray="4,4"
-                                                  class="demo-ready-pulse">
+                                                  class="line-ready-pulse">
                                             </line>
                                         </svg>
                                     </div>
@@ -672,13 +671,13 @@
                                     </div>
                                 </div>
                                 <div class="legend-item">
-                                    <div class="legend-line-demo">
+                                    <div class="legend-line">
                                         <svg width="24" height="6" viewBox="0 0 24 6">
                                             <line x1="2" y1="3" x2="22" y2="3" 
                                                   stroke="#e74c3c" 
                                                   stroke-width="2" 
                                                   stroke-dasharray="5,5"
-                                                  class="demo-broken">
+                                                  class="line-broken">
                                             </line>
                                         </svg>
                                     </div>
@@ -1752,7 +1751,11 @@
                 event.preventDefault();
                 const form = event.target.closest('form');
                 if (form && !document.getElementById('central-send').disabled) {
-                    form.requestSubmit();
+                    try {
+                        form.requestSubmit();
+                    } catch (e) {
+                        console.error('Form submission failed:', e);
+                    }
                 }
             }
         }
@@ -2888,8 +2891,7 @@
                     hexPoints.push(`${x},${y}`);
                 }
                 hexPath.setAttribute('d', `M${hexPoints.join('L')}Z`);
-                hexPath.setAttribute('fill', node.color);
-                hexPath.setAttribute('fill-opacity', '0.3');
+                hexPath.setAttribute('fill', 'none');
                 hexPath.setAttribute('stroke', node.color);
                 hexPath.setAttribute('stroke-width', '2');
                 
@@ -2909,38 +2911,38 @@
             console.log('Created', basicNodes.length, 'fallback hex nodes');
         }
         
-        // Add developer test functions for rainbow glow testing
-        window.testThinking = function() {
-            if (window.hexAIThoughts) {
-                window.hexAIThoughts.startThinking('AI deep analysis in progress...');
-                console.log('🌈 Rainbow glow activated!');
-            }
-        };
-        
-        window.testNormal = function() {
-            if (window.hexAIThoughts) {
-                window.hexAIThoughts.stopThinking('Ready for next sequence...');
-                console.log('💡 Normal state restored');
-            }
-        };
-        
-        // Test thinking with different phases
-        window.testPhase = function(phase) {
-            if (window.hexAIThoughts) {
-                window.hexAIThoughts.updateHeaderForPhase(phase, 'test content');
-                console.log(`🔬 Testing phase: ${phase}`);
-            }
-        };
-        
-        console.log('🧠 AI Header Testing Functions Available:');
-        console.log('  testThinking() - Enable rainbow glow');
-        console.log('  testNormal() - Disable rainbow glow');
-        console.log('  testPhase("prima-materia") - Test specific phases');
+        // Production code only - no test functions
     </script>
     
     <script src="/static/js/hex-flow-unified.js?v={{.Timestamp}}"></script>
     <script src="/static/js/ultra-animation-fix.js?v={{.Timestamp}}"></script>
-    <script src="/static/js/engine-flow-connections.js?v={{.Timestamp}}"></script>
+    <script src="/static/js/engine-flow-connections-v2.js?v={{.Timestamp}}"></script>
+    <!-- <script src="/static/js/hex-tooltips.js?v={{.Timestamp}}"></script> Disabled - using unified premium tooltip -->
+    <script src="/static/js/fix-missing-emojis.js?v={{.Timestamp}}"></script>
+    <script src="/static/js/realtime-api-integration.js?v={{.Timestamp}}"></script>
+    
+    <!-- Magical Gateway Effects -->
+    <link rel="stylesheet" href="/static/css/magical-gateway-effects.css?v={{.Timestamp}}">
+    <link rel="stylesheet" href="/static/css/flow-particles.css?v={{.Timestamp}}">
+    <link rel="stylesheet" href="/static/css/flow-particles-enhanced.css?v={{.Timestamp}}">
+    <link rel="stylesheet" href="/static/css/tattoo-alchemy-output.css?v={{.Timestamp}}">
+    <link rel="stylesheet" href="/static/css/call-transfer-animation.css?v={{.Timestamp}}">
+    <link rel="stylesheet" href="/static/css/premium-tooltip.css?v={{.Timestamp}}">
+    <script src="/static/js/magical-gateway-animations.js?v={{.Timestamp}}"></script>
+    <script src="/static/js/tattoo-alchemy-effect.js?v={{.Timestamp}}"></script>
+    <script src="/static/js/gateway-diagnostics.js?v={{.Timestamp}}"></script>
+    <script src="/static/js/live-server-gateway.js?v={{.Timestamp}}"></script>
+    <script src="/static/js/real-api-particles.js?v={{.Timestamp}}"></script>
+    <script src="/static/js/fix-connection-timing.js?v={{.Timestamp}}"></script>
+    <script src="/static/js/call-transfer-animation.js?v={{.Timestamp}}"></script>
+    <script src="/static/js/api-call-transfer-integration.js?v={{.Timestamp}}"></script>
+    <script src="/static/js/unified-premium-tooltip.js?v={{.Timestamp}}"></script>
+    <script src="/static/js/particle-diagnostics.js?v={{.Timestamp}}"></script>
+    <script src="/static/js/continuous-line-animations.js?v={{.Timestamp}}"></script>
+    <script src="/static/js/hex-glow-enhancement.js?v={{.Timestamp}}"></script>
+    <script src="/static/js/hex-positioning-fix.js?v={{.Timestamp}}"></script>
+    <script src="/static/js/particle-animation-fix.js?v={{.Timestamp}}"></script>
+    <script src="/static/js/data-process-visualization.js?v={{.Timestamp}}"></script>
     
     <!-- ULTRA FORCE HEX GRID CREATION -->
     <script>
@@ -3016,8 +3018,7 @@
                     points.push(`${size * Math.cos(angle)},${size * Math.sin(angle)}`);
                 }
                 hex.setAttribute('points', points.join(' '));
-                hex.setAttribute('fill', nodeData.color);
-                hex.setAttribute('fill-opacity', '0.7');
+                hex.setAttribute('fill', 'none');
                 hex.setAttribute('stroke', nodeData.color);
                 hex.setAttribute('stroke-width', '2');
                 
@@ -3122,20 +3123,72 @@
                     
                     console.log('🎯 ULTRA FIX: Registered', window.unifiedHexFlow.nodes.size, 'nodes and', window.unifiedHexFlow.connections.size, 'connections for animation');
                     
-                    // ULTRA TEST: Add manual animation trigger function
-                    window.testHexAnimation = function() {
-                        console.log('🎬 Testing hex animation...');
-                        if (window.unifiedHexFlow) {
-                            window.unifiedHexFlow.startProcessFlowWithAnimation();
-                        }
-                    };
                     
-                    console.log('🎮 Test function available: testHexAnimation()');
-                    
-                    // BYPASS BACKEND: Add direct animation trigger on form submit
+                    // REAL API Integration - bypass HTMX for real API calls
                     const generateForm = document.getElementById('generate-form');
-                    if (generateForm) {
-                        generateForm.addEventListener('submit', function(e) {
+                    if (generateForm && window.realtimeGenerator) {
+                        // Override form submission to use REAL API
+                        generateForm.addEventListener('submit', async function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            
+                            console.log('🚀 REAL API form submission intercepted');
+                            
+                            // Get form data
+                            const input = document.getElementById('input').value;
+                            const persona = document.getElementById('persona').value;
+                            const count = parseInt(document.getElementById('count').value) || 3;
+                            
+                            // Show loading state
+                            const submitBtn = generateForm.querySelector('button[type="submit"]');
+                            if (submitBtn) {
+                                submitBtn.disabled = true;
+                                submitBtn.textContent = 'Generating...';
+                            }
+                            
+                            try {
+                                // Make REAL API call with visualizations
+                                const result = await window.realtimeGenerator.generatePrompt(input, {
+                                    persona: persona,
+                                    count: count,
+                                    save: true
+                                });
+                                
+                                console.log('✅ REAL API generation complete:', result);
+                                
+                                // Display results (optional - you could update the results container)
+                                const resultsContainer = document.getElementById('results-container');
+                                if (resultsContainer && result.prompt) {
+                                    resultsContainer.innerHTML = `
+                                        <div class="result-card">
+                                            <h3>Generated Prompt</h3>
+                                            <p>${result.prompt}</p>
+                                            <div class="result-meta">
+                                                <span>Score: ${result.score || 'N/A'}</span>
+                                                <span>Provider: ${result.provider || 'N/A'}</span>
+                                            </div>
+                                        </div>
+                                    `;
+                                }
+                            } catch (error) {
+                                console.error('❌ REAL API error:', error);
+                            } finally {
+                                // Reset button state
+                                if (submitBtn) {
+                                    submitBtn.disabled = false;
+                                    submitBtn.textContent = 'Generate';
+                                }
+                            }
+                            
+                            return false; // Prevent default HTMX behavior
+                        }, true); // Use capture to intercept before HTMX
+                        
+                        console.log('✅ REAL API form integration active - submit form to see real API calls');
+                    } else if (!window.realtimeGenerator) {
+                        console.error('❌ Real-time generator not available');
+                    }
+                    
+                    // Original code continues...
                             console.log('🎬 Generate form submitted - triggering animation!');
                             
                             // Prevent HTMX request if backend is down
