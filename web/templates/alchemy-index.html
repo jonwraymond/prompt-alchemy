@@ -3065,6 +3065,16 @@
                     
                     console.log('🎯 ULTRA FIX: Registered', window.unifiedHexFlow.nodes.size, 'nodes and', window.unifiedHexFlow.connections.size, 'connections for animation');
                     
+                    // ULTRA TEST: Add manual animation trigger function
+                    window.testHexAnimation = function() {
+                        console.log('🎬 Testing hex animation...');
+                        if (window.unifiedHexFlow) {
+                            window.unifiedHexFlow.startProcessFlowWithAnimation();
+                        }
+                    };
+                    
+                    console.log('🎮 Test function available: testHexAnimation()');
+                    
                 } catch (e) {
                     console.log('⚠️ UnifiedHexFlow creation skipped:', e.message);
                 }
