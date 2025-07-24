@@ -74,9 +74,17 @@ body::before {
 }
 
 .main-title {
-  font-family: 'Inter', sans-serif;
+  font-family: 'JetBrains Mono', monospace;
   font-size: 3rem;
   font-weight: 700;
+  margin: 0 0 0.5rem 0;
+  letter-spacing: -0.025em;
+  text-align: center;
+}
+
+.main-title .letter {
+  display: inline-block;
+  transition: text-shadow 0.3s ease-in-out;
   background: linear-gradient(135deg, 
     var(--liquid-gold) 0%,
     var(--liquid-blue) 50%,
@@ -85,16 +93,16 @@ body::before {
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  margin: 0 0 0.5rem 0;
-  letter-spacing: -0.025em;
-  text-shadow: 0 0 30px rgba(251, 191, 36, 0.3);
-  transition: text-shadow 0.3s ease-in-out;
 }
 
-.main-title:hover {
-  text-shadow: 0 0 15px rgba(251, 191, 36, 0.6), 
-               0 0 25px rgba(59, 130, 246, 0.4), 
-               0 0 35px rgba(16, 185, 129, 0.3);
+.main-title .letter:hover {
+  text-shadow: 0 0 5px rgba(255, 0, 150, 0.8),
+               0 0 10px rgba(0, 150, 255, 0.7),
+               0 0 15px rgba(150, 0, 255, 0.6),
+               0 0 20px rgba(255, 100, 0, 0.5),
+               0 0 25px rgba(255, 255, 0, 0.4),
+               0 0 30px rgba(0, 255, 150, 0.3),
+               0 0 35px rgba(255, 0, 255, 0.2);
 }
 
 .main-subtitle {
