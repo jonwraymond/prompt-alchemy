@@ -2914,6 +2914,8 @@
         // Production code only - no test functions
     </script>
     
+    <!-- Patcher must load BEFORE hex-flow-unified.js to intercept positioning -->
+    <script src="/static/js/unified-hex-flow-patcher.js?v={{.Timestamp}}"></script>
     <script src="/static/js/hex-flow-unified.js?v={{.Timestamp}}"></script>
     <script src="/static/js/ultra-animation-fix.js?v={{.Timestamp}}"></script>
     <script src="/static/js/engine-flow-connections-v2.js?v={{.Timestamp}}"></script>
@@ -2931,8 +2933,7 @@
     <!-- API Error Handler - Load First -->
     <script src="/static/js/api-error-handler.js?v={{.Timestamp}}"></script>
     
-    <!-- Script Conflict Resolver -->
-    <script src="/static/js/script-conflict-resolver.js?v={{.Timestamp}}"></script>
+
     
     <!-- Gateway Effects System -->
     <script src="/static/js/magical-gateway-animations.js?v={{.Timestamp}}"></script>
@@ -3286,5 +3287,8 @@
             }, 1000);
         });
     </script>
+    
+    <!-- Position Enforcer - Runs last to ensure all nodes stay in correct positions -->
+    <script src="/static/js/position-enforcer.js?v={{.Timestamp}}"></script>
 </body>
 </html>

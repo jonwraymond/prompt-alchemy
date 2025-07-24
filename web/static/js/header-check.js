@@ -23,14 +23,14 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('\nPage title:', document.title);
     
     // Force correct header text if wrong
-    if (mainTitle && mainTitle.textContent !== 'Prompt Alchemy') {
-        console.warn('⚠️ Wrong header text detected! Current:', mainTitle.textContent);
-        console.log('Forcing correct header text...');
-        mainTitle.textContent = 'Prompt Alchemy';
-    }
+    // if (mainTitle && mainTitle.textContent !== 'Prompt Alchemy') {
+    //     console.warn('⚠️ Wrong header text detected! Current:', mainTitle.textContent);
+    //     console.log('Forcing correct header text...');
+    //     mainTitle.textContent = 'Prompt Alchemy';
+    // }
     
-    if (mainSubtitle && mainSubtitle.textContent !== 'Transform raw ideas into refined AI prompts') {
-        console.warn('⚠️ Wrong subtitle text detected! Current:', mainSubtitle.textContent);
-        mainSubtitle.textContent = 'Transform raw ideas into refined AI prompts';
-    }
+    // if (mainSubtitle && mainSubtitle.textContent !== 'Transform raw ideas into refined AI prompts') {
+    //     console.warn('⚠️ Wrong subtitle text detected! Current:', mainSubtitle.textContent);
+    //     mainSubtitle.textContent = 'Transform raw ideas into refined AI prompts';
+    // }
 }); 

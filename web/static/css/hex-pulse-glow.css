@@ -1,0 +1,66 @@
+/* Pulsating hex glow effect for hex nodes */
+
+/* Main pulsating animation */
+@keyframes hex-pulse-glow {
+    0%, 100% {
+        filter: 
+            drop-shadow(0 0 15px var(--glow-color, currentColor))
+            drop-shadow(0 0 30px var(--glow-color, currentColor))
+            drop-shadow(0 0 45px var(--glow-color, currentColor))
+            brightness(1.1);
+        transform: scale(1);
+    }
+    50% {
+        filter: 
+            drop-shadow(0 0 25px var(--glow-color, currentColor))
+            drop-shadow(0 0 50px var(--glow-color, currentColor))
+            drop-shadow(0 0 75px var(--glow-color, currentColor))
+            brightness(1.4);
+        transform: scale(1.05);
+    }
+}
+
+/* Apply pulsating animation to active nodes */
+.hex-node.pulsating polygon {
+    animation: hex-pulse-glow 1.5s ease-in-out infinite;
+}
+
+/* Different glow colors for different node types */
+.hex-node.phase-prima.pulsating {
+    --glow-color: #ff6b6b;
+}
+
+.hex-node.phase-solutio.pulsating {
+    --glow-color: #4ecdc4;
+}
+
+.hex-node.phase-coagulatio.pulsating {
+    --glow-color: #45b7d1;
+}
+
+.hex-node.process-node.pulsating {
+    --glow-color: #a29bfe;
+}
+
+.hex-node.provider-node.pulsating {
+    --glow-color: #74b9ff;
+}
+
+.hex-node.core-node.pulsating {
+    --glow-color: #ff6b35;
+}
+
+.hex-node.io-node.pulsating {
+    --glow-color: #ffd700;
+}
+
+/* Special pulsating for input gateway */
+.hex-node#input.pulsating {
+    --glow-color: #ffcc33;
+}
+
+/* Enhanced golden celebration for output gateway */
+.hex-node#output.pulsating {
+    --glow-color: #ffd700;
+    animation: hex-pulse-glow 1.2s ease-in-out infinite, golden-celebration 3s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}

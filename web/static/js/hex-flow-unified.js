@@ -43,8 +43,10 @@ class UnifiedHexFlow {
         
         // Initialize if DOM elements exist
         if (this.validateElements()) {
-            // Don't call init here - it's called at the end of constructor
-            console.log('DOM elements validated');
+            console.log('DOM elements validated, calling init()...');
+            this.init();
+        } else {
+            console.error('❌ DOM elements not valid, cannot initialize');
         }
     }
     
@@ -471,7 +473,7 @@ class UnifiedHexFlow {
                 return null;
             }
             
-            hex.setAttribute('fill', `${config.color || '#ffffff'}20`);
+            hex.setAttribute('fill', 'none');
             hex.setAttribute('stroke', config.color || '#ffffff');
             hex.setAttribute('stroke-width', '2');
             g.appendChild(hex);
@@ -1076,16 +1078,16 @@ class UnifiedHexFlow {
     
     findOptimalTooltipPosition(mouseX, mouseY, tooltipWidth, tooltipHeight, currentNodeId) {
         const containerRect = this.container.getBoundingClientRect();
-        const padding = 20;
-        const hexRadius = this.hexSize + 10; // Extra clearance
+        const padding = 8; // Reduced padding for closer positioning
+        const hexRadius = this.hexSize + 5; // Reduced clearance for tighter positioning
         
-        // Default positions to try (in order of preference)
+        // Default positions to try (in order of preference) - almost touching hex nodes
         const positions = [
-            { x: mouseX + 20, y: mouseY - 10, label: 'right' },
-            { x: mouseX - tooltipWidth - 20, y: mouseY - 10, label: 'left' },
-            { x: mouseX - tooltipWidth / 2, y: mouseY + 50, label: 'bottom' },
-            { x: mouseX - tooltipWidth / 2, y: mouseY - tooltipHeight - 30, label: 'top' },
-            { x: mouseX + 20, y: mouseY + 30, label: 'bottom-right' },
+            { x: mouseX + 5, y: mouseY - 5, label: 'right' },
+            { x: mouseX - tooltipWidth - 5, y: mouseY - 5, label: 'left' },
+            { x: mouseX - tooltipWidth / 2, y: mouseY + 18, label: 'bottom' },
+            { x: mouseX - tooltipWidth / 2, y: mouseY - tooltipHeight - 8, label: 'top' },
+            { x: mouseX + 5, y: mouseY + 15, label: 'bottom-right' },
         ];
         
         // Check each position for collisions with hexagons
@@ -1106,10 +1108,10 @@ class UnifiedHexFlow {
             }
         }
         
-        // If all positions have collisions, use the default right position
+        // If all positions have collisions, use the default right position (almost touching hex)
         return {
-            x: Math.max(padding, Math.min(mouseX + 20, containerRect.width - tooltipWidth - padding)),
-            y: Math.max(padding, Math.min(mouseY - 10, containerRect.height - tooltipHeight - padding))
+            x: Math.max(padding, Math.min(mouseX + 5, containerRect.width - tooltipWidth - padding)),
+            y: Math.max(padding, Math.min(mouseY - 5, containerRect.height - tooltipHeight - padding))
         };
     }
     

@@ -1,0 +1,408 @@
+/* HEX GLASS EFFECTS - Liquid metal glass-like styling for hex nodes */
+
+/* Ensure hex nodes are interactive */
+.hex-node {
+    pointer-events: all;
+    cursor: pointer;
+}
+
+/* Transparent hex node styling - no background fill */
+.hex-node polygon {
+    /* Completely transparent - only borders visible */
+    fill: none !important;
+    fill-opacity: 0 !important;
+    stroke-opacity: 0.8;
+    stroke-width: 1.5;
+    filter: 
+        drop-shadow(0 4px 12px rgba(0, 0, 0, 0.15))
+        drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: all;
+}
+
+/* Transparent node types - only border colors, no fills */
+.hex-node.phase-prima polygon {
+    fill: none !important;
+    stroke: #ff6b6b;
+}
+
+.hex-node.phase-solutio polygon {
+    fill: none !important;
+    stroke: #4ecdc4;
+}
+
+.hex-node.phase-coagulatio polygon {
+    fill: none !important;
+    stroke: #45b7d1;
+}
+
+.hex-node.process-node polygon {
+    fill: none !important;
+    stroke: #a29bfe;
+}
+
+.hex-node.provider-node polygon {
+    fill: none !important;
+    stroke: #74b9ff;
+}
+
+.hex-node.core-node polygon {
+    fill: none !important;
+    stroke: #ff6b35;
+}
+
+.hex-node.io-node polygon {
+    fill: none !important;
+    stroke: #ffd700;
+}
+
+/* Hover effects - keep transparent */
+.hex-node:hover polygon {
+    fill: none !important;
+    fill-opacity: 0 !important;
+    stroke-opacity: 1;
+    stroke-width: 2;
+    filter: 
+        drop-shadow(0 8px 24px rgba(0, 0, 0, 0.2))
+        drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15))
+        brightness(1.1);
+    transform: scale(1.05);
+}
+
+/* Icon styling - larger and centered */
+.hex-node text.hex-icon {
+    font-size: 24px;
+    text-anchor: middle;
+    dominant-baseline: middle;
+    pointer-events: none;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+    transition: all 0.3s ease;
+}
+
+/* Remove title text - only show on hover */
+.hex-node text.hex-title {
+    display: none;
+}
+
+/* Glass tooltip styling with ultra-smooth diffused transparency */
+.hex-tooltip {
+    position: absolute;
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0;
+    transform: translateY(2px) scale(0.98); /* Smaller movement for closer positioning */
+    transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.12));
+}
+
+.hex-tooltip.visible {
+    opacity: 0.95;
+    transform: translateY(0) scale(1);
+}
+
+.hex-tooltip-content {
+    background: linear-gradient(
+        135deg,
+        rgba(0, 0, 0, 0.15) 0%,
+        rgba(0, 0, 0, 0.12) 50%,
+        rgba(0, 0, 0, 0.08) 100%
+    );
+    backdrop-filter: blur(25px) saturate(180%) brightness(1.05);
+    -webkit-backdrop-filter: blur(25px) saturate(180%) brightness(1.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background-clip: padding-box;
+    border-radius: 10px;
+    padding: 8px 12px;
+    position: relative;
+    overflow: hidden;
+    min-width: 150px;
+    max-width: 240px;
+    box-shadow: 
+        0 0 0 1px rgba(255, 255, 255, 0.03),
+        0 2px 12px rgba(0, 0, 0, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Subtle rainbow gradient border effect */
+.hex-tooltip-content::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: 12px;
+    padding: 1px;
+    background: linear-gradient(
+        45deg,
+        rgba(255, 0, 128, 0.2),
+        rgba(255, 140, 0, 0.15),
+        rgba(255, 215, 0, 0.1),
+        rgba(0, 255, 136, 0.1),
+        rgba(0, 255, 255, 0.15),
+        rgba(0, 128, 255, 0.2),
+        rgba(128, 0, 255, 0.15),
+        rgba(255, 0, 128, 0.2)
+    );
+    background-size: 300% 300%;
+    animation: rainbow-glow 12s ease infinite;
+    -webkit-mask: 
+        linear-gradient(#fff 0 0) content-box, 
+        linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0.3;
+    filter: blur(0.5px);
+}
+
+/* Diffused glow effect */
+.hex-tooltip-content::after {
+    content: '';
+    position: absolute;
+    inset: -20px;
+    border-radius: 16px;
+    background: radial-gradient(
+        ellipse at center,
+        rgba(255, 255, 255, 0.1) 0%,
+        rgba(255, 100, 255, 0.05) 20%,
+        rgba(100, 255, 255, 0.05) 40%,
+        transparent 70%
+    );
+    filter: blur(20px);
+    opacity: 0.8;
+    z-index: -1;
+    animation: glow-pulse 3s ease-in-out infinite;
+}
+
+@keyframes rainbow-glow {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+}
+
+@keyframes glow-pulse {
+    0%, 100% { transform: scale(1); opacity: 0.8; }
+    50% { transform: scale(1.1); opacity: 1; }
+}
+
+/* Tooltip arrow - positioned for almost touching */
+.hex-tooltip-arrow {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: rgba(20, 25, 40, 0.7);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transform: rotate(45deg);
+    bottom: -5px; /* Changed to bottom positioning */
+    left: 50%;
+    margin-left: -5px;
+    border-top: none;
+    border-left: none;
+}
+
+/* Arrow when tooltip is below */
+.hex-tooltip.below .hex-tooltip-arrow {
+    top: -5px;
+    bottom: auto;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: none;
+    border-right: none;
+}
+
+/* Enhanced tooltip text styling for readability */
+.hex-tooltip-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-shadow: 
+        0 1px 4px rgba(0, 0, 0, 0.8),
+        0 0 8px rgba(0, 0, 0, 0.3);
+    position: relative;
+    z-index: 1;
+    letter-spacing: 0.3px;
+}
+
+.hex-tooltip-phase {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.9);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+    font-weight: 600;
+    opacity: 0.95;
+    position: relative;
+    z-index: 1;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+}
+
+.hex-tooltip-description {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.95);
+    line-height: 1.5;
+    margin-bottom: 0;
+    text-shadow: 
+        0 1px 3px rgba(0, 0, 0, 0.7),
+        0 0 6px rgba(0, 0, 0, 0.2);
+    position: relative;
+    z-index: 1;
+}
+
+/* Phase-specific tooltip colors */
+.hex-tooltip[data-phase="prima"] .hex-tooltip-content {
+    background: rgba(255, 107, 107, 0.1);
+    border-color: rgba(255, 107, 107, 0.3);
+}
+
+.hex-tooltip[data-phase="solutio"] .hex-tooltip-content {
+    background: rgba(78, 205, 196, 0.1);
+    border-color: rgba(78, 205, 196, 0.3);
+}
+
+.hex-tooltip[data-phase="coagulatio"] .hex-tooltip-content {
+    background: rgba(69, 183, 209, 0.1);
+    border-color: rgba(69, 183, 209, 0.3);
+}
+
+/* Liquid metal gradients for different node types */
+.liquid-gradients {
+    position: absolute;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+}
+
+/* Active phase glow animation */
+@keyframes liquid-glow {
+    0%, 100% {
+        filter: 
+            drop-shadow(0 0 20px currentColor)
+            drop-shadow(0 0 40px currentColor)
+            drop-shadow(0 0 60px currentColor)
+            brightness(1.2);
+        fill-opacity: 0.3;
+        stroke-width: 3;
+    }
+    50% {
+        filter: 
+            drop-shadow(0 0 30px currentColor)
+            drop-shadow(0 0 60px currentColor)
+            drop-shadow(0 0 80px currentColor)
+            brightness(1.5);
+        fill-opacity: 0.4;
+        stroke-width: 4;
+    }
+}
+
+.hex-node.phase-active polygon {
+    animation: liquid-glow 2s ease-in-out infinite;
+}
+
+/* Output gateway golden celebration */
+@keyframes golden-celebration {
+    0% {
+        filter: 
+            drop-shadow(0 0 20px #ffd700)
+            drop-shadow(0 0 40px #ffed4e)
+            drop-shadow(0 0 60px #fff59d)
+            brightness(1.3);
+        fill-opacity: 0.5;
+        stroke: #ffd700;
+        stroke-width: 4;
+        transform: scale(1) rotate(0deg);
+    }
+    25% {
+        filter: 
+            drop-shadow(0 0 30px #ffd700)
+            drop-shadow(0 0 60px #ffed4e)
+            drop-shadow(0 0 90px #fff59d)
+            brightness(1.6);
+        fill-opacity: 0.6;
+        stroke-width: 5;
+        transform: scale(1.1) rotate(90deg);
+    }
+    50% {
+        filter: 
+            drop-shadow(0 0 40px #ffd700)
+            drop-shadow(0 0 80px #ffed4e)
+            drop-shadow(0 0 120px #fff59d)
+            brightness(1.8);
+        fill-opacity: 0.7;
+        stroke-width: 6;
+        transform: scale(1.2) rotate(180deg);
+    }
+    75% {
+        filter: 
+            drop-shadow(0 0 35px #ffd700)
+            drop-shadow(0 0 70px #ffed4e)
+            drop-shadow(0 0 100px #fff59d)
+            brightness(1.6);
+        fill-opacity: 0.6;
+        stroke-width: 5;
+        transform: scale(1.15) rotate(270deg);
+    }
+    100% {
+        filter: 
+            drop-shadow(0 0 20px #ffd700)
+            drop-shadow(0 0 40px #ffed4e)
+            drop-shadow(0 0 60px #fff59d)
+            brightness(1.3);
+        fill-opacity: 0.5;
+        stroke-width: 4;
+        transform: scale(1) rotate(360deg);
+    }
+}
+
+.hex-node.output-celebration polygon {
+    animation: golden-celebration 3s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* Particle burst for output celebration */
+.output-particle-burst {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+@keyframes particle-burst {
+    0% {
+        transform: translate(0, 0) scale(0);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(var(--tx), var(--ty)) scale(1);
+        opacity: 0;
+    }
+}
+
+.celebration-particle {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: radial-gradient(circle, #ffd700 0%, #ffed4e 50%, transparent 70%);
+    border-radius: 50%;
+    animation: particle-burst 1.5s ease-out forwards;
+}
+
+/* Ripple effect on click */
+@keyframes hex-ripple {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1.5);
+        opacity: 0;
+    }
+}
+
+.hex-ripple {
+    position: absolute;
+    border: 2px solid currentColor;
+    border-radius: 50%;
+    transform: scale(0);
+    animation: hex-ripple 0.6s ease-out;
+}

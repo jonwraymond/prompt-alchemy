@@ -1,0 +1,538 @@
+/* MAGICAL GATEWAY EFFECTS - Modern alchemical transmutation animations */
+
+/* Rainbow gradient definitions */
+@keyframes rainbow-shift {
+    0% { filter: hue-rotate(0deg) saturate(1.5) brightness(1.2); }
+    100% { filter: hue-rotate(360deg) saturate(1.5) brightness(1.2); }
+}
+
+/* Enhanced Input Gateway (Vortex) Effects */
+.input-vortex {
+    position: absolute;
+    width: 300px; /* Increased size */
+    height: 300px;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 1000;
+}
+
+/* Enhanced Black Hole Center */
+.vortex-center {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(
+        circle,
+        rgba(0, 0, 0, 0.95) 0%,
+        rgba(20, 20, 60, 0.8) 30%,
+        rgba(40, 0, 80, 0.6) 60%,
+        transparent 100%
+    );
+    border-radius: 50%;
+    box-shadow: 
+        inset 0 0 30px rgba(138, 43, 226, 0.8),
+        0 0 60px rgba(138, 43, 226, 0.6),
+        0 0 120px rgba(138, 43, 226, 0.4);
+    animation: vortex-pulse 2s ease-in-out infinite alternate;
+}
+
+/* Enhanced Rainbow Rings with Depth */
+.vortex-ring {
+    position: absolute;
+    border: 4px solid; /* Thicker rings */
+    border-radius: 50%;
+    animation: input-vortex 3s linear infinite;
+    background: conic-gradient(
+        from 0deg,
+        #ff0080 0deg,
+        #ff4040 45deg,
+        #ff8c00 90deg,
+        #ffd700 135deg,
+        #40ff40 180deg,
+        #00ffff 225deg,
+        #4080ff 270deg,
+        #8040ff 315deg,
+        #ff0080 360deg
+    );
+    -webkit-mask: radial-gradient(
+        transparent calc(100% - 5px),
+        black calc(100% - 4px),
+        black 100%,
+        transparent 100%
+    );
+    mask: radial-gradient(
+        transparent calc(100% - 5px),
+        black calc(100% - 4px),
+        black 100%,
+        transparent 100%
+    );
+    filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.5));
+}
+
+.vortex-ring-1 {
+    width: 120px;
+    height: 120px;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    animation-duration: 2s;
+    animation-delay: 0s;
+}
+
+.vortex-ring-2 {
+    width: 180px;
+    height: 180px;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    animation-duration: 2.5s;
+    animation-delay: -0.5s;
+}
+
+.vortex-ring-3 {
+    width: 240px;
+    height: 240px;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    animation-duration: 3s;
+    animation-delay: -1s;
+}
+
+.vortex-ring-4 {
+    width: 300px;
+    height: 300px;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    animation-duration: 3.5s;
+    animation-delay: -1.5s;
+}
+
+/* Enhanced Particle System */
+.input-particle {
+    position: absolute;
+    width: 8px; /* Larger particles */
+    height: 8px;
+    border-radius: 50%;
+    pointer-events: none;
+    animation: particle-suck-in 3s ease-in infinite;
+    box-shadow: 0 0 12px currentColor;
+}
+
+.input-particle.type-1 {
+    background: #ff0080;
+    color: #ff0080;
+    animation-delay: 0s;
+}
+
+.input-particle.type-2 {
+    background: #00ff80;
+    color: #00ff80;
+    animation-delay: -0.5s;
+}
+
+.input-particle.type-3 {
+    background: #8080ff;
+    color: #8080ff;
+    animation-delay: -1s;
+}
+
+.input-particle.type-4 {
+    background: #ffff40;
+    color: #ffff40;
+    animation-delay: -1.5s;
+}
+
+.input-particle.type-5 {
+    background: #ff4080;
+    color: #ff4080;
+    animation-delay: -2s;
+}
+
+/* Data Stream Trails */
+.data-trail {
+    position: absolute;
+    width: 2px;
+    height: 40px; /* Longer trails */
+    background: linear-gradient(
+        to bottom,
+        transparent,
+        rgba(255, 255, 255, 0.8),
+        transparent
+    );
+    border-radius: 2px;
+    animation: data-spiral 4s linear infinite;
+    filter: blur(0.5px);
+}
+
+/* Enhanced Data Fragments */
+.data-fragment {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    background: linear-gradient(45deg, #40ffff, #ff40ff);
+    border-radius: 2px;
+    animation: fragment-suck 2.5s ease-in infinite;
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+}
+
+/* Distortion Waves */
+.distortion-wave {
+    position: absolute;
+    width: 200px;
+    height: 200px;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    animation: distortion-expand 3s ease-out infinite;
+}
+
+/* Enhanced Keyframes */
+@keyframes vortex-pulse {
+    0% {
+        box-shadow: 
+            inset 0 0 30px rgba(138, 43, 226, 0.8),
+            0 0 60px rgba(138, 43, 226, 0.6),
+            0 0 120px rgba(138, 43, 226, 0.4);
+    }
+    100% {
+        box-shadow: 
+            inset 0 0 50px rgba(138, 43, 226, 1),
+            0 0 100px rgba(138, 43, 226, 0.8),
+            0 0 200px rgba(138, 43, 226, 0.6);
+    }
+}
+
+@keyframes input-vortex {
+    0% {
+        transform: translate(-50%, -50%) rotate(0deg);
+        filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.5)) hue-rotate(0deg);
+    }
+    100% {
+        transform: translate(-50%, -50%) rotate(360deg);
+        filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.5)) hue-rotate(360deg);
+    }
+}
+
+@keyframes particle-suck-in {
+    0% {
+        transform: translateX(var(--start-x, 150px)) translateY(var(--start-y, 150px)) scale(1) rotate(0deg);
+        opacity: 1;
+    }
+    70% {
+        transform: translateX(calc(var(--start-x, 150px) * 0.3)) translateY(calc(var(--start-y, 150px) * 0.3)) scale(0.7) rotate(270deg);
+        opacity: 0.8;
+    }
+    100% {
+        transform: translateX(0) translateY(0) scale(0.2) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+@keyframes data-spiral {
+    0% {
+        transform: translateX(var(--spiral-x, 120px)) translateY(var(--spiral-y, 120px)) rotate(0deg);
+        opacity: 1;
+    }
+    100% {
+        transform: translateX(0) translateY(0) rotate(720deg);
+        opacity: 0;
+    }
+}
+
+@keyframes fragment-suck {
+    0% {
+        transform: translateX(var(--frag-x, 100px)) translateY(var(--frag-y, 100px)) rotate(0deg);
+        opacity: 1;
+    }
+    100% {
+        transform: translateX(0) translateY(0) rotate(180deg);
+        opacity: 0;
+    }
+}
+
+@keyframes distortion-expand {
+    0% {
+        transform: translate(-50%, -50%) scale(0.5);
+        opacity: 0.8;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(2);
+        opacity: 0;
+    }
+}
+
+/* Enhanced Input Node Activation */
+.input-active polygon {
+    fill: url(#rainbowGradient) !important;
+    stroke: #fff !important;
+    stroke-width: 3px !important;
+    filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.8)) !important;
+    animation: input-rainbow-pulse 2s ease-in-out infinite alternate !important;
+}
+
+@keyframes input-rainbow-pulse {
+    0% {
+        filter: drop-shadow(0 0 20px rgba(255, 0, 128, 0.8)) hue-rotate(0deg);
+    }
+    25% {
+        filter: drop-shadow(0 0 25px rgba(255, 140, 0, 0.8)) hue-rotate(90deg);
+    }
+    50% {
+        filter: drop-shadow(0 0 30px rgba(0, 255, 0, 0.8)) hue-rotate(180deg);
+    }
+    75% {
+        filter: drop-shadow(0 0 25px rgba(0, 140, 255, 0.8)) hue-rotate(270deg);
+    }
+    100% {
+        filter: drop-shadow(0 0 20px rgba(128, 0, 255, 0.8)) hue-rotate(360deg);
+    }
+}
+
+/* Distortion waves around vortex */
+.distortion-wave {
+    position: absolute;
+    border: 2px solid;
+    border-radius: 50%;
+    pointer-events: none;
+    animation: distortion-expand 2s ease-out infinite;
+}
+
+@keyframes distortion-expand {
+    0% {
+        width: 60px;
+        height: 60px;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        opacity: 0.8;
+        border-color: rgba(147, 51, 234, 0.8);
+    }
+    100% {
+        width: 300px;
+        height: 300px;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        opacity: 0;
+        border-color: rgba(147, 51, 234, 0);
+    }
+}
+
+/* Output Gateway - Golden Transmutation Effect */
+@keyframes golden-transmutation {
+    0% {
+        filter: 
+            drop-shadow(0 0 20px #ffd700)
+            drop-shadow(0 0 40px #ffed4e)
+            drop-shadow(0 0 60px #fff59d);
+        stroke: #ffd700;
+        stroke-width: 3;
+        fill-opacity: 0.3;
+    }
+    50% {
+        filter: 
+            drop-shadow(0 0 40px #ffd700)
+            drop-shadow(0 0 80px #ffed4e)
+            drop-shadow(0 0 120px #fff59d)
+            drop-shadow(0 0 160px rgba(255, 245, 157, 0.5));
+        stroke: #ffed4e;
+        stroke-width: 5;
+        fill-opacity: 0.5;
+    }
+    100% {
+        filter: 
+            drop-shadow(0 0 30px #ffd700)
+            drop-shadow(0 0 60px #ffed4e)
+            drop-shadow(0 0 90px #fff59d);
+        stroke: #ffd700;
+        stroke-width: 4;
+        fill-opacity: 0.4;
+    }
+}
+
+/* Alchemical symbol rays */
+.alchemical-rays {
+    position: absolute;
+    width: 300px;
+    height: 300px;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+}
+
+@keyframes ray-rotation {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.ray-container {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    animation: ray-rotation 20s linear infinite;
+}
+
+.golden-ray {
+    position: absolute;
+    width: 2px;
+    height: 150px;
+    background: linear-gradient(
+        to bottom,
+        transparent 0%,
+        rgba(255, 215, 0, 0.1) 30%,
+        rgba(255, 215, 0, 0.8) 50%,
+        rgba(255, 215, 0, 0.1) 70%,
+        transparent 100%
+    );
+    top: 50%;
+    left: 50%;
+    transform-origin: center bottom;
+}
+
+.golden-ray:nth-child(1) { transform: translateX(-50%) rotate(0deg); }
+.golden-ray:nth-child(2) { transform: translateX(-50%) rotate(45deg); }
+.golden-ray:nth-child(3) { transform: translateX(-50%) rotate(90deg); }
+.golden-ray:nth-child(4) { transform: translateX(-50%) rotate(135deg); }
+.golden-ray:nth-child(5) { transform: translateX(-50%) rotate(180deg); }
+.golden-ray:nth-child(6) { transform: translateX(-50%) rotate(225deg); }
+.golden-ray:nth-child(7) { transform: translateX(-50%) rotate(270deg); }
+.golden-ray:nth-child(8) { transform: translateX(-50%) rotate(315deg); }
+
+/* Alchemical circles */
+.alchemical-circle {
+    position: absolute;
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: 50%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+@keyframes circle-pulse {
+    0%, 100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0.3;
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.1);
+        opacity: 0.6;
+    }
+}
+
+.alchemical-circle-1 {
+    width: 100px;
+    height: 100px;
+    animation: circle-pulse 3s ease-in-out infinite;
+}
+
+.alchemical-circle-2 {
+    width: 140px;
+    height: 140px;
+    animation: circle-pulse 3s ease-in-out infinite;
+    animation-delay: 0.5s;
+}
+
+.alchemical-circle-3 {
+    width: 180px;
+    height: 180px;
+    animation: circle-pulse 3s ease-in-out infinite;
+    animation-delay: 1s;
+}
+
+/* Golden particles bursting outward */
+@keyframes golden-burst {
+    0% {
+        transform: translate(0, 0) scale(0);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(var(--burst-x), var(--burst-y)) scale(1);
+        opacity: 0;
+    }
+}
+
+.golden-particle {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    background: radial-gradient(circle, #ffd700 0%, #ffed4e 30%, #fff59d 60%, transparent 70%);
+    border-radius: 50%;
+    animation: golden-burst 2s ease-out forwards;
+}
+
+/* Output gateway transmutation state */
+.hex-node#output.transmutation-complete polygon {
+    animation: golden-transmutation 3s ease-in-out infinite;
+    fill: rgba(255, 215, 0, 0.15) !important;
+}
+
+/* Persistent glow state after transmutation */
+.hex-node#output.transmutation-glow polygon {
+    filter: 
+        drop-shadow(0 0 25px #ffd700)
+        drop-shadow(0 0 50px #ffed4e)
+        drop-shadow(0 0 75px rgba(255, 237, 78, 0.4));
+    stroke: #ffd700;
+    stroke-width: 4;
+    fill-opacity: 0.4;
+    transition: all 0.5s ease;
+}
+
+/* Modern alchemical symbol overlay */
+.alchemical-symbol {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    pointer-events: none;
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0);
+    transition: all 0.5s ease;
+}
+
+.alchemical-symbol.active {
+    opacity: 0.8;
+    transform: translate(-50%, -50%) scale(1) rotate(45deg);
+}
+
+.alchemical-symbol svg {
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(0 0 10px #ffd700);
+}
+
+/* Magical connection lines during transmutation */
+.transmutation-line {
+    stroke: url(#golden-gradient);
+    stroke-width: 3;
+    fill: none;
+    opacity: 0;
+    stroke-dasharray: 5, 10;
+    animation: transmutation-flow 2s linear infinite;
+}
+
+@keyframes transmutation-flow {
+    0% {
+        stroke-dashoffset: 0;
+        opacity: 0.6;
+    }
+    100% {
+        stroke-dashoffset: -15;
+        opacity: 0.6;
+    }
+}
+
+.transmutation-line.active {
+    opacity: 1;
+}

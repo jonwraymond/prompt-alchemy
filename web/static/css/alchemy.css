@@ -2288,13 +2288,7 @@ body > * > * > *,
   font-weight: 400;
 }
 
-.clean-input:focus {
-  transform: translateY(-2px);
-  box-shadow: 
-    0 12px 40px rgba(0, 0, 0, 0.4),
-    0 0 30px rgba(251, 191, 36, 0.1),
-    0 1px 0 rgba(255, 255, 255, 0.1) inset;
-}
+/* Original focus styles moved to new soft rainbow focus above */
 
 .clean-input:focus::before {
   opacity: 1;
@@ -2351,21 +2345,30 @@ body > * > * > *,
   filter: blur(15px);
 }
 
-/* Rainbow border animation */
-.clean-input:hover,
+/* Soft rainbow border on focus - much more diffuse */
 .clean-input:focus {
-  border-image: linear-gradient(
-    45deg,
-    #ff0080,
-    #ff8c00,
-    #ffd700,
-    #00ff00,
-    #00ffff,
-    #ff00ff,
-    #ff0080
-  ) 1;
-  border-image-slice: 1;
-  animation: rainbow-border-shift 2s linear infinite;
+  border: 2px solid rgba(255, 255, 255, 0.05);
+  transform: translateY(-1px);
+  box-shadow: 
+    0 0 0 1px rgba(255, 255, 255, 0.02),
+    0 0 20px rgba(255, 0, 128, 0.02),
+    0 0 30px rgba(255, 140, 0, 0.015),
+    0 0 40px rgba(255, 215, 0, 0.01),
+    0 0 50px rgba(0, 255, 255, 0.01),
+    0 12px 40px rgba(0, 0, 0, 0.4),
+    0 1px 0 rgba(255, 255, 255, 0.1) inset;
+}
+
+/* Subtle rainbow border on hover - very soft */
+.clean-input:hover {
+  border: 2px solid rgba(255, 255, 255, 0.03);
+  box-shadow: 
+    0 0 0 1px rgba(255, 255, 255, 0.015),
+    0 0 15px rgba(255, 0, 128, 0.015),
+    0 0 25px rgba(255, 140, 0, 0.01),
+    0 0 35px rgba(0, 255, 255, 0.008),
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 1px 0 rgba(255, 255, 255, 0.1) inset;
 }
 
 /* Rainbow animations */

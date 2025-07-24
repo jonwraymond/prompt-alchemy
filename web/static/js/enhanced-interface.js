@@ -74,11 +74,13 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="options-content">
                 <h3>Generation Options</h3>
                 <div class="option-item">
-                    <label for="model-select">Model:</label>
+                    <label for="model-select">Persona:</label>
                     <select id="model-select" class="option-select">
-                        <option value="gpt-4">GPT-4</option>
-                        <option value="gpt-3.5">GPT-3.5</option>
-                        <option value="claude">Claude</option>
+                        <option value="general">General</option>
+                        <option value="code">Code Assistant</option>
+                        <option value="creative">Creative Writer</option>
+                        <option value="technical">Technical Expert</option>
+                        <option value="academic">Academic Scholar</option>
                     </select>
                 </div>
                 <div class="option-item">
@@ -114,32 +116,98 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 300);
     }
     
-    // Simulate generation (replace with actual API call)
+    // Real API generation with visualization
     async function simulateGeneration(prompt) {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                console.log('Generating with prompt:', prompt);
-                displayResult(prompt);
-                resolve();
-            }, 2000);
-        });
+        try {
+            // Get options from the UI
+            const options = {
+                persona: document.getElementById('model-select')?.value || 'general',
+                count: 3,
+                save: true,
+                phaseSelection: 'best'
+            };
+            
+            // Use the real-time generator
+            const result = await window.realtimeGenerator.generatePrompt(prompt, options);
+            
+            // Display the actual result
+            displayRealResult(result);
+            
+            return result;
+        } catch (error) {
+            console.error('Generation failed:', error);
+            throw error;
+        }
     }
     
-    // Display result in third section
-    function displayResult(prompt) {
+    // Display real API result
+    function displayRealResult(result) {
         const thirdSection = document.getElementById('third-section');
+        
+        // Extract the best prompt from the result
+        const bestPrompt = result.prompts && result.prompts.length > 0 
+            ? result.prompts[0] 
+            : result.prompt || 'No prompt generated';
+            
+        const promptData = typeof bestPrompt === 'object' ? bestPrompt : { content: bestPrompt };
+        
         thirdSection.innerHTML = `
             <div class="result-container">
-                <h2>Generated Result</h2>
+                <h2>🎉 Transmutation Complete!</h2>
                 <div class="result-content">
-                    <p><strong>Original Prompt:</strong> ${prompt}</p>
-                    <p><strong>Enhanced Version:</strong> ${enhancePrompt(prompt)}</p>
+                    <div class="phase-results">
+                        <h3>✨ Final Alchemical Result</h3>
+                        <div class="final-prompt">
+                            ${promptData.content || promptData}
+                        </div>
+                        ${promptData.score ? `<p class="score">Score: ${promptData.score.toFixed(2)}</p>` : ''}
+                    </div>
+                    
+                    ${result.phases ? `
+                    <div class="phase-breakdown">
+                        <h3>🔬 Alchemical Process</h3>
+                        <div class="phase-item">
+                            <h4>Prima Materia (Extraction)</h4>
+                            <p>${result.phases.prima || 'Initial essence extracted'}</p>
+                        </div>
+                        <div class="phase-item">
+                            <h4>Solutio (Dissolution)</h4>
+                            <p>${result.phases.solutio || 'Refined into flowing form'}</p>
+                        </div>
+                        <div class="phase-item">
+                            <h4>Coagulatio (Crystallization)</h4>
+                            <p>${result.phases.coagulatio || 'Crystallized into final form'}</p>
+                        </div>
+                    </div>
+                    ` : ''}
+                    
+                    ${result.metadata ? `
+                    <div class="metadata">
+                        <p><small>Generated in ${result.metadata.duration || 'unknown'}ms</small></p>
+                        ${result.metadata.providers_used ? 
+                            `<p><small>Providers: ${result.metadata.providers_used.join(', ')}</small></p>` : ''}
+                    </div>
+                    ` : ''}
                 </div>
             </div>
         `;
         
         // Scroll to result
         thirdSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        
+        // Add celebration animation to result container
+        const resultContainer = thirdSection.querySelector('.result-container');
+        if (resultContainer) {
+            resultContainer.classList.add('celebration-glow');
+            setTimeout(() => {
+                resultContainer.classList.remove('celebration-glow');
+            }, 3000);
+        }
+    }
+
+    // Keep old display function for compatibility
+    function displayResult(prompt) {
+        displayRealResult({ prompt: { content: enhancePrompt(prompt) } });
     }
     
     // Simple prompt enhancement (example)
@@ -322,6 +390,100 @@ style.textContent = `
     .rainbow-input-container.active-typing::before {
         animation-duration: 2s;
         filter: blur(6px);
+    }
+    
+    /* Real result display styles */
+    .final-prompt {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 215, 0, 0.3);
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin: 1rem 0;
+        font-size: 1.1rem;
+        line-height: 1.6;
+        color: #e0e0e0;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .final-prompt::before {
+        content: '';
+        position: absolute;
+        inset: -2px;
+        background: linear-gradient(45deg, #ffd700, #ffed4e, #fff59d, #ffd700);
+        border-radius: 8px;
+        opacity: 0.1;
+        animation: shimmer 3s ease-in-out infinite;
+    }
+    
+    @keyframes shimmer {
+        0%, 100% { transform: translateX(-100%); }
+        50% { transform: translateX(100%); }
+    }
+    
+    .phase-breakdown {
+        margin-top: 2rem;
+        padding-top: 2rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .phase-item {
+        margin-bottom: 1.5rem;
+        padding: 1rem;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 6px;
+        border-left: 3px solid;
+    }
+    
+    .phase-item:nth-child(2) { border-color: #ff6b6b; }
+    .phase-item:nth-child(3) { border-color: #4ecdc4; }
+    .phase-item:nth-child(4) { border-color: #45b7d1; }
+    
+    .phase-item h4 {
+        margin-top: 0;
+        margin-bottom: 0.5rem;
+        color: #fff;
+    }
+    
+    .phase-item p {
+        margin: 0;
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 0.95rem;
+    }
+    
+    .score {
+        color: #ffd700;
+        font-weight: bold;
+        font-size: 1.2rem;
+        margin-top: 0.5rem;
+    }
+    
+    .metadata {
+        margin-top: 2rem;
+        padding-top: 1rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.5);
+    }
+    
+    .metadata p {
+        margin: 0.25rem 0;
+    }
+    
+    /* Celebration glow */
+    .celebration-glow {
+        animation: celebration-pulse 3s ease-in-out;
+    }
+    
+    @keyframes celebration-pulse {
+        0%, 100% {
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+        }
+        50% {
+            box-shadow: 
+                0 0 40px rgba(255, 215, 0, 0.4),
+                0 0 80px rgba(255, 215, 0, 0.2),
+                0 4px 24px rgba(0, 0, 0, 0.3);
+        }
     }
 `;
 document.head.appendChild(style); 

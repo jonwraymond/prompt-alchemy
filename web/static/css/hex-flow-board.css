@@ -514,7 +514,7 @@
 /* Golden Celebration Glow for Output Gateway */
 .hex-node.output-celebration polygon {
     stroke: #ffd700 !important;
-    fill: rgba(255, 215, 0, 0.25) !important;
+    fill: none !important;
     stroke-width: 4;
     animation: golden-celebration 3s ease-in-out infinite;
     filter: drop-shadow(0 0 40px #ffd700) drop-shadow(0 0 80px rgba(255, 215, 0, 0.6));
@@ -608,7 +608,7 @@
 /* Enhanced output gateway base styling */
 .hex-node[data-id="output"] polygon {
     stroke: #ffd700;
-    fill: rgba(255, 215, 0, 0.15);
+    fill: none !important;
     filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.5));
 }
 
@@ -619,7 +619,7 @@
 /* Input gateway enhanced styling for visual flow */
 .hex-node[data-id="input"] polygon {
     stroke: #ffcc33;
-    fill: rgba(255, 204, 51, 0.15);
+    fill: none !important;
     filter: drop-shadow(0 0 12px rgba(255, 204, 51, 0.4));
 }
 
@@ -696,7 +696,7 @@
 /* Red Pulsating Animation for Failed States */
 .hex-node.state-failed polygon {
     stroke: #e74c3c !important;
-    fill: rgba(231, 76, 60, 0.2) !important;
+    fill: none !important;
     animation: failure-pulsate 1.2s ease-in-out infinite;
     filter: drop-shadow(0 0 20px #e74c3c);
 }
@@ -850,7 +850,7 @@
 /* Multiple Failure States */
 .hex-node.critical-failure polygon {
     stroke: #c0392b !important;
-    fill: rgba(192, 57, 43, 0.3) !important;
+    fill: none !important;
     animation: critical-failure-shake 0.8s ease-in-out infinite;
     filter: drop-shadow(0 0 25px #c0392b);
 }
@@ -870,7 +870,7 @@
 /* Warning State (Pre-failure) */
 .hex-node.state-warning polygon {
     stroke: #f39c12 !important;
-    fill: rgba(243, 156, 18, 0.15) !important;
+    fill: none !important;
     animation: warning-blink 2s ease-in-out infinite;
     filter: drop-shadow(0 0 15px #f39c12);
 }
@@ -906,54 +906,54 @@
 }
 
 .hex-node polygon {
-    fill: var(--hex-node-bg);
+    fill: none !important;
     stroke: var(--hex-node-border);
     stroke-width: 2;
     transition: all 0.3s ease;
 }
 
-/* Node Types */
+/* Node Types - Transparent backgrounds */
 .hex-node.enhanced polygon {
     stroke: var(--hex-enhance);
-    fill: rgba(52, 152, 219, 0.1);
+    fill: none !important;
 }
 
 .hex-node.special polygon {
     stroke: var(--hex-special);
-    fill: rgba(255, 204, 51, 0.1);
+    fill: none !important;
 }
 
 .hex-node.core polygon {
     stroke: var(--hex-core);
-    fill: rgba(255, 107, 53, 0.2);
+    fill: none !important;
     filter: drop-shadow(0 0 10px var(--hex-core));
 }
 
 .hex-node.validator polygon {
     stroke: var(--hex-validate);
-    fill: rgba(155, 89, 182, 0.1);
+    fill: none !important;
 }
 
-/* Phase Nodes */
+/* Phase Nodes - Transparent backgrounds */
 .hex-node.phase-prima polygon {
     stroke: var(--hex-glow-prima);
-    fill: rgba(255, 107, 107, 0.15);
+    fill: none !important;
 }
 
 .hex-node.phase-solutio polygon {
     stroke: var(--hex-glow-solutio);
-    fill: rgba(78, 205, 196, 0.15);
+    fill: none !important;
 }
 
 .hex-node.phase-coagulatio polygon {
     stroke: var(--hex-glow-coagulatio);
-    fill: rgba(69, 183, 209, 0.15);
+    fill: none !important;
 }
 
 /* Feature Nodes */
 .hex-node.feature polygon {
     stroke: #95a5a6;
-    fill: rgba(149, 165, 166, 0.1);
+    fill: none !important;
     stroke-dasharray: 5, 3;
 }
 
