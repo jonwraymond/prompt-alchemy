@@ -12,7 +12,7 @@ class UnifiedHexFlow {
         this.tooltip = document.getElementById('hex-tooltip');
         this.nodesGroup = document.getElementById('hex-nodes');
         this.pathsGroup = document.getElementById('connection-paths');
-        this.particlesGroup = document.getElementById('flow-particles');
+        // Particle system removed - using line animations only
         
         console.log('Elements found:', {
             container: !!this.container,
@@ -20,7 +20,7 @@ class UnifiedHexFlow {
             tooltip: !!this.tooltip,
             nodesGroup: !!this.nodesGroup,
             pathsGroup: !!this.pathsGroup,
-            particlesGroup: !!this.particlesGroup
+            particlesGroup: false // Particles removed
         });
         
         if (!this.container) console.error('❌ hex-flow-container not found!');
@@ -113,11 +113,7 @@ class UnifiedHexFlow {
             }
         }
         
-        if (this.particlesGroup) {
-            while (this.particlesGroup.firstChild) {
-                this.particlesGroup.removeChild(this.particlesGroup.firstChild);
-            }
-        }
+        // Particle system removed - no cleanup needed
         
         // Clear internal state
         this.nodes.clear();
@@ -1632,21 +1628,16 @@ class UnifiedHexFlow {
     createSuccessBurst(node) {
         if (!node) return;
         
-        // Create particle burst effect
-        for (let i = 0; i < 8; i++) {
-            const particle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-            particle.setAttribute('cx', node.x);
-            particle.setAttribute('cy', node.y);
-            particle.setAttribute('r', '3');
-            particle.setAttribute('fill', '#ffd700');
-            particle.setAttribute('class', 'success-particle');
-            particle.style.setProperty('--angle', `${i * 45}deg`);
-            particle.style.setProperty('--delay', `${i * 0.1}s`);
+        // Success burst effect now uses node glow animation instead of particles
+        const nodeElement = document.querySelector(`[data-id="${node.id}"]`);
+        if (nodeElement) {
+            // Add a temporary glow class
+            nodeElement.classList.add('success-burst-glow');
             
-            this.particlesGroup.appendChild(particle);
-            
-            // Remove after animation
-            setTimeout(() => particle.remove(), 1500);
+            // Remove the glow after animation
+            setTimeout(() => {
+                nodeElement.classList.remove('success-burst-glow');
+            }, 1500);
         }
     }
     
@@ -1808,7 +1799,7 @@ class UnifiedHexFlow {
         if (stage.phase > 0) {
             const prevStage = this.processStages.find(s => s.phase === Math.floor(stage.phase - 1));
             if (prevStage) {
-                this.createFlowParticle(prevStage.id, stage.id);
+                this.createFlowAnimation(prevStage.id, stage.id);
             }
         }
         
@@ -2063,33 +2054,57 @@ class UnifiedHexFlow {
         });
     }
     
-    createFlowParticle(fromId, toId) {
-        if (!this.particlesGroup) return;
+    createFlowAnimation(fromId, toId) {
+        // Animate the connection line instead of creating particles
+        const pathId = `path-${fromId}-${toId}`;
+        const path = document.getElementById(pathId);
+        if (!path) return;
         
         const fromNode = this.nodes.get(fromId);
         const toNode = this.nodes.get(toId);
         if (!fromNode || !toNode) return;
         
-        const particle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        particle.setAttribute('r', '4');
-        particle.setAttribute('fill', toNode.color || '#3498db');
-        particle.setAttribute('class', 'flow-particle');
+        // Store original styles
+        const originalStroke = path.getAttribute('stroke');
+        const originalStrokeWidth = path.getAttribute('stroke-width');
+        const originalOpacity = path.getAttribute('opacity');
         
-        // Animation along path
-        const animateMotion = document.createElementNS('http://www.w3.org/2000/svg', 'animateMotion');
-        animateMotion.setAttribute('dur', '1.5s');
-        animateMotion.setAttribute('fill', 'freeze');
+        // Apply animation styles
+        path.setAttribute('stroke', toNode.color || '#3498db');
+        path.setAttribute('stroke-width', '4');
+        path.setAttribute('opacity', '1');
+        path.style.filter = `drop-shadow(0 0 8px ${toNode.color || '#3498db'})`;
+        path.style.animation = 'flow-line-pulse 1.5s ease-in-out';
         
-        const mpath = document.createElementNS('http://www.w3.org/2000/svg', 'mpath');
-        mpath.setAttributeNS('http://www.w3.org/1999/xlink', 'href', `#path-${fromId}-${toId}`);
+        // Create CSS animation if not exists
+        if (!document.getElementById('flow-line-pulse-style')) {
+            const style = document.createElement('style');
+            style.id = 'flow-line-pulse-style';
+            style.textContent = `
+                @keyframes flow-line-pulse {
+                    0%, 100% {
+                        stroke-width: 2;
+                        opacity: 0.7;
+                        filter: drop-shadow(0 0 4px currentColor);
+                    }
+                    50% {
+                        stroke-width: 6;
+                        opacity: 1;
+                        filter: drop-shadow(0 0 12px currentColor);
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        }
         
-        animateMotion.appendChild(mpath);
-        particle.appendChild(animateMotion);
-        
-        this.particlesGroup.appendChild(particle);
-        
-        // Remove after animation
-        setTimeout(() => particle.remove(), 1500);
+        // Reset after animation
+        setTimeout(() => {
+            path.setAttribute('stroke', originalStroke || '#666');
+            path.setAttribute('stroke-width', originalStrokeWidth || '2');
+            path.setAttribute('opacity', originalOpacity || '0.7');
+            path.style.filter = '';
+            path.style.animation = '';
+        }, 1500);
     }
     
     completeProcess() {

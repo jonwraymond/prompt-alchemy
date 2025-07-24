@@ -248,89 +248,10 @@
         // Determine animation direction
         const dashOffset = direction === 'reverse' ? '40' : '-40';
         
-        // Create particle group for better visibility
-        const particleTimestamp = new Date().toISOString();
-        console.log(`🎯 [${particleTimestamp}] Creating particle for connection: ${connectionKey}`);
-        console.log(`   - Direction: ${direction}`);
-        console.log(`   - Animation Type: ${animationType}`);
-        console.log(`   - Style: `, style);
-        
-        const particleGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-        particleGroup.setAttribute('class', `flow-particle-group-${animClass}`);
-        particleGroup.setAttribute('id', `particle-group-${animClass}`);
-        
-        console.log(`✅ [${timestamp}] Particle group created with ID: particle-group-${animClass}`);
-        
-        // Create single colored particle without white core for seamless blending
-        const particle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        particle.setAttribute('r', '6'); // Medium size for visibility
-        particle.setAttribute('fill', style.stroke);
-        particle.setAttribute('opacity', '1');
-        particle.setAttribute('class', `flow-particle-${animClass}`);
-        
-        // Add subtle glow effect in the line's color
-        particle.style.filter = `drop-shadow(0 0 8px ${style.stroke})`;
-        
-        particleGroup.appendChild(particle);
-        
-        // Create animate motion with single iteration
-        const animateMotion = document.createElementNS('http://www.w3.org/2000/svg', 'animateMotion');
-        animateMotion.setAttribute('dur', animationType === 'active-processing' ? '2s' : '1.5s');
-        animateMotion.setAttribute('repeatCount', '1'); // Single flow only
-        animateMotion.setAttribute('fill', 'freeze');
-        animateMotion.setAttribute('begin', '0s');
-        
-        // Create mpath reference
-        const mpath = document.createElementNS('http://www.w3.org/2000/svg', 'mpath');
-        mpath.setAttributeNS('http://www.w3.org/1999/xlink', 'href', `#${path.id || 'path-' + connectionKey}`);
-        
-        animateMotion.appendChild(mpath);
-        particleGroup.appendChild(animateMotion);
-        
-        // Remove particle when animation ends
-        animateMotion.addEventListener('endEvent', () => {
-            console.log(`🏁 [${new Date().toISOString()}] Animation endEvent fired for ${animClass}`);
-            particleGroup.remove();
-        });
-        animateMotion.addEventListener('end', () => {
-            console.log(`🏁 [${new Date().toISOString()}] Animation end event fired for ${animClass}`);
-            particleGroup.remove();
-        });
-        // Fallback removal after animation duration
-        const removalTimeout = animationType === 'active-processing' ? 2100 : 1600;
-        setTimeout(() => {
-            if (particleGroup.parentNode) {
-                console.log(`⏰ [${new Date().toISOString()}] Fallback removal triggered for ${animClass} after ${removalTimeout}ms`);
-                particleGroup.remove();
-            } else {
-                console.log(`ℹ️ [${new Date().toISOString()}] Particle ${animClass} already removed before timeout`);
-            }
-        }, removalTimeout);
-        
-        // Set path ID if not already set
+        // Set path ID if not already set  
         if (!path.id) {
             path.id = 'path-' + connectionKey;
         }
-        
-        // Add glow filter to particle
-        const filter = document.createElementNS('http://www.w3.org/2000/svg', 'filter');
-        filter.id = `glow-${animClass}`;
-        filter.innerHTML = `
-            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-            <feMerge>
-                <feMergeNode in="coloredBlur"/>
-                <feMergeNode in="SourceGraphic"/>
-            </feMerge>
-        `;
-        
-        const svg = document.getElementById('hex-flow-board');
-        const defs = svg.querySelector('defs');
-        defs.appendChild(filter);
-        particleGroup.setAttribute('filter', `url(#glow-${animClass})`);
-        
-        // Insert particle in a visible layer
-        svg.appendChild(particleGroup);  // Add to top layer for visibility
-        console.log(`🚀 [${timestamp}] Particle appended to SVG. Total particles in DOM: ${svg.querySelectorAll('[id^="particle-group-"]').length}`);
         
         if (animationType === 'active-processing') {
             // Green smooth glow
@@ -351,9 +272,7 @@
                         filter: drop-shadow(0 0 20px ${style.stroke}) brightness(1.2);
                     }
                 }
-                .flow-particle-${animClass} {
-                    filter: drop-shadow(0 0 8px ${style.stroke});
-                }
+
             `;
         } else if (animationType === 'input-output') {
             // Golden smooth flow
@@ -374,9 +293,7 @@
                         filter: drop-shadow(0 0 25px ${style.stroke}) brightness(1.3);
                     }
                 }
-                .flow-particle-${animClass} {
-                    filter: drop-shadow(0 0 12px ${style.stroke});
-                }
+
             `;
         } else if (animationType === 'ready-flow') {
             // Orange ready smooth pulse
@@ -398,9 +315,7 @@
                         filter: drop-shadow(0 0 15px ${style.stroke}) brightness(1.1);
                     }
                 }
-                .flow-particle-${animClass} {
-                    filter: drop-shadow(0 0 10px ${style.stroke});
-                }
+
             `;
         }
         
@@ -413,13 +328,7 @@
             path.classList.remove(animClass);
             animStyle.remove();
             
-            // Double-check particle removal
-            const particleToRemove = document.getElementById(`particle-group-${animClass}`);
-            if (particleToRemove && particleToRemove.parentNode) {
-                particleToRemove.remove();
-            }
-            
-            // Remove glow filter
+            // Remove glow filter if it exists
             const filterToRemove = document.getElementById(`glow-${animClass}`);
             if (filterToRemove) {
                 filterToRemove.remove();
@@ -612,7 +521,7 @@
             
             console.log('✅ Engine flow connections V2 ready (no duplicate lines)!');
             console.log('🎮 Test with: animateCompleteEngineFlow()');
-            console.log('🔵 Test dots with: testDirectionalFlow()');
+            console.log('🔵 Test line animations with: testDirectionalFlow()');
         }, 1000);
     }
     
@@ -629,9 +538,9 @@
     window.testDirectionalFlow = function(continuous = false) {
         console.log('🔵 Testing directional flow animations...');
         
-        // Test function that shows particles clearly
+        // Test function that shows line animations clearly
         const testSequence = () => {
-            // Test various connections with visible dots
+            // Test various connections with animated lines
             setTimeout(() => animateConnection('input-hub', 'forward', 'input-output'), 100);
             setTimeout(() => animateConnection('input-prima', 'forward', 'ready-flow'), 500);
             setTimeout(() => animateConnection('prima-parse', 'forward', 'active-processing'), 1000);
@@ -639,7 +548,7 @@
             setTimeout(() => animateConnection('prima-validate', 'forward', 'active-processing'), 2000);
             setTimeout(() => animateConnection('hub-output', 'forward', 'input-output'), 2500);
             
-            // More visible tests
+            // More animation tests
             setTimeout(() => animateConnection('prima-openai', 'forward', 'active-processing'), 3000);
             setTimeout(() => animateConnection('solutio-refine', 'forward', 'active-processing'), 3500);
             setTimeout(() => animateConnection('coagulatio-optimize', 'forward', 'active-processing'), 4000);
@@ -650,9 +559,9 @@
         if (continuous) {
             // Repeat every 5 seconds for continuous testing
             setInterval(testSequence, 5000);
-            console.log('Continuous particle test started - watch for moving dots!');
+            console.log('Continuous line animation test started - watch for flowing lines!');
         } else {
-            console.log('Test animations started - watch for moving dots!');
+            console.log('Test animations started - watch for flowing lines!');
         }
     };
     

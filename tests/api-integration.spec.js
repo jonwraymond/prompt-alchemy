@@ -10,7 +10,10 @@ test.describe('API Integration Tests', () => {
       return window.apiClient && 
              window.ErrorHandler && 
              window.testGatewayEffects;
-    }, { timeout: 10000 });
+    }, { timeout: 15000 });
+    
+    // Wait for form to be ready
+    await page.waitForSelector('#input', { timeout: 10000 });
   });
 
   test.describe('API Client Functionality', () => {
@@ -127,7 +130,7 @@ test.describe('API Integration Tests', () => {
 
     test('should handle form submission with proper API integration', async ({ page }) => {
       // Fill out the form
-      await page.fill('#prompt-input', 'Test prompt for API integration');
+      await page.fill('#input', 'Test prompt for API integration');
       
       // Monitor network requests
       const apiRequests = [];
@@ -165,7 +168,7 @@ test.describe('API Integration Tests', () => {
       });
 
       // Fill and submit form
-      await page.fill('#prompt-input', 'Test prompt for failure handling');
+      await page.fill('#input', 'Test prompt for failure handling');
       await page.click('button[type="submit"]');
 
       // Should still show visual effects despite API failure
@@ -217,7 +220,7 @@ test.describe('API Integration Tests', () => {
       const form = page.locator('#generate-form');
       
       // Submit form multiple times rapidly to test for conflicts
-      await page.fill('#prompt-input', 'Conflict test');
+      await page.fill('#input', 'Conflict test');
       
       let submitCount = 0;
       page.on('request', request => {
@@ -246,7 +249,7 @@ test.describe('API Integration Tests', () => {
       });
 
       // Interact with the page to trigger potential errors
-      await page.fill('#prompt-input', 'Console error test');
+      await page.fill('#input', 'Console error test');
       await page.click('button[type="submit"]');
       await page.waitForTimeout(3000);
 

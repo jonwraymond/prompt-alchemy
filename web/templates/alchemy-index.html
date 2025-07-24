@@ -536,7 +536,7 @@
                         
                         <g id="hex-nodes"></g>
                         
-                        <g id="flow-particles"></g>
+            
                     </svg>
                     
                     <!-- Manual zoom controls hidden - automated zoom only -->
@@ -2914,26 +2914,20 @@
         // Production code only - no test functions
     </script>
     
-    <!-- Radial Layout Override - Most aggressive fix, loads first -->
-    <script src="/static/js/radial-layout-override.js?v={{.Timestamp}}"></script>
-    
-    <!-- Patcher must load BEFORE hex-flow-unified.js to intercept positioning -->
-    <script src="/static/js/unified-hex-flow-patcher.js?v={{.Timestamp}}"></script>
+    <!-- Hex Position Manager - Clean production positioning -->
+    <script src="/static/js/hex-position-manager.js?v={{.Timestamp}}"></script>
     <script src="/static/js/hex-flow-unified.js?v={{.Timestamp}}"></script>
-    <script src="/static/js/ultra-animation-fix.js?v={{.Timestamp}}"></script>
-    <script src="/static/js/engine-flow-connections-v2.js?v={{.Timestamp}}"></script>
+    <script src="/static/js/engine-flow-connections-clean.js?v={{.Timestamp}}"></script>
     <!-- <script src="/static/js/hex-tooltips.js?v={{.Timestamp}}"></script> Disabled - using unified premium tooltip -->
     <script src="/static/js/fix-missing-emojis.js?v={{.Timestamp}}"></script>
     <script src="/static/js/realtime-api-integration.js?v={{.Timestamp}}"></script>
     
     <!-- Magical Gateway Effects -->
     <link rel="stylesheet" href="/static/css/magical-gateway-effects.css?v={{.Timestamp}}">
-    <link rel="stylesheet" href="/static/css/flow-particles.css?v={{.Timestamp}}">
-    <link rel="stylesheet" href="/static/css/flow-particles-enhanced.css?v={{.Timestamp}}">
+
     <link rel="stylesheet" href="/static/css/tattoo-alchemy-output.css?v={{.Timestamp}}">
     <link rel="stylesheet" href="/static/css/call-transfer-animation.css?v={{.Timestamp}}">
     <link rel="stylesheet" href="/static/css/premium-tooltip.css?v={{.Timestamp}}">
-    <link rel="stylesheet" href="/static/css/position-fix-override.css?v={{.Timestamp}}">
     <!-- API Error Handler - Load First -->
     <script src="/static/js/api-error-handler.js?v={{.Timestamp}}"></script>
     
@@ -2942,24 +2936,14 @@
     <!-- Gateway Effects System -->
     <script src="/static/js/magical-gateway-animations.js?v={{.Timestamp}}"></script>
     <script src="/static/js/tattoo-alchemy-effect.js?v={{.Timestamp}}"></script>
-    <script src="/static/js/gateway-diagnostics.js?v={{.Timestamp}}"></script>
     <script src="/static/js/live-server-gateway.js?v={{.Timestamp}}"></script>
-    <script src="/static/js/gateway-performance-monitor.js?v={{.Timestamp}}"></script>
-    <script src="/static/js/real-api-particles.js?v={{.Timestamp}}"></script>
+    
     <script src="/static/js/fix-connection-timing.js?v={{.Timestamp}}"></script>
     <script src="/static/js/call-transfer-animation.js?v={{.Timestamp}}"></script>
     <script src="/static/js/api-call-transfer-integration.js?v={{.Timestamp}}"></script>
     <script src="/static/js/unified-premium-tooltip.js?v={{.Timestamp}}"></script>
-    <script src="/static/js/particle-diagnostics.js?v={{.Timestamp}}"></script>
-    <script src="/static/js/continuous-line-animations.js?v={{.Timestamp}}"></script>
     <script src="/static/js/hex-glow-enhancement.js?v={{.Timestamp}}"></script>
-    <script src="/static/js/hex-positioning-fix.js?v={{.Timestamp}}"></script>
-    <script src="/static/js/particle-animation-fix.js?v={{.Timestamp}}"></script>
     <script src="/static/js/data-process-visualization.js?v={{.Timestamp}}"></script>
-    <script src="/static/js/connection-line-animator.js?v={{.Timestamp}}"></script>
-    <script src="/static/js/hexagon-position-stabilizer.js?v={{.Timestamp}}"></script>
-    <script src="/static/js/grid-layout-debugger.js?v={{.Timestamp}}"></script>
-    <script src="/static/js/layout-animation-tester.js?v={{.Timestamp}}"></script>
     
     <!-- ULTRA FORCE HEX GRID CREATION -->
     <script>
@@ -3292,10 +3276,5 @@
         });
     </script>
     
-    <!-- Position Enforcer - Runs last to ensure all nodes stay in correct positions -->
-    <script src="/static/js/position-enforcer.js?v={{.Timestamp}}"></script>
-    
-    <!-- Positioning Diagnostic - Debug tool to understand why positions aren't working -->
-    <script src="/static/js/positioning-diagnostic.js?v={{.Timestamp}}"></script>
 </body>
 </html>

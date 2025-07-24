@@ -199,11 +199,19 @@
     function createOutputTransmutation() {
         debug('Creating enhanced output transmutation effect');
         
-        const outputNode = document.getElementById('output');
+        // Try multiple selectors for output node
+        let outputNode = document.getElementById('output') || 
+                        document.querySelector('[data-id="output"]') ||
+                        document.querySelector('.hex-node[data-id="output"]') ||
+                        document.querySelector('#output');
+        
         if (!outputNode) {
-            debug('❌ Output node not found');
+            debug('❌ Output node not found with any selector');
+            debug('Available nodes:', Array.from(document.querySelectorAll('[data-id], #output, .hex-node')).map(n => n.id || n.getAttribute('data-id')));
             return false;
         }
+        
+        debug('✅ Found output node:', outputNode);
         
         // Clear any existing effects
         clearOutputTransmutation();
@@ -221,7 +229,7 @@
         setTimeout(() => {
             debug('Triggering enhanced tattoo overlay');
             if (window.createOutputTattooEffect) {
-                window.createOutputTattooEffect();
+                window.createOutputTattooEffect(outputNode);
             }
         }, 1500);
         

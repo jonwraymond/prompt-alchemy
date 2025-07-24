@@ -6,10 +6,10 @@ async function globalSetup(config) {
   
   // Log test environment details
   console.log('Test Configuration:');
-  console.log(`  - Base URL: ${config.use.baseURL}`);
-  console.log(`  - Test Directory: ${config.testDir}`);
+  console.log(`  - Base URL: ${config.use?.baseURL || 'http://localhost:8090'}`);
+  console.log(`  - Test Directory: ${config.testDir || './tests'}`);
   console.log(`  - Workers: ${config.workers || 'auto'}`);
-  console.log(`  - Retries: ${config.retries}`);
+  console.log(`  - Retries: ${config.retries || 0}`);
   
   // Environment checks
   const environment = {
@@ -23,18 +23,18 @@ async function globalSetup(config) {
   console.log('Environment Details:', environment);
   
   // Wait for server to be ready (additional check beyond webServer config)
-  if (config.webServer) {
-    console.log('🔍 Verifying server readiness...');
-    
-    const maxAttempts = 30;
-    const delay = 2000; // 2 seconds
-    
-    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-      try {
-        const response = await fetch(config.use.baseURL, {
-          method: 'GET',
-          timeout: 5000
-        });
+  const baseURL = config.use?.baseURL || 'http://localhost:8090';
+  console.log('🔍 Verifying server readiness...');
+  
+  const maxAttempts = 30;
+  const delay = 2000; // 2 seconds
+  
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const response = await fetch(baseURL, {
+        method: 'GET',
+        timeout: 5000
+      });
         
         if (response.status < 500) {
           console.log('✅ Server is ready for testing');
@@ -50,7 +50,6 @@ async function globalSetup(config) {
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
-  }
   
   // Pre-test validations
   console.log('🔧 Running pre-test validations...');

@@ -190,16 +190,16 @@ class DataProcessVisualization {
     
     async createBidirectionalFlow(fromId, toId, processType, duration) {
         // Step 1: Send request (from → to)
-        await this.createDataParticle(fromId, toId, processType, 'request', duration / 2);
+        await this.createDataAnimation(fromId, toId, processType, 'request', duration / 2);
         
         // Brief processing delay at destination
         await this.delay(200);
         
         // Step 2: Send response (to → from)  
-        await this.createDataParticle(toId, fromId, processType, 'response', duration / 2);
+        await this.createDataAnimation(toId, fromId, processType, 'response', duration / 2);
     }
     
-    createDataParticle(fromId, toId, processType, direction, duration) {
+    createDataAnimation(fromId, toId, processType, direction, duration) {
         return new Promise((resolve) => {
             const fromNode = document.querySelector(`[data-id="${fromId}"]`);
             const toNode = document.querySelector(`[data-id="${toId}"]`);
@@ -210,105 +210,16 @@ class DataProcessVisualization {
                 return;
             }
             
-            // Get node positions
-            const fromPos = this.getNodePosition(fromNode);
-            const toPos = this.getNodePosition(toNode);
-            
-            if (!fromPos || !toPos) {
-                console.warn(`⚠️ Could not get positions for: ${fromId} → ${toId}`);
-                resolve();
-                return;
-            }
-            
-            // Create particle
-            const particle = this.createParticleElement(processType, direction);
-            const svg = document.getElementById('hex-flow-board');
-            
-            if (!svg) {
-                resolve();
-                return;
-            }
-            
-            // Add to SVG
-            svg.appendChild(particle);
-            
-            // Animate particle from source to destination  
-            this.animateParticleMovement(particle, fromPos, toPos, duration, () => {
-                particle.remove();
-                resolve();
-            });
-            
-            // Create connection line animation with proper process type
+            // Animate connection line only (no particles)
             this.animateConnectionLine(fromId, toId, duration, processType);
+            
+            // Resolve after animation duration
+            setTimeout(() => {
+                resolve();
+            }, duration);
         });
     }
-    
-    createParticleElement(processType, direction) {
-        const particle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        
-        // Smaller particles as requested (3px radius)
-        particle.setAttribute('r', this.particleSize);
-        particle.setAttribute('opacity', '1');
-        particle.setAttribute('class', `data-particle ${processType} ${direction}`);
-        
-        // Color based on process type and direction
-        const colors = {
-            'data-ingestion': { request: '#ffcc33', response: '#ff9933' },
-            'phase-initiation': { request: '#4ecdc4', response: '#45b7d1' },
-            'parsing': { request: '#3498db', response: '#2980b9' },
-            'extraction': { request: '#3498db', response: '#2980b9' },
-            'validation': { request: '#3498db', response: '#2980b9' },
-            'api-call': { request: '#e74c3c', response: '#27ae60' },
-            'refinement': { request: '#4ecdc4', response: '#45b7d1' },
-            'flow-optimization': { request: '#4ecdc4', response: '#45b7d1' },
-            'finalization': { request: '#4ecdc4', response: '#45b7d1' },
-            'optimization': { request: '#45b7d1', response: '#3498db' },
-            'evaluation': { request: '#45b7d1', response: '#3498db' },
-            'storage': { request: '#45b7d1', response: '#3498db' },
-            'final-output': { request: '#ffd700', response: '#ffed4e' }
-        };
-        
-        const color = colors[processType]?.[direction] || '#ffffff';
-        particle.setAttribute('fill', color);
-        particle.style.filter = `drop-shadow(0 0 6px ${color})`;
-        
-        return particle;
-    }
-    
-    getNodePosition(node) {
-        const transform = node.getAttribute('transform');
-        const match = transform ? transform.match(/translate\(([^,]+),\s*([^)]+)\)/) : null;
-        
-        if (match) {
-            return {
-                x: parseFloat(match[1]),
-                y: parseFloat(match[2])
-            };
-        }
-        return null;
-    }
-    
-    animateParticleMovement(particle, fromPos, toPos, duration, onComplete) {
-        // Set initial position
-        particle.setAttribute('cx', fromPos.x);
-        particle.setAttribute('cy', fromPos.y);
-        
-        // Create smooth animation to destination
-        const animate = document.createElementNS('http://www.w3.org/2000/svg', 'animateTransform');
-        animate.setAttribute('attributeName', 'transform');
-        animate.setAttribute('type', 'translate');
-        animate.setAttribute('values', `${fromPos.x},${fromPos.y}; ${toPos.x},${toPos.y}`);
-        animate.setAttribute('dur', `${duration}ms`);
-        animate.setAttribute('fill', 'freeze');
-        
-        animate.addEventListener('endEvent', onComplete);
-        animate.addEventListener('end', onComplete);
-        
-        particle.appendChild(animate);
-        
-        // Start animation
-        animate.beginElement();
-    }
+
     
     animateConnectionLine(fromId, toId, duration, processType = 'processing') {
         // Use the advanced line animator if available

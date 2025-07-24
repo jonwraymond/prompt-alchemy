@@ -228,7 +228,7 @@ class RealtimePromptGenerator {
                 const connData = conn.getAttribute('data-connection');
                 if (connData && connData.includes(fromId) && connData.includes(toId)) {
                     // Trigger particle animation
-                    this.createParticleAnimation(conn, fromId, toId);
+                    this.createLineAnimation(conn, fromId, toId);
                     
                     // Add glow effect
                     conn.classList.add('connection-active');
@@ -240,54 +240,49 @@ class RealtimePromptGenerator {
         }
     }
     
-    // Create particle animation for a connection
-    createParticleAnimation(pathElement, fromId, toId) {
-        const svg = pathElement.closest('svg');
-        const particleGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-        particleGroup.setAttribute('class', 'flow-particle-realtime');
+    // Create line animation for a connection (no floating particles)
+    createLineAnimation(pathElement, fromId, toId) {
+        // Animate just the line without floating particles
+        const originalStroke = pathElement.getAttribute('stroke');
+        const originalStrokeWidth = pathElement.getAttribute('stroke-width');
+        const originalOpacity = pathElement.getAttribute('opacity');
         
-        // Create particle with white core
-        const particleCore = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        particleCore.setAttribute('r', '4');
-        particleCore.setAttribute('fill', '#ffffff');
-        particleCore.setAttribute('opacity', '0.9');
+        // Apply enhanced animation to the line itself
+        pathElement.setAttribute('stroke', '#ffd700');
+        pathElement.setAttribute('stroke-width', '4');
+        pathElement.setAttribute('opacity', '1');
+        pathElement.style.filter = 'drop-shadow(0 0 8px #ffd700)';
+        pathElement.style.animation = 'api-line-pulse 1.5s ease-in-out';
         
-        // Create particle glow
-        const particle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        particle.setAttribute('r', '8');
-        particle.setAttribute('fill', '#ffd700');
-        particle.setAttribute('opacity', '0.7');
-        particle.setAttribute('filter', 'url(#glow)');
+        // Create CSS animation for line pulsing
+        if (!document.getElementById('api-line-pulse-style')) {
+            const style = document.createElement('style');
+            style.id = 'api-line-pulse-style';
+            style.textContent = `
+                @keyframes api-line-pulse {
+                    0%, 100% {
+                        stroke-width: 2;
+                        opacity: 0.6;
+                        filter: drop-shadow(0 0 4px currentColor);
+                    }
+                    50% {
+                        stroke-width: 6;
+                        opacity: 1;
+                        filter: drop-shadow(0 0 12px currentColor);
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        }
         
-        particleGroup.appendChild(particle);
-        particleGroup.appendChild(particleCore);
-        
-        // Create animation along path
-        const animateMotion = document.createElementNS('http://www.w3.org/2000/svg', 'animateMotion');
-        animateMotion.setAttribute('dur', '1.5s');
-        animateMotion.setAttribute('repeatCount', '1');
-        animateMotion.setAttribute('fill', 'freeze');
-        
-        // Use the path data
-        const pathData = pathElement.getAttribute('d');
-        const mpath = document.createElementNS('http://www.w3.org/2000/svg', 'mpath');
-        mpath.setAttributeNS('http://www.w3.org/1999/xlink', 'href', `#${pathElement.id || this.generatePathId(pathElement)}`);
-        animateMotion.appendChild(mpath);
-        
-        particleGroup.appendChild(animateMotion);
-        svg.appendChild(particleGroup);
-        
-        // Remove particle after animation
-        animateMotion.addEventListener('endEvent', () => {
-            particleGroup.remove();
-        });
-        
-        // Fallback removal
+        // Reset line to original state after animation
         setTimeout(() => {
-            if (particleGroup.parentNode) {
-                particleGroup.remove();
-            }
-        }, 2000);
+            pathElement.setAttribute('stroke', originalStroke || '#666');
+            pathElement.setAttribute('stroke-width', originalStrokeWidth || '2');
+            pathElement.setAttribute('opacity', originalOpacity || '0.7');
+            pathElement.style.filter = '';
+            pathElement.style.animation = '';
+        }, 1500);
     }
     
     // Generate ID for path if needed
