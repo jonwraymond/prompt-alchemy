@@ -27,7 +27,7 @@ func TestNewGoogleProvider(t *testing.T) {
 			name: "config with model",
 			config: Config{
 				APIKey: "test-key",
-				Model:  "gemini-2.0-flash",
+				Model:  "gemini-2.5-flash",
 			},
 			expectClient: true,
 		},

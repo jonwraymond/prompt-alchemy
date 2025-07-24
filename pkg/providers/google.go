@@ -54,7 +54,7 @@ func (p *GoogleProvider) Generate(ctx context.Context, req GenerateRequest) (*Ge
 	// Use configured model or default
 	model := p.config.Model
 	if model == "" {
-		model = "gemini-2.0-flash" // Default to Gemini 2.0 Flash
+		model = "gemini-2.5-flash" // Default to Gemini 2.5 Flash (correct model name)
 	}
 
 	// Create generation config
@@ -107,7 +107,8 @@ func (p *GoogleProvider) Generate(ctx context.Context, req GenerateRequest) (*Ge
 	}
 
 	// Send the actual prompt
-	result, err := chat.SendMessage(ctx, genai.Part{Text: req.Prompt})
+	part := genai.NewPartFromText(req.Prompt)
+	result, err := chat.SendMessage(ctx, *part)
 	if err != nil {
 		return nil, fmt.Errorf("google Gemini API call failed: %w", err)
 	}

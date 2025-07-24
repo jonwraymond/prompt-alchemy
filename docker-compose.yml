@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # API Server (default)
   prompt-alchemy:
@@ -32,6 +30,24 @@ services:
     restart: unless-stopped
     profiles:
       - api
+      - hybrid
+
+  # Web UI for interactive testing
+  prompt-alchemy-web:
+    build: .
+    container_name: prompt-alchemy-web
+    ports:
+      - "8090:8090"
+    command: ["/usr/local/bin/prompt-alchemy-web"]
+    depends_on:
+      - prompt-alchemy
+    volumes:
+      - ./web:/app/web
+    environment:
+      - API_BASE_URL=http://prompt-alchemy:8080
+    restart: unless-stopped
+    profiles:
+      - web
       - hybrid
 
   # MCP Server (for AI agents)

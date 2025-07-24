@@ -15,7 +15,7 @@ providers:
     
   google:
     # API key from PROMPT_ALCHEMY_PROVIDERS_GOOGLE_API_KEY env var
-    model: "gemini-2.5-flash"
+    model: "gemini-1.5-pro"
     timeout: 60
     
   openrouter:
@@ -38,11 +38,11 @@ providers:
 # Phase configurations
 phases:
   prima-materia:
-    provider: "openai"
-  solutio:
     provider: "anthropic"
+  solutio:
+    provider: "openai"
   coagulatio:
-    provider: "google"
+    provider: "anthropic"
 
 # Generation settings
 generation:
@@ -52,6 +52,13 @@ generation:
   use_parallel: true
   default_embedding_model: "text-embedding-3-small"
   default_embedding_dimensions: 1536
+
+# Embedding settings for standardization
+embeddings:
+  provider: "openai"
+  model: "text-embedding-3-small"
+  dimensions: 1536
+  auto_migrate_legacy: true
 
 # Data storage
 data_dir: "/app/data"

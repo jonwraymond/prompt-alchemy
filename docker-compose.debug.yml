@@ -1,0 +1,174 @@
+version: '3.8'
+
+# Debug configuration overlay for maximum logging visibility
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.debug.yml --profile hybrid up
+#
+# This configuration enables:
+# - Debug/trace level logging for all components
+# - Persistent log volumes
+# - Structured JSON logging for better parsing
+# - Request/response logging
+# - Performance metrics
+# - Error stack traces
+
+services:
+  # API Server with debug logging
+  prompt-alchemy:
+    environment:
+      # Core debug settings
+      - LOG_LEVEL=debug
+      - DEBUG=true
+      - VERBOSE=true
+      - TRACE=true
+      
+      # Application specific debug
+      - PROMPT_ALCHEMY_LOG_LEVEL=debug
+      - PROMPT_ALCHEMY_DEBUG=true
+      - PROMPT_ALCHEMY_TRACE_REQUESTS=true
+      - PROMPT_ALCHEMY_LOG_FORMAT=json
+      
+      # HTTP debug
+      - HTTP_DEBUG=true
+      - HTTP_LOG_REQUESTS=true
+      - HTTP_LOG_RESPONSES=true
+      - HTTP_LOG_HEADERS=true
+      
+      # Database debug
+      - DB_DEBUG=true
+      - DB_LOG_QUERIES=true
+      - SQLITE_TRACE=true
+      
+      # Provider debug
+      - PROVIDER_DEBUG=true
+      - API_CLIENT_DEBUG=true
+      - OPENAI_DEBUG=true
+      - ANTHROPIC_DEBUG=true
+      
+      # Go runtime debug
+      - GODEBUG=http2debug=2,netdns=go+2
+      - GOGC=100
+      - GOMAXPROCS=4
+      
+    volumes:
+      # Persistent log volumes
+      - ./logs/api:/app/logs
+      - ./logs/api/requests:/app/logs/requests
+      - ./logs/api/errors:/app/logs/errors
+      - ./logs/api/metrics:/app/logs/metrics
+      
+    # Enhanced logging driver
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "10"
+        labels: "service=api,env=debug"
+        env: "LOG_LEVEL,DEBUG,TRACE"
+    
+    # Remove healthcheck in debug to avoid noise
+    healthcheck:
+      disable: true
+
+  # Web UI with debug logging
+  prompt-alchemy-web:
+    environment:
+      # Core debug settings
+      - LOG_LEVEL=debug
+      - DEBUG=true
+      - VERBOSE=true
+      - NODE_ENV=development
+      
+      # Application debug
+      - WEB_DEBUG=true
+      - WEB_LOG_REQUESTS=true
+      - WEB_LOG_STATIC=true
+      - WEB_LOG_TEMPLATES=true
+      
+      # Frontend debug
+      - FRONTEND_DEBUG=true
+      - JS_DEBUG=true
+      - CSS_DEBUG=true
+      
+      # API client debug
+      - API_CLIENT_DEBUG=true
+      - API_CLIENT_LOG_REQUESTS=true
+      - API_CLIENT_LOG_RESPONSES=true
+      
+      # Template engine debug
+      - TEMPLATE_DEBUG=true
+      - TEMPLATE_CACHE=false
+      
+      # Static file serving debug
+      - STATIC_DEBUG=true
+      - STATIC_LOG_ACCESS=true
+      
+    volumes:
+      # Persistent log volumes
+      - ./logs/web:/app/logs
+      - ./logs/web/access:/app/logs/access
+      - ./logs/web/errors:/app/logs/errors
+      - ./logs/web/static:/app/logs/static
+      
+      # Mount source for better stack traces
+      - ./web:/app/web:ro
+      - ./internal:/app/internal:ro
+      - ./pkg:/app/pkg:ro
+      
+    # Enhanced logging driver
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "10"
+        labels: "service=web,env=debug"
+        env: "LOG_LEVEL,DEBUG,NODE_ENV"
+
+  # MCP Server with debug logging
+  prompt-alchemy-mcp:
+    environment:
+      # Core debug settings
+      - LOG_LEVEL=debug
+      - DEBUG=true
+      - VERBOSE=true
+      - TRACE=true
+      
+      # MCP specific debug
+      - MCP_DEBUG=true
+      - MCP_LOG_MESSAGES=true
+      - MCP_LOG_PROTOCOL=true
+      - MCP_TRACE_CALLS=true
+      
+    volumes:
+      # Persistent log volumes
+      - ./logs/mcp:/app/logs
+      - ./logs/mcp/protocol:/app/logs/protocol
+      - ./logs/mcp/messages:/app/logs/messages
+      
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "10"
+        labels: "service=mcp,env=debug"
+
+  # Ollama with debug logging
+  ollama:
+    environment:
+      - OLLAMA_DEBUG=true
+      - OLLAMA_LOG_LEVEL=debug
+      - OLLAMA_TRACE=true
+      
+    volumes:
+      - ./logs/ollama:/var/log/ollama
+      
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "10"
+        labels: "service=ollama,env=debug"
+
+# Create named volumes for better log management
+volumes:
+  log-data:
+    driver: local

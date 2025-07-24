@@ -8,6 +8,7 @@ import (
 	"time"
 
 	log "github.com/jonwraymond/prompt-alchemy/internal/log"
+	"github.com/sirupsen/logrus"
 
 	"github.com/ollama/ollama/api"
 )
@@ -97,42 +98,13 @@ func (p *OllamaProvider) Generate(ctx context.Context, req GenerateRequest) (*Ge
 	}, nil
 }
 
-// GetEmbedding creates embeddings using Ollama's official API
+// GetEmbedding delegates to standardized embedding to ensure 1536 dimensions
 func (p *OllamaProvider) GetEmbedding(ctx context.Context, text string, registry RegistryInterface) ([]float32, error) {
-	logger := log.GetLogger()
-	logger.Debug("OllamaProvider: Getting embedding")
-
-	// Use a default embedding model if not specified
-	model := p.config.Model
-	if model == "" {
-		model = p.config.DefaultEmbeddingModel
-		if model == "" {
-			model = "nomic-embed-text" // Default Ollama embedding model
-		}
-	}
-	logger.Debugf("OllamaProvider: Using embedding model: %s", model)
-
-	// Create embedding request
-	req := &api.EmbeddingRequest{
-		Model:  model,
-		Prompt: text,
-	}
-
-	// Make the API call
-	response, err := p.client.Embeddings(ctx, req)
-	if err != nil {
-		logger.WithError(err).Error("OllamaProvider: Failed to create embedding")
-		return nil, fmt.Errorf("failed to create embedding: %w", err)
-	}
-
-	// Convert []float64 to []float32
-	embedding := make([]float32, len(response.Embedding))
-	for i, v := range response.Embedding {
-		embedding[i] = float32(v)
-	}
-	logger.Debugf("OllamaProvider: Successfully created embedding with length %d", len(embedding))
-
-	return embedding, nil
+	logger := log.GetLogger().WithFields(logrus.Fields{
+		"provider": p.Name(),
+	})
+	logger.Info("OllamaProvider delegating embedding to standardized provider")
+	return getStandardizedEmbedding(ctx, text, registry)
 }
 
 // Name returns the provider name

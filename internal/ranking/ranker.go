@@ -21,7 +21,7 @@ import (
 
 // Ranker handles prompt ranking
 type Ranker struct {
-	storage  *storage.Storage
+	storage  storage.StorageInterface
 	registry providers.RegistryInterface
 	logger   *logrus.Logger
 
@@ -65,7 +65,7 @@ const (
 // NewRanker creates a new ranker instance
 // registry is required so we can obtain an embedding-capable provider for
 // semantic similarity calculations.
-func NewRanker(storage *storage.Storage, registry providers.RegistryInterface, logger *logrus.Logger) *Ranker {
+func NewRanker(storage storage.StorageInterface, registry providers.RegistryInterface, logger *logrus.Logger) *Ranker {
 	// Load weights from config / env with sane defaults.
 	viper.SetDefault(WeightTemperatureKey, DefaultWeightTemperature)
 	viper.SetDefault(WeightTokenKey, DefaultWeightToken)

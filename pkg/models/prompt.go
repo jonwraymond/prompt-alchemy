@@ -33,6 +33,7 @@ type Prompt struct {
 	GenerationContext []string       `json:"generation_context,omitempty" db:"-"`                    // Additional context (files, etc.)
 	PersonaUsed       string         `json:"persona_used,omitempty" db:"persona_used"`               // Persona used for generation
 	TargetModelFamily string         `json:"target_model_family,omitempty" db:"target_model_family"` // Target model family specified
+	TargetUseCase     string         `json:"target_use_case,omitempty" db:"target_use_case"`         // Target use case (auto-inferred or user-specified)
 
 	CreatedAt         time.Time       `json:"created_at" db:"created_at"`
 	UpdatedAt         time.Time       `json:"updated_at" db:"updated_at"`
@@ -44,6 +45,12 @@ type Prompt struct {
 	ModelMetadata     *ModelMetadata  `json:"model_metadata,omitempty"` // Additional model information
 
 	SessionID uuid.UUID `json:"session_id"`
+
+	// UI display fields
+	Score          float64  `json:"score,omitempty"`
+	Reasoning      string   `json:"reasoning,omitempty"`
+	SimilarPrompts []string `json:"similar_prompts,omitempty"`
+	AvgSimilarity  float64  `json:"avg_similarity,omitempty"`
 }
 
 // ModelMetadata contains detailed information about model usage
@@ -85,16 +92,176 @@ func (p Phase) String() string {
 
 // PromptRequest represents a request to generate prompts
 type PromptRequest struct {
-	Input       string           `json:"input"`
-	Phases      []Phase          `json:"phases"`
-	Count       int              `json:"count"`
-	Providers   map[Phase]string `json:"providers"`
-	Temperature float64          `json:"temperature"`
-	MaxTokens   int              `json:"max_tokens"`
-	Tags        []string         `json:"tags"`
-	Context     []string         `json:"context"`
+	Input         string           `json:"input"`
+	Phases        []Phase          `json:"phases"`
+	Count         int              `json:"count"`
+	Providers     map[Phase]string `json:"providers"`
+	Temperature   float64          `json:"temperature"`
+	MaxTokens     int              `json:"max_tokens"`
+	Tags          []string         `json:"tags"`
+	Context       []string         `json:"context"`
+	Persona       string           `json:"persona,omitempty"`
+	TargetUseCase string           `json:"target_use_case,omitempty"` // Optional: auto-inferred from persona if not provided
+	SessionID     uuid.UUID
+}
 
-	SessionID uuid.UUID
+// UseCase represents different target use cases for prompts
+type UseCase string
+
+const (
+	UseCaseGeneral     UseCase = "general"     // General purpose prompts
+	UseCaseCode        UseCase = "code"        // Code generation and programming
+	UseCaseWriting     UseCase = "writing"     // Content writing and editing
+	UseCaseAnalysis    UseCase = "analysis"    // Data analysis and insights
+	UseCaseCreative    UseCase = "creative"    // Creative writing and brainstorming
+	UseCaseTechnical   UseCase = "technical"   // Technical documentation
+	UseCaseEducational UseCase = "educational" // Educational content
+	UseCaseBusiness    UseCase = "business"    // Business and professional
+	UseCaseMarketing   UseCase = "marketing"   // Marketing and advertising
+	UseCaseResearch    UseCase = "research"    // Research and academic
+	UseCaseCustomer    UseCase = "customer"    // Customer service and support
+	UseCaseSales       UseCase = "sales"       // Sales and conversion
+	UseCaseProduct     UseCase = "product"     // Product development
+	UseCaseDesign      UseCase = "design"      // Design and UX
+	UseCaseLegal       UseCase = "legal"       // Legal and compliance
+	UseCaseMedical     UseCase = "medical"     // Medical and healthcare
+	UseCaseFinancial   UseCase = "financial"   // Financial and accounting
+	UseCaseHR          UseCase = "hr"          // Human resources
+	UseCaseOperations  UseCase = "operations"  // Operations and logistics
+)
+
+// String returns the string representation of the UseCase
+func (u UseCase) String() string {
+	return string(u)
+}
+
+// PersonaUseCaseMapping maps personas to their most likely target use cases
+var PersonaUseCaseMapping = map[string]UseCase{
+	// Analysis personas
+	"analyst":           UseCaseAnalysis,
+	"data_scientist":    UseCaseAnalysis,
+	"researcher":        UseCaseResearch,
+	"business_analyst":  UseCaseBusiness,
+	"financial_analyst": UseCaseFinancial,
+
+	// Code personas
+	"programmer":        UseCaseCode,
+	"software_engineer": UseCaseCode,
+	"developer":         UseCaseCode,
+	"architect":         UseCaseTechnical,
+	"devops":            UseCaseTechnical,
+
+	// Writing personas
+	"writer":          UseCaseWriting,
+	"content_creator": UseCaseWriting,
+	"journalist":      UseCaseWriting,
+	"editor":          UseCaseWriting,
+	"copywriter":      UseCaseMarketing,
+
+	// Creative personas
+	"designer":          UseCaseDesign,
+	"creative_director": UseCaseCreative,
+	"artist":            UseCaseCreative,
+	"marketer":          UseCaseMarketing,
+	"brand_manager":     UseCaseMarketing,
+
+	// Business personas
+	"manager":         UseCaseBusiness,
+	"executive":       UseCaseBusiness,
+	"consultant":      UseCaseBusiness,
+	"entrepreneur":    UseCaseBusiness,
+	"product_manager": UseCaseProduct,
+
+	// Service personas
+	"customer_service":   UseCaseCustomer,
+	"sales_rep":          UseCaseSales,
+	"support_specialist": UseCaseCustomer,
+	"account_manager":    UseCaseSales,
+
+	// Professional personas
+	"lawyer":        UseCaseLegal,
+	"doctor":        UseCaseMedical,
+	"teacher":       UseCaseEducational,
+	"professor":     UseCaseEducational,
+	"hr_specialist": UseCaseHR,
+
+	// Operations personas
+	"operations_manager":    UseCaseOperations,
+	"logistics_coordinator": UseCaseOperations,
+	"project_manager":       UseCaseBusiness,
+
+	// Default fallback
+	"": UseCaseGeneral,
+}
+
+// InferUseCaseFromPersona automatically determines the target use case based on persona
+func InferUseCaseFromPersona(persona string) UseCase {
+	if persona == "" {
+		return UseCaseGeneral
+	}
+
+	if useCase, exists := PersonaUseCaseMapping[persona]; exists {
+		return useCase
+	}
+
+	// Try partial matching for personas not in the exact mapping
+	for key, useCase := range PersonaUseCaseMapping {
+		if contains(persona, key) || contains(key, persona) {
+			return useCase
+		}
+	}
+
+	return UseCaseGeneral
+}
+
+// contains checks if a string contains another string (case-insensitive)
+func contains(s, substr string) bool {
+	return len(s) >= len(substr) &&
+		(s == substr ||
+			len(s) > len(substr) &&
+				(s[:len(substr)] == substr ||
+					s[len(s)-len(substr):] == substr ||
+					containsSubstring(s, substr)))
+}
+
+// containsSubstring performs a simple substring check
+func containsSubstring(s, substr string) bool {
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+	return false
+}
+
+// GetUseCaseDescription returns a human-readable description of the use case
+func (u UseCase) GetDescription() string {
+	descriptions := map[UseCase]string{
+		UseCaseGeneral:     "General purpose prompts for everyday tasks",
+		UseCaseCode:        "Programming, code generation, and software development",
+		UseCaseWriting:     "Content creation, writing, and text editing",
+		UseCaseAnalysis:    "Data analysis, insights, and analytical thinking",
+		UseCaseCreative:    "Creative writing, brainstorming, and artistic content",
+		UseCaseTechnical:   "Technical documentation and specifications",
+		UseCaseEducational: "Educational content and learning materials",
+		UseCaseBusiness:    "Business communication and professional tasks",
+		UseCaseMarketing:   "Marketing copy, advertising, and promotional content",
+		UseCaseResearch:    "Research, academic writing, and scholarly content",
+		UseCaseCustomer:    "Customer service, support, and user assistance",
+		UseCaseSales:       "Sales pitches, proposals, and conversion content",
+		UseCaseProduct:     "Product descriptions, features, and specifications",
+		UseCaseDesign:      "Design briefs, UX content, and visual descriptions",
+		UseCaseLegal:       "Legal documents, contracts, and compliance content",
+		UseCaseMedical:     "Medical documentation and healthcare content",
+		UseCaseFinancial:   "Financial reports, analysis, and accounting content",
+		UseCaseHR:          "Human resources, job descriptions, and employee content",
+		UseCaseOperations:  "Operations manuals, procedures, and logistics content",
+	}
+
+	if desc, exists := descriptions[u]; exists {
+		return desc
+	}
+	return "Custom use case"
 }
 
 // PromptMetrics contains performance metrics for a prompt

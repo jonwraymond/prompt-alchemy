@@ -1,0 +1,2910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}}</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://unpkg.com/hyperscript.org@0.9.12"></script>
+    <script>
+        // EMERGENCY FIX: Disable HTMX retries to stop timeout loop
+        document.addEventListener('DOMContentLoaded', function() {
+            htmx.config.timeout = 5000;
+            htmx.config.retryDelay = 0;
+            htmx.config.historyCacheSize = 0;
+            
+            document.body.addEventListener('htmx:sendError', function(evt) {
+                console.log('HTMX Error prevented retry storm:', evt.detail);
+                evt.preventDefault();
+            });
+            
+            document.body.addEventListener('htmx:responseError', function(evt) {
+                console.log('HTMX Response Error prevented retry storm:', evt.detail);
+                evt.preventDefault();
+            });
+        });
+    </script>
+    <link rel="stylesheet" href="/static/css/alchemy.css">
+    <link rel="stylesheet" href="/static/css/modern-alchemy.css">
+    <link rel="stylesheet" href="/static/css/hex-flow-board.css">
+    <link rel="stylesheet" href="/static/css/hex-flow-board-unified.css">
+    <!-- Emergency Fix CSS - Remove after diagnosis -->
+    <link rel="stylesheet" href="/static/css/hex-grid-fix.css">
+    <script src="/static/js/hex-flow-board-unified.js" defer></script>
+    <script src="/static/js/hex-flow-unified.js" defer></script>
+    <script src="/static/js/hex-debug-fix.js" defer></script>
+    <script src="/static/js/header-check.js" defer></script>
+    
+    <!-- Emergency inline styles to force display -->
+    <style>
+        /* Force header visibility */
+        .main-header {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            text-align: center !important;
+            padding: 2rem 0 1rem 0 !important;
+            margin-bottom: 2rem !important;
+            border-bottom: 1px solid #2a2a2c !important;
+        }
+        
+        .main-title {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            font-size: 3rem !important;
+            font-weight: 700 !important;
+            background: linear-gradient(135deg, #fbbf24 0%, #3b82f6 50%, #10b981 100%) !important;
+            background-clip: text !important;
+            -webkit-background-clip: text !important;
+            -webkit-text-fill-color: transparent !important;
+            margin: 0 0 0.5rem 0 !important;
+        }
+        
+        .main-subtitle {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            font-size: 1.125rem !important;
+            color: #a1a1aa !important;
+            margin: 0 !important;
+        }
+        
+        .ai-header {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            padding: 1.5rem 0 2rem 0 !important;
+            text-align: center !important;
+        }
+        
+        .ai-header-content {
+            display: inline-flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            align-items: center !important;
+            gap: 0.75rem !important;
+            padding: 0.75rem 1.5rem !important;
+            background: rgba(59, 130, 246, 0.08) !important;
+            border: 1px solid rgba(255, 255, 255, 0.06) !important;
+            border-radius: 50px !important;
+        }
+        
+        .ai-indicator {
+            font-size: 1rem !important;
+            opacity: 0.8 !important;
+        }
+        
+        .ai-header-text {
+            font-size: 0.85rem !important;
+            color: #d4d4d8 !important;
+            opacity: 0.9 !important;
+        }
+        
+        #hex-flow-container {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            width: 100% !important;
+            height: 600px !important;
+            background: #0a0a0a !important;
+            border: 2px solid #1a1a1a !important;
+            border-radius: 10px !important;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container container-premium">
+        
+        <!-- Main Header -->
+        <header class="main-header">
+            <h1 class="main-title">Prompt Alchemy</h1>
+            <p class="main-subtitle">Transform raw ideas into refined AI prompts</p>
+        </header>
+        
+        <!-- AI Thought Process Header -->
+        <div class="ai-header" id="ai-header">
+            <div class="ai-header-content">
+                <span class="ai-indicator">🧠</span>
+                <span class="ai-header-text" id="ai-header-text">Observing hex grid transformations...</span>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <div class="xl:col-span-2" style="background: none !important; border: none !important; box-shadow: none !important; padding: 0 !important;">
+                
+                <form id="generate-form" 
+                      hx-post="/generate" 
+                      hx-target="#results-container"
+                      hx-indicator="#alchemy-loading"
+                      hx-swap="innerHTML transition:true"
+                      class="htmx-fade"
+                      style="background: none !important; border: none !important; box-shadow: none !important; padding: 0 !important; margin: 0 !important;">
+                    
+                    <textarea 
+                        id="input" 
+                        name="input" 
+                        required
+                        class="clean-input"
+                        placeholder="Insert your prompt here..."
+                        rows="3"></textarea>
+                    
+                    <div class="horizontal-controls">
+                        <button type="submit" class="generate-btn" title="Generate (Enter)" id="central-send">
+                            <svg class="btn-icon" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M2,21L23,12L2,3V10L17,12L2,14V21Z"/>
+                            </svg>
+                            Generate
+                        </button>
+                        
+                        <button type="button" class="config-btn" onclick="toggleFloatingOptions()" title="Configuration">
+                            <svg class="btn-icon" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 15.5A3.5 3.5 0 0 1 8.5 12A3.5 3.5 0 0 1 12 8.5a3.5 3.5 0 0 1 3.5 3.5a3.5 3.5 0 0 1-3.5 3.5m7.43-2.53c.04-.32.07-.64.07-.97c0-.33-.03-.66-.07-1l1.86-1.41c.17-.13.22-.36.12-.55l-1.76-3.03a.448.448 0 0 0-.52-.22l-2.19.91c-.46-.35-.97-.62-1.51-.84L16.06 2.5c-.03-.23-.21-.4-.45-.4h-3.52c-.24 0-.42.17-.45.4L11.27 4.95c-.54.22-1.05.49-1.51.84l-2.19-.91c-.23-.09-.49 0-.52.22L5.29 8.13c-.1.19-.05.42.12.55L7.27 10.09c-.04.34-.07.67-.07 1c0 .33.03.65.07.97l-1.86 1.41c-.17.13-.22.36-.12.55l1.76 3.03c.12.22.29.28.52.22l2.19-.91c.46.35.97.62 1.51.84l.37 1.95c.03.23.21.4.45.4h3.52c.24 0 .42-.17.45-.4l.37-1.95c.54-.22 1.05-.49 1.51-.84l2.19.91c.23.09.49 0 .52-.22l1.76-3.03c.1-.19.05-.42-.12-.55l-1.86-1.41Z"/>
+                            </svg>
+                            Options
+                        </button>
+                    </div>
+                    
+                    <div class="floating-options-panel" id="floating-options">
+                                <div class="options-grid">
+                                    <div class="option-group">
+                                        <label class="option-label">
+                                            <svg class="option-icon" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z"/>
+                                            </svg>
+                                            Iterations
+                                        </label>
+                                        <select id="count" name="count" class="option-select">
+                                            <option value="1">1x</option>
+                                            <option value="3" selected>3x</option>
+                                            <option value="5">5x</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="option-group slider-group">
+                                        <label class="option-label">
+                                            <svg class="option-icon" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.46,13.97L5.82,21L12,17.27Z"/>
+                                            </svg>
+                                            Creativity
+                                        </label>
+                                        <div class="slider-container">
+                                            <input type="range" id="temperature" name="temperature" 
+                                                   min="0" max="2" step="0.1" value="0.7" class="modern-slider">
+                                            <span class="slider-display">0.7</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="option-group">
+                                        <label class="option-label">
+                                            <svg class="option-icon" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M9,4V2H7V4H9M13,4V2H11V4H13M17,4V2H15V4H17M19,6V4H21V2H23V4H21V6H19M21,10V8H23V10H21M21,14V12H23V14H21M21,18V16H23V18H21M19,20V18H21V20H19M15,22V20H17V22H15M11,22V20H13V22H11M7,22V20H9V22H7M5,20V18H7V20H5M3,16V18H1V16H3M3,12V14H1V12H3M3,8V10H1V8H3M5,6V4H7V6H5M5,10V8H7V10H5M5,14V12H7V14H5M9,6V8H11V6H9M13,6V8H15V6H13M17,6V8H19V6H17M9,10V12H11V10H9M13,10V12H15V10H13M17,10V12H19V10H17M9,14V16H11V14H9M13,14V16H15V14H13M17,14V16H19V14H17"/>
+                                            </svg>
+                                            Max Tokens
+                                        </label>
+                                        <select class="option-select" name="max_tokens">
+                                            <option value="1000">1,000</option>
+                                            <option value="2000" selected>2,000</option>
+                                            <option value="4000">4,000</option>
+                                            <option value="8000">8,000</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="option-group">
+                                        <label class="option-label">
+                                            <svg class="option-icon" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,8.5A1.5,1.5 0 0,0 10.5,10A1.5,1.5 0 0,0 12,11.5A1.5,1.5 0 0,0 13.5,10A1.5,1.5 0 0,0 12,8.5M12,14C10.34,14 9,15.34 9,17C9,17.55 9.45,18 10,18H14C14.55,18 15,17.55 15,17C15,15.34 13.66,14 12,14Z"/>
+                                            </svg>
+                                            Style
+                                        </label>
+                                        <select id="persona" name="persona" class="option-select">
+                                            <option value="code" selected>Code</option>
+                                            <option value="writing">Writing</option>
+                                            <option value="analysis">Analysis</option>
+                                            <option value="generic">Generic</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="option-group">
+                                        <label class="option-label">
+                                            <svg class="option-icon" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M12,6A6,6 0 0,1 18,12A6,6 0 0,1 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6M12,8A4,4 0 0,0 8,12A4,4 0 0,0 12,16A4,4 0 0,0 16,12A4,4 0 0,0 12,8Z"/>
+                                            </svg>
+                                            Phase
+                                        </label>
+                                        <select id="phase" name="phase" class="option-select">
+                                            <option value="auto" selected>Auto Select</option>
+                                            <option value="prima-materia">Prima Materia</option>
+                                            <option value="solutio">Solutio</option>
+                                            <option value="coagulatio">Coagulatio</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="option-group">
+                                        <label class="option-label">
+                                            <svg class="option-icon" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M12,6A6,6 0 0,1 18,12A6,6 0 0,1 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6M12,8A4,4 0 0,0 8,12A4,4 0 0,0 12,16A4,4 0 0,0 16,12A4,4 0 0,0 12,8Z"/>
+                                            </svg>
+                                            Model
+                                        </label>
+                                        <select id="provider" name="provider" class="option-select">
+                                            <option value="auto" selected>Auto Select</option>
+                                            {{range .Providers}}
+                                            {{if .Available}}
+                                            <option value="{{.Name}}">{{.DisplayName}}</option>
+                                            {{end}}
+                                            {{end}}
+                                        </select>
+                                    </div>
+
+                                    <div class="option-group full-width">
+                                        <label class="option-label">
+                                            <svg class="option-icon" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M5.5,7A1.5,1.5 0 0,1 4,5.5A1.5,1.5 0 0,1 5.5,4A1.5,1.5 0 0,1 7,5.5A1.5,1.5 0 0,1 5.5,7M21.41,11.58L12.41,2.58C12.05,2.22 11.55,2 11,2H4C2.89,2 2,2.89 2,4V11C2,11.55 2.22,12.05 2.59,12.41L11.58,21.41C11.95,21.78 12.45,22 13,22C13.55,22 14.05,21.78 14.41,21.41L21.41,14.41C21.78,14.05 22,13.55 22,13C22,12.45 21.78,11.95 21.41,11.58Z"/>
+                                            </svg>
+                                            Tags
+                                        </label>
+                                        <input type="text" id="tags" name="tags" class="option-input" 
+                                               placeholder="testing, automation, docs">
+                                    </div>
+                                    
+                                    <div class="option-group full-width">
+                                        <div class="toggle-group">
+                                            <label class="toggle-option">
+                                                <input type="checkbox" name="use_parallel" value="true" checked>
+                                                <span class="toggle-label">
+                                                    <svg class="option-icon small" fill="currentColor" viewBox="0 0 24 24">
+                                                        <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                                                    </svg>
+                                                    Parallel Processing
+                                                </span>
+                                            </label>
+                                            <label class="toggle-option">
+                                                <input type="checkbox" name="save" value="true" checked>
+                                                <span class="toggle-label">
+                                                    <svg class="option-icon small" fill="currentColor" viewBox="0 0 24 24">
+                                                        <path d="M15,9H5V5H15M12,19A3,3 0 0,1 9,16A3,3 0 0,1 12,13A3,3 0 0,1 15,16A3,3 0 0,1 12,19M17,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V7L17,3Z"/>
+                                                    </svg>
+                                                    Save Results
+                                                </span>
+                                            </label>
+                                            <label class="toggle-option">
+                                                <input type="checkbox" name="use_optimization" value="true" checked>
+                                                <span class="toggle-label">
+                                                    <svg class="option-icon small" fill="currentColor" viewBox="0 0 24 24">
+                                                        <path d="M12,2A7,7 0 0,1 19,9C19,11.38 17.81,13.47 16,14.74V17A1,1 0 0,1 15,18H9A1,1 0 0,1 8,17V14.74C6.19,13.47 5,11.38 5,9A7,7 0 0,1 12,2M9,21V20H15V21A1,1 0 0,1 14,22H10A1,1 0 0,1 9,21M12,4A5,5 0 0,0 7,9C7,11.05 8.23,12.81 10,13.58V16H14V13.58C15.77,12.81 17,11.05 17,9A5,5 0 0,0 12,4Z"/>
+                                                    </svg>
+                                                    Historical Optimization
+                                                </span>
+                                            </label>
+                                            <label class="toggle-option">
+                                                <input type="checkbox" name="enable_judging" value="true" checked>
+                                                <span class="toggle-label">
+                                                    <svg class="option-icon small" fill="currentColor" viewBox="0 0 24 24">
+                                                        <path d="M21 7L9 19L3.5 13.5L4.91 12.09L9 16.17L19.59 5.59L21 7Z"/>
+                                                    </svg>
+                                                    AI Evaluation
+                                                </span>
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div class="option-group full-width" style="margin-top: 1rem;">
+                                        <div class="advanced-section">
+                                            <div class="advanced-header" onclick="toggleAdvancedSettings(event)">
+                                                <svg class="option-icon small" fill="currentColor" viewBox="0 0 24 24">
+                                                    <path d="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.22,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.22,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.68 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z"/>
+                                                </svg>
+                                                <span>Advanced Settings</span>
+                                                <svg class="chevron-icon" fill="currentColor" viewBox="0 0 24 24">
+                                                    <path d="M7,10L12,15L17,10H7Z"/>
+                                                </svg>
+                                            </div>
+                                            
+                                            <div class="advanced-content" id="advanced-settings-content" style="display: none;">
+                                                <div class="advanced-row">
+                                                    <div class="advanced-option">
+                                                        <label class="option-label small">Similarity Threshold</label>
+                                                        <select name="similarity_threshold" class="option-select small">
+                                                            <option value="0.7">High (0.7)</option>
+                                                            <option value="0.6" selected>Medium (0.6)</option>
+                                                            <option value="0.5">Low (0.5)</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="advanced-option">
+                                                        <label class="option-label small">Historical Weight</label>
+                                                        <select name="historical_weight" class="option-select small">
+                                                            <option value="0.3" selected>Light (30%)</option>
+                                                            <option value="0.5">Medium (50%)</option>
+                                                            <option value="0.7">Heavy (70%)</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="advanced-row">
+                                                    <div class="advanced-option">
+                                                        <label class="option-label small">Judge Provider</label>
+                                                        <select name="judge_provider" class="option-select small">
+                                                            {{range .Providers}}
+                                                            {{if .Available}}
+                                                            <option value="{{.Name}}" {{if eq .Name "anthropic"}}selected{{end}}>{{.DisplayName}}</option>
+                                                            {{end}}
+                                                            {{end}}
+                                                        </select>
+                                                    </div>
+                                                    <div class="advanced-option">
+                                                        <label class="option-label small">Scoring Criteria</label>
+                                                        <select name="scoring_criteria" class="option-select small">
+                                                            <option value="comprehensive" selected>Comprehensive</option>
+                                                            <option value="clarity">Clarity</option>
+                                                            <option value="creativity">Creativity</option>
+                                                            <option value="effectiveness">Effectiveness</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="advanced-row">
+                                                    <div class="advanced-option full">
+                                                        <label class="option-label small">Target Use Case</label>
+                                                        <input type="text" name="target_use_case" class="option-input small" 
+                                                               placeholder="Optional: Specific context for evaluation">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="config-reference">
+                                    <img src="/static/assets/input_configuration.png?v={{.Timestamp}}" 
+                                         alt="Input Configuration Guide" 
+                                         class="config-guide-image"
+                                         onclick="toggleConfigGuide(event)"
+                                         title="Click to view input configuration guide">
+                                </div>
+
+                                <div class="option-hints">
+                                    <span class="hint-tag">⌘ + ↵ Send</span>
+                                    <span class="hint-tag">⚗️ Three-phase</span>
+                                    <span class="hint-tag" id="char-display">0 chars</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+
+
+                </form>
+                
+            </div>
+            
+            <div class="xl:col-span-1" id="transmutation-flow-panel">
+                <div class="text-center mb-6">
+                    <div class="fragmented-text justify-center">
+                        <span style="--index: 0;">Alchemical</span>
+                        <span style="--index: 1;">Runes</span>
+                    </div>
+                </div>
+                
+                <!-- Unified Dual-View Container -->
+                <div class="dual-view-container">
+                    
+                    <!-- Left Side: Hex Grid Visualization -->
+                    <div class="hex-grid-column">
+                        <div class="hex-flow-container" 
+                             id="hex-flow-container"
+                             hx-ext="sse"
+                             sse-connect="/api/flow-events"
+                             sse-swap="flow-update">
+                    
+                    <div class="hex-flow-wrapper">
+                        
+                        <div class="hex-flow-main">
+                    
+                    
+                    <svg id="hex-flow-board" 
+                         class="hex-flow-board" 
+                         viewBox="0 0 1000 700"
+                         hx-get="/api/board-state"
+                         hx-trigger="board-refresh from:body"
+                         hx-swap="none">
+                        
+                        <defs>
+                            <radialGradient id="primaGradient">
+                                <stop offset="0%" style="stop-color:#ff6b6b;stop-opacity:0.8" />
+                                <stop offset="100%" style="stop-color:#ff6b6b;stop-opacity:0.1" />
+                            </radialGradient>
+                            <radialGradient id="solutioGradient">
+                                <stop offset="0%" style="stop-color:#4ecdc4;stop-opacity:0.8" />
+                                <stop offset="100%" style="stop-color:#4ecdc4;stop-opacity:0.1" />
+                            </radialGradient>
+                            <radialGradient id="coagulatioGradient">
+                                <stop offset="0%" style="stop-color:#45b7d1;stop-opacity:0.8" />
+                                <stop offset="100%" style="stop-color:#45b7d1;stop-opacity:0.1" />
+                            </radialGradient>
+                            
+                            <filter id="hexGlow">
+                                <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+                                <feMerge>
+                                    <feMergeNode in="coloredBlur"/>
+                                    <feMergeNode in="SourceGraphic"/>
+                                </feMerge>
+                            </filter>
+                            
+                            <linearGradient id="flowGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#2ecc71;stop-opacity:0">
+                                    <animate attributeName="stop-opacity" values="0;1;0" dur="2s" repeatCount="indefinite" />
+                                </stop>
+                                <stop offset="50%" style="stop-color:#2ecc71;stop-opacity:1">
+                                    <animate attributeName="stop-opacity" values="1;0;1" dur="2s" repeatCount="indefinite" />
+                                </stop>
+                                <stop offset="100%" style="stop-color:#2ecc71;stop-opacity:0">
+                                    <animate attributeName="stop-opacity" values="0;1;0" dur="2s" repeatCount="indefinite" />
+                                </stop>
+                            </linearGradient>
+                        </defs>
+                        
+                        <pattern id="hexGrid" x="0" y="0" width="60" height="52" patternUnits="userSpaceOnUse">
+                            <polygon points="30,0 45,15 45,37 30,52 15,37 15,15" 
+                                     fill="none" 
+                                     stroke="#1a1a1a" 
+                                     stroke-width="0.5" 
+                                     opacity="0.3"/>
+                        </pattern>
+                        <rect width="100%" height="100%" fill="url(#hexGrid)" />
+                        
+                        <g id="connection-paths"></g>
+                        
+                        <g id="hex-nodes"></g>
+                        
+                        <g id="flow-particles"></g>
+                    </svg>
+                    
+                    <!-- Manual zoom controls hidden - automated zoom only -->
+                    <div class="hex-zoom-controls" style="display: none;">
+                        <div class="zoom-level"
+                             hx-get="/api/zoom-level"
+                             hx-trigger="load, zoom-changed from:body"
+                             hx-target="this">100%</div>
+                        
+                        <div id="zoom-indicator" class="htmx-indicator">
+                            <div class="spinner"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="hex-tooltip" 
+                         id="hex-tooltip"
+                         hx-get="/api/node-details"
+                         hx-trigger="node-hover"
+                         hx-target=".tooltip-content"
+                         hx-swap="innerHTML">
+                        <div class="tooltip-content">
+                            <div class="tooltip-title"></div>
+                            <div class="tooltip-type"></div>
+                            <div class="tooltip-description"></div>
+                            <div class="tooltip-stats"></div>
+                        </div>
+                    </div>
+                    
+                    
+                    <div class="node-actions-panel"
+                         id="node-actions"
+                         style="display: none;"
+                         hx-get="/api/node-actions"
+                         hx-trigger="node-selected"
+                         hx-target="this"
+                         hx-swap="innerHTML"
+                         hx-on:htmx:after-swap="this.style.display='block'">
+                    </div>
+                        
+                        </div> <!-- End hex-flow-main -->
+                    
+                    </div> <!-- End hex-flow-wrapper -->
+
+                    <!-- Legend Dropdown -->
+                    <div class="legend-dropdown" id="legend-dropdown">
+                        <button class="legend-trigger" onclick="toggleLegendDropdown()">
+                            Legend
+                        </button>
+                        
+                        <div class="legend-content" id="legend-content">
+                            <div class="legend-section">
+                                <div class="legend-section-title">Transmutation Process</div>
+                                <div class="legend-item">
+                                    <div class="legend-symbol" style="color: var(--liquid-gold);">➔</div>
+                                    <div class="legend-description">
+                                        <div class="legend-label">Input/Output</div>
+                                        <div class="legend-detail">Represents the initial prompt and the final, refined output.</div>
+                                    </div>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-symbol" style="color: var(--liquid-red);">●</div>
+                                    <div class="legend-description">
+                                        <div class="legend-label">Prima Materia</div>
+                                        <div class="legend-detail">The first phase of transformation, extracting the raw essence.</div>
+                                    </div>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-symbol" style="color: var(--liquid-blue);">●</div>
+                                    <div class="legend-description">
+                                        <div class="legend-label">Solutio</div>
+                                        <div class="legend-detail">The second phase, dissolving the raw material into a fluid state.</div>
+                                    </div>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-symbol" style="color: var(--liquid-emerald);">●</div>
+                                    <div class="legend-description">
+                                        <div class="legend-label">Coagulatio</div>
+                                        <div class="legend-detail">The final phase, crystallizing the fluid ideas into a solid, structured form.</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="legend-section">
+                                <div class="legend-section-title">Connection Lines</div>
+                                <div class="legend-item">
+                                    <div class="legend-line-demo">
+                                        <svg width="24" height="6" viewBox="0 0 24 6">
+                                            <line x1="2" y1="3" x2="22" y2="3" 
+                                                  stroke="#2ecc71" 
+                                                  stroke-width="2" 
+                                                  stroke-dasharray="6,4"
+                                                  class="demo-active-processing">
+                                            </line>
+                                        </svg>
+                                    </div>
+                                    <div class="legend-description">
+                                        <div class="legend-label">Active Processing</div>
+                                        <div class="legend-detail">Animated flow showing data moving toward destination</div>
+                                    </div>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-line-demo">
+                                        <svg width="24" height="6" viewBox="0 0 24 6">
+                                            <line x1="2" y1="3" x2="22" y2="3" 
+                                                  stroke="#6c757d" 
+                                                  stroke-width="2" 
+                                                  stroke-dasharray="3,3"
+                                                  opacity="0.6"
+                                                  class="demo-standby">
+                                            </line>
+                                        </svg>
+                                    </div>
+                                    <div class="legend-description">
+                                        <div class="legend-label">Standby Connection</div>
+                                        <div class="legend-detail">Available but inactive pathway (static)</div>
+                                    </div>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-line-demo">
+                                        <svg width="24" height="6" viewBox="0 0 24 6">
+                                            <line x1="2" y1="3" x2="22" y2="3" 
+                                                  stroke="#ffcc33" 
+                                                  stroke-width="2" 
+                                                  stroke-dasharray="4,4"
+                                                  class="demo-ready-pulse">
+                                            </line>
+                                        </svg>
+                                    </div>
+                                    <div class="legend-description">
+                                        <div class="legend-label">Ready to Flow</div>
+                                        <div class="legend-detail">Pulsing connection awaiting activation</div>
+                                    </div>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-line-demo">
+                                        <svg width="24" height="6" viewBox="0 0 24 6">
+                                            <line x1="2" y1="3" x2="22" y2="3" 
+                                                  stroke="#e74c3c" 
+                                                  stroke-width="2" 
+                                                  stroke-dasharray="5,5"
+                                                  class="demo-broken">
+                                            </line>
+                                        </svg>
+                                    </div>
+                                    <div class="legend-description">
+                                        <div class="legend-label">Broken Connection</div>
+                                        <div class="legend-detail">Failed pathway with error indication</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="legend-section">
+                                <div class="legend-section-title">Node States</div>
+                                <div class="legend-item">
+                                    <div class="legend-symbol">❖</div>
+                                    <div class="legend-description">
+                                        <div class="legend-label">Ready</div>
+                                        <div class="legend-detail">Node is ready to begin processing.</div>
+                                    </div>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-symbol" style="color: var(--liquid-red);">❖</div>
+                                    <div class="legend-description">
+                                        <div class="legend-label">Failed</div>
+                                        <div class="legend-detail">An error occurred during transmutation.</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="legend-section">
+                                <div class="legend-section-title">UI Interactions</div>
+                                <div class="legend-item">
+                                    <div class="legend-symbol">🖱️</div>
+                                    <div class="legend-description">
+                                        <div class="legend-label">Click & Drag</div>
+                                        <div class="legend-detail">Reposition nodes to customize your view.</div>
+                                    </div>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-symbol">휠</div>
+                                    <div class="legend-description">
+                                        <div class="legend-label">Scroll Wheel</div>
+                                        <div class="legend-detail">Zoom in and out of the transmutation grid.</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                </div>
+                </div>
+                
+                <div class="mt-4">
+                    <label class="flex items-center cursor-pointer">
+                        <input type="checkbox" 
+                               class="mr-2"
+                               hx-post="/api/toggle-features"
+                               hx-trigger="change"
+                               hx-swap="none"
+                               hx-on:htmx:after-request="window.hexFlowBoard?.toggleFeatures(event.target.checked)">
+                        <span class="text-sm text-gray-600">Show Advanced Features (Optimizer, Judge, Vector DB)</span>
+                    </label>
+                </div>
+                
+                        </div> <!-- End hex-grid-column -->
+                        
+                        <!-- Right Side: AI Thought Process Display -->
+                        <div class="ai-thoughts-column">
+                            <div id="hex-ai-thoughts" class="hex-thoughts-container unified-thoughts">
+                                <div class="thoughts-header">
+                                    <div class="thoughts-indicator">🧠</div>
+                                    <h4 class="thoughts-title">AI Transmutation Reasoning</h4>
+                                    <div class="thoughts-status" id="hex-thoughts-status">Observing...</div>
+                                </div>
+                                
+                                <div class="thoughts-content" id="hex-thoughts-content">
+                                    <div class="thought-stream" id="thought-stream">
+                                        <div class="thought-entry initial" data-timestamp="">
+                                            <div class="thought-meta">
+                                                <span class="thought-phase">System</span>
+                                                <span class="thought-time">Just now</span>
+                                            </div>
+                                            <div class="thought-text">
+                                                Ready to analyze transmutation process. Hex grid initialized and awaiting input for alchemical transformation.
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="thoughts-insights" id="hex-insights">
+                                    <div class="insight-grid">
+                                        <div class="insight-card">
+                                            <div class="insight-label">Current Phase</div>
+                                            <div class="insight-value" id="hex-current-phase">Idle</div>
+                                        </div>
+                                        <div class="insight-card">
+                                            <div class="insight-label">Processing Node</div>
+                                            <div class="insight-value" id="hex-active-node">None</div>
+                                        </div>
+                                        <div class="insight-card">
+                                            <div class="insight-label">Transformation State</div>
+                                            <div class="insight-value" id="hex-transform-state">Ready</div>
+                                        </div>
+                                        <div class="insight-card">
+                                            <div class="insight-label">AI Confidence</div>
+                                            <div class="insight-value" id="hex-confidence">100%</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Advanced AI Thinking Process (Shows during generation) -->
+                            <div id="thinking-process" class="thinking-panel unified-thinking" style="display: none;">
+                                <div class="thinking-header">
+                                    <h3 class="thinking-title">Deep AI Analysis</h3>
+                                    <div class="thinking-status">🧠 Processing...</div>
+                                </div>
+                                
+                                <div class="thinking-stages">
+                                    <div class="stage-item" data-stage="prima-materia">
+                                        <div class="stage-icon">🌱</div>
+                                        <div class="stage-content">
+                                            <div class="stage-name">Prima Materia</div>
+                                            <div class="stage-description">Extracting raw essence...</div>
+                                            <div class="stage-thoughts" id="thoughts-prima-materia"></div>
+                                        </div>
+                                        <div class="stage-progress">
+                                            <div class="progress-circle" data-progress="0">
+                                                <svg viewBox="0 0 36 36">
+                                                    <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" 
+                                                          fill="none" stroke="var(--metal-border)" stroke-width="2"/>
+                                                    <path class="progress-bar" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" 
+                                                          fill="none" stroke="var(--liquid-gold)" stroke-width="2" 
+                                                          stroke-dasharray="0, 100"/>
+                                                </svg>
+                                                <div class="progress-text">0%</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="stage-item" data-stage="solutio">
+                                        <div class="stage-icon">💧</div>
+                                        <div class="stage-content">
+                                            <div class="stage-name">Solutio</div>
+                                            <div class="stage-description">Dissolving into flowing form...</div>
+                                            <div class="stage-thoughts" id="thoughts-solutio"></div>
+                                        </div>
+                                        <div class="stage-progress">
+                                            <div class="progress-circle" data-progress="0">
+                                                <svg viewBox="0 0 36 36">
+                                                    <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" 
+                                                          fill="none" stroke="var(--metal-border)" stroke-width="2"/>
+                                                    <path class="progress-bar" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" 
+                                                          fill="none" stroke="var(--liquid-blue)" stroke-width="2" 
+                                                          stroke-dasharray="0, 100"/>
+                                                </svg>
+                                                <div class="progress-text">0%</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="stage-item" data-stage="coagulatio">
+                                        <div class="stage-icon">💎</div>
+                                        <div class="stage-content">
+                                            <div class="stage-name">Coagulatio</div>
+                                            <div class="stage-description">Crystallizing final form...</div>
+                                            <div class="stage-thoughts" id="thoughts-coagulatio"></div>
+                                        </div>
+                                        <div class="stage-progress">
+                                            <div class="progress-circle" data-progress="0">
+                                                <svg viewBox="0 0 36 36">
+                                                    <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" 
+                                                          fill="none" stroke="var(--metal-border)" stroke-width="2"/>
+                                                    <path class="progress-bar" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" 
+                                                          fill="none" stroke="var(--liquid-emerald)" stroke-width="2" 
+                                                          stroke-dasharray="0, 100"/>
+                                                </svg>
+                                                <div class="progress-text">0%</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="thinking-insights">
+                                    <div class="insight-item">
+                                        <span class="insight-label">Current Input:</span>
+                                        <span class="insight-value" id="current-input">Analyzing...</span>
+                                    </div>
+                                    <div class="insight-item">
+                                        <span class="insight-label">AI Decision:</span>
+                                        <span class="insight-value" id="ai-decision">Evaluating options...</span>
+                                    </div>
+                                    <div class="insight-item">
+                                        <span class="insight-label">Quality Score:</span>
+                                        <span class="insight-value" id="quality-score">Calculating...</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div> <!-- End ai-thoughts-column -->
+                        
+                    </div> <!-- End dual-view-container -->
+                </div>
+
+                <div id="alchemy-loading" class="htmx-indicator" style="display: none;">
+                </div>
+            </div>
+
+
+
+        </div>
+
+        <div id="results-section" class="mt-8 results-flow-container" style="display: none;">
+            <div class="text-center mb-6">
+                <div class="fragmented-text justify-center">
+                    <span style="--index: 0;">Transformation</span>
+                    <span style="--index: 1;">Results</span>
+                </div>
+            </div>
+            <div class="glass-card liquid-results">
+                
+                <div id="results-container" class="liquid-results-content">
+                    <div class="text-center results-placeholder" style="padding: 3rem;">
+                        <div class="transmutation-circle" style="width: 50px; height: 50px; margin: 0 auto 1.5rem; opacity: 0.4;"></div>
+                        <p style="color: var(--metal-muted); font-size: 1rem;">
+                            ✨ Results will materialize here after transformation ✨
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+    </div>
+
+    <script>
+        class ParticleSystem {
+            constructor() {
+                this.container = document.getElementById('particle-field');
+                this.particleCount = 50;
+                this.particles = [];
+                if (this.container) {
+                    this.init();
+                }
+            }
+            
+            init() {
+                for (let i = 0; i < this.particleCount; i++) {
+                    this.createParticle(i);
+                }
+            }
+            
+            createParticle(index) {
+                if (!this.container) return;
+                
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = (index * 0.1) + 's';
+                particle.style.animationDuration = (15 + Math.random() * 10) + 's';
+                particle.style.opacity = Math.random() * 0.5 + 0.1;
+                particle.style.transform = `scale(${Math.random() * 1.5 + 0.5})`;
+                
+                if (Math.random() > 0.7) {
+                    particle.style.background = 'var(--alchemy-copper)';
+                } else if (Math.random() > 0.5) {
+                    particle.style.background = 'var(--alchemy-silver)';
+                }
+                
+                this.container.appendChild(particle);
+                this.particles.push(particle);
+            }
+        }
+        
+        
+
+        function toggleAdvanced(event) {
+            const settings = document.getElementById('advanced-settings');
+            const button = event.target;
+            if (settings.classList.contains('hidden')) {
+                settings.classList.remove('hidden');
+                settings.style.animation = 'fadeIn 0.5s ease-in-out';
+                button.textContent = '🔮 Hide Advanced Parameters';
+            } else {
+                settings.classList.add('hidden');
+                button.textContent = '🔮 Advanced Transmutation Parameters';
+            }
+        }
+
+        // Make function globally accessible
+        window.toggleLegendDropdown = function() {
+            const dropdown = document.getElementById('legend-dropdown');
+            if (!dropdown) {
+                console.error('Legend dropdown element not found');
+                return;
+            }
+            
+            const chevron = dropdown.querySelector('.legend-chevron');
+            
+            if (dropdown.classList.contains('open')) {
+                // Close dropdown
+                dropdown.classList.remove('open');
+            } else {
+                // Open dropdown
+                dropdown.classList.add('open');
+            }
+        };
+
+
+        // Close dropdown when clicking outside
+        document.addEventListener('DOMContentLoaded', function() {
+            document.addEventListener('click', function(event) {
+                const dropdown = document.getElementById('legend-dropdown');
+                if (dropdown && !dropdown.contains(event.target)) {
+                    dropdown.classList.remove('open');
+                }
+            });
+        });
+
+        document.addEventListener('input', function(e) {
+            if (e.target.form && e.target.form.id === 'generate-form') {
+                localStorage.setItem('alchemy-codex-' + e.target.name, e.target.value);
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('generate-form');
+            if (form) {
+                Array.from(form.elements).forEach(element => {
+                    if (element.name) {
+                        const saved = localStorage.getItem('alchemy-codex-' + element.name);
+                        if (saved && element.type !== 'checkbox') {
+                            element.value = saved;
+                        }
+                    }
+                });
+            }
+        });
+
+        class AlchemyProgressTracker {
+            constructor() {
+                this.phases = ['prima-materia', 'solutio', 'coagulatio'];
+                this.currentPhaseIndex = 0;
+                this.progress = 0;
+                this.messages = [
+                    '🔬 Initializing alchemical transformation...',
+                    '⚗️ Starting Prima Materia phase - extracting raw essence...',
+                    '🌟 Prima Materia complete - beginning Solutio transformation...',
+                    '💧 Solutio in progress - flowing into natural form...',
+                    '✨ Solutio complete - beginning Coagulatio crystallization...',
+                    '💎 Coagulatio in progress - crystallizing final form...',
+                    '🔍 Applying historical optimization...',
+                    '⚖️ Running AI evaluation and ranking...',
+                    '🏆 Selecting optimal results...',
+                    '✅ Alchemical transformation complete!'
+                ];
+                this.agentMessages = [
+                    ['Claude Agent: Analyzing input structure...', 'Gemini Agent: Extracting semantic patterns...', 'GPT Agent: Identifying core concepts...'],
+                    ['Claude Agent: Deconstructing elements...', 'Gemini Agent: Mapping relationships...', 'GPT Agent: Building knowledge graph...'],
+                    ['Claude Agent: Applying creative synthesis...', 'Gemini Agent: Generating variations...', 'GPT Agent: Optimizing language flow...'],
+                    ['Claude Agent: Refining expressions...', 'Gemini Agent: Enhancing clarity...', 'GPT Agent: Balancing complexity...'],
+                    ['Claude Agent: Finalizing structure...', 'Gemini Agent: Polishing output...', 'GPT Agent: Validating coherence...'],
+                    ['Claude Agent: Crystallizing results...', 'Gemini Agent: Ensuring precision...', 'GPT Agent: Final quality check...']
+                ];
+                this.processMessages = {
+                    'database-search': ['🔍 Searching database...', '📚 Found 42 similar prompts', '✨ Best match: 0.92 similarity'],
+                    'scoring': ['📊 Calculating scores...', '🎯 Relevance: 8.7/10', '💡 Creativity: 9.2/10', '📈 Overall: 8.9/10'],
+                    'relationships': ['🔗 Discovering patterns...', '🌐 Found 3 key relationships', '🧩 Connecting concepts...'],
+                    'optimization': ['⚙️ Optimizing output...', '🎨 Applying best practices', '✅ Enhanced by 34%'],
+                    'judging': ['⚖️ Evaluating quality...', '🏆 Ranking results...', '💫 Top result selected']
+                };
+                this.currentAgentMessage = 0;
+                this.messageIndex = 0;
+            }
+            
+            start() {
+                this.reset();
+                this.updateMessage();
+                this.simulateProgress();
+                this.animateRunes();
+            }
+            
+            reset() {
+                this.currentPhaseIndex = 0;
+                this.progress = 0;
+                this.messageIndex = 0;
+                this.resetPhases();
+                this.resetSubProcesses();
+                this.updateProgressCircle(0);
+            }
+            
+            resetPhases() {
+                document.querySelectorAll('.liquid-phase-bubble').forEach(bubble => {
+                    bubble.classList.remove('active', 'completed');
+                });
+                document.querySelectorAll('.liquid-connector').forEach(connector => {
+                    connector.classList.remove('active', 'completed');
+                });
+            }
+            
+            resetSubProcesses() {
+                document.querySelectorAll('.sub-process').forEach(process => {
+                    process.classList.remove('active', 'completed');
+                });
+            }
+            
+            updateProgressCircle(percentage) {
+                const circle = document.getElementById('main-progress');
+                const text = document.getElementById('progress-percentage');
+                if (circle && text) {
+                    const circumference = 314;
+                    const offset = circumference - (percentage / 100) * circumference;
+                    circle.style.strokeDashoffset = offset;
+                    text.textContent = Math.round(percentage) + '%';
+                }
+            }
+            
+            updateMessage() {
+                const messageEl = document.getElementById('progress-message');
+                if (messageEl && this.messageIndex < this.messages.length) {
+                    messageEl.textContent = this.messages[this.messageIndex];
+                    this.messageIndex++;
+                }
+                
+                this.updateAgentStatus();
+            }
+            
+            updateAgentStatus() {
+                let agentContainer = document.getElementById('agent-status-container');
+                if (!agentContainer) {
+                    const progressContainer = document.querySelector('.progress-messages');
+                    if (progressContainer) {
+                        agentContainer = document.createElement('div');
+                        agentContainer.id = 'agent-status-container';
+                        agentContainer.className = 'agent-status-container';
+                        agentContainer.style.cssText = 'margin-top: 1rem; display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.75rem; color: var(--metal-muted);';
+                        progressContainer.appendChild(agentContainer);
+                    }
+                }
+                
+                if (agentContainer && this.currentAgentMessage < this.agentMessages.length) {
+                    const messages = this.agentMessages[this.currentAgentMessage];
+                    agentContainer.innerHTML = messages.map((msg, index) => {
+                        const agentColors = ['var(--liquid-purple)', 'var(--liquid-blue)', 'var(--liquid-emerald)'];
+                        return `<div class="agent-message" style="opacity: 0; animation: fadeInAgent 0.5s ease-out ${index * 0.2}s forwards; color: ${agentColors[index]}; font-family: 'JetBrains Mono', monospace;">${msg}</div>`;
+                    }).join('');
+                    this.currentAgentMessage++;
+                }
+            }
+            
+            activatePhase(phaseIndex) {
+                const bubbles = document.querySelectorAll('.liquid-phase-bubble');
+                const connectors = document.querySelectorAll('.liquid-connector');
+                
+                if (bubbles[phaseIndex]) {
+                    bubbles[phaseIndex].classList.add('active');
+                    
+                    if (phaseIndex > 0) {
+                        bubbles[phaseIndex - 1].classList.remove('active');
+                        bubbles[phaseIndex - 1].classList.add('completed');
+                        
+                        if (connectors[phaseIndex - 1]) {
+                            connectors[phaseIndex - 1].classList.add('active');
+                        }
+                    }
+                    
+                    if (phaseIndex > 1 && connectors[phaseIndex - 2]) {
+                        connectors[phaseIndex - 2].classList.remove('active');
+                        connectors[phaseIndex - 2].classList.add('completed');
+                    }
+                }
+            }
+            
+            activateSubProcess(processName) {
+                const process = document.querySelector(`[data-process="${processName}"]`);
+                if (process) {
+                    process.classList.add('active');
+                }
+            }
+            
+            animateRunes() {
+                const svg = document.getElementById('rune-svg');
+                if (!svg) return;
+                
+                this.resetRunes();
+                
+                this.animateRunePhase('prima-materia', 0);
+                setTimeout(() => this.animateRunePhase('solutio', 2000), 2000);
+                setTimeout(() => this.animateRunePhase('coagulatio', 4000), 4000);
+            }
+            
+            resetRunes() {
+                const svg = document.getElementById('rune-svg');
+                if (!svg) return;
+                
+                document.querySelectorAll('.phase-rune').forEach(rune => {
+                    rune.classList.remove('active', 'completed');
+                });
+                
+                document.querySelectorAll('.rune-path').forEach(path => {
+                    path.classList.remove('active', 'completed');
+                });
+                
+                document.querySelectorAll('.rune-stage').forEach(stage => {
+                    stage.classList.remove('active', 'completed');
+                });
+            }
+            
+            animateRunePhase(phaseName, delay) {
+                const svg = document.getElementById('rune-svg');
+                if (!svg) return;
+                
+                const phaseRune = svg.querySelector(`[data-phase="${phaseName}"]`);
+                if (phaseRune) {
+                    setTimeout(() => {
+                        phaseRune.classList.add('active');
+                        
+                        const stageMap = {
+                            'prima-materia': 'extraction',
+                            'solutio': 'transformation',
+                            'coagulatio': 'crystallization'
+                        };
+                        
+                        const stageName = stageMap[phaseName];
+                        if (stageName) {
+                            const stage = document.querySelector(`[data-stage="${stageName}"]`);
+                            if (stage) {
+                                stage.classList.add('active');
+                            }
+                        }
+                        
+                        setTimeout(() => {
+                            phaseRune.classList.remove('active');
+                            phaseRune.classList.add('completed');
+                            
+                            if (stageName) {
+                                const stage = document.querySelector(`[data-stage="${stageName}"]`);
+                                if (stage) {
+                                    stage.classList.remove('active');
+                                    stage.classList.add('completed');
+                                }
+                            }
+                        }, 3000);
+                    }, delay);
+                }
+            }
+            
+            completeSubProcess(processName) {
+                const process = document.querySelector(`[data-process="${processName}"]`);
+                if (process) {
+                    process.classList.remove('active');
+                    process.classList.add('completed');
+                }
+            }
+            
+            showProcessMessages(type) {
+                const messages = this.processMessages[type];
+                if (!messages) return;
+                
+                const container = document.getElementById('agent-status-container');
+                if (!container) {
+                    const progressContainer = document.querySelector('.progress-messages');
+                    if (progressContainer) {
+                        const newContainer = document.createElement('div');
+                        newContainer.id = 'process-status-container';
+                        newContainer.style.cssText = 'margin-top: 0.5rem; font-size: 0.7rem; color: var(--metal-muted);';
+                        progressContainer.appendChild(newContainer);
+                    }
+                }
+                
+                const processContainer = document.getElementById('process-status-container');
+                if (processContainer) {
+                    processContainer.innerHTML = '';
+                    messages.forEach((msg, index) => {
+                        setTimeout(() => {
+                            const msgDiv = document.createElement('div');
+                            msgDiv.style.cssText = `opacity: 0; animation: fadeInAgent 0.5s ease-out forwards; color: var(--liquid-gold); font-family: 'JetBrains Mono', monospace; text-align: center; margin: 0.25rem 0;`;
+                            msgDiv.textContent = msg;
+                            processContainer.appendChild(msgDiv);
+                        }, index * 800);
+                    });
+                }
+            }
+            
+            simulateProgress() {
+                const stages = [
+                    { progress: 5, phase: 0, message: 0 },
+                    { progress: 15, phase: 0, message: 1 },
+                    { progress: 30, phase: 0, message: 2 },
+                    { progress: 45, phase: 1, message: 3 },
+                    { progress: 60, phase: 1, message: 4 },
+                    { progress: 75, phase: 2, message: 5 },
+                    { progress: 85, phase: 2, message: 6, subprocess: 'optimization' },
+                    { progress: 92, phase: 2, message: 7, subprocess: 'judging' },
+                    { progress: 97, phase: 2, message: 8, subprocess: 'ranking' },
+                    { progress: 100, phase: 2, message: 9 }
+                ];
+                
+                let stageIndex = 0;
+                const interval = setInterval(() => {
+                    if (stageIndex >= stages.length) {
+                        clearInterval(interval);
+                        return;
+                    }
+                    
+                    const stage = stages[stageIndex];
+                    this.updateProgressCircle(stage.progress);
+                    this.activatePhase(stage.phase);
+                    
+                    if (stage.subprocess) {
+                        this.activateSubProcess(stage.subprocess);
+                        setTimeout(() => this.completeSubProcess(stage.subprocess), 1500);
+                    }
+                    
+                    if (stage.message !== undefined) {
+                        this.messageIndex = stage.message;
+                        this.updateMessage();
+                    }
+                    
+                    stageIndex++;
+                }, 2000 + Math.random() * 3000);
+            }
+        }
+        
+        window.alchemyTracker = new AlchemyProgressTracker();
+
+        
+        document.body.addEventListener('htmx:beforeRequest', function(evt) {
+            if (evt.detail.elt.closest('#generate-form')) {
+                window.alchemyTracker.start();
+                
+                evt.detail.elt.classList.add('htmx-request');
+                
+                // Show thinking process panel
+                showThinkingProcess();
+                
+                // Start provider animations
+                if (window.unifiedHexFlow) {
+                    window.unifiedHexFlow.startProcessFlowWithAnimation();
+                }
+                
+                // Show hex AI thoughts
+                if (window.hexAIThoughts) {
+                    window.hexAIThoughts.show();
+                }
+                
+                // No scrolling - keep both views visible
+                // Show deep thinking panel in the unified view
+                const unifiedThinking = document.querySelector('#thinking-process.unified-thinking');
+                if (unifiedThinking) {
+                    unifiedThinking.style.display = 'block';
+                }
+            }
+        });
+        
+        document.body.addEventListener('htmx:afterRequest', function(evt) {
+            if (evt.detail.elt.closest('#generate-form')) {
+                evt.detail.elt.classList.remove('htmx-request');
+                
+                // Hide deep thinking panel but keep hex thoughts visible
+                const unifiedThinking = document.querySelector('#thinking-process.unified-thinking');
+                if (unifiedThinking) {
+                    unifiedThinking.style.display = 'none';
+                }
+                
+                // Show results section without scrolling
+                setTimeout(() => {
+                    const resultsSection = document.getElementById('results-section');
+                    if (resultsSection) {
+                        resultsSection.style.display = 'block';
+                        resultsSection.style.opacity = '0';
+                        resultsSection.style.transform = 'translateY(20px)';
+                        
+                        setTimeout(() => {
+                            resultsSection.style.transition = 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
+                            resultsSection.style.opacity = '1';
+                            resultsSection.style.transform = 'translateY(0)';
+                        }, 100);
+                        
+                        // No automatic scrolling - keep dual view visible
+                    }
+                }, 500);
+            }
+        });
+        
+        document.body.addEventListener('htmx:xhr:progress', function(evt) {
+            if (evt.detail.elt.closest('#generate-form')) {
+            }
+        });
+        
+        const customStyle = document.createElement('style');
+        customStyle.textContent = `
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(-10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+        `;
+        document.head.appendChild(customStyle);
+
+        function createVerticalLayout() {
+            const runeSystem = document.getElementById('rune-system');
+            if (!runeSystem) return;
+            
+            if (document.getElementById('rune-svg-vertical')) return;
+            
+            const verticalSVG = `
+                <svg class="rune-connections vertical-layout" viewBox="0 0 350 500" xmlns="http://www.w3.org/2000/svg" id="rune-svg-vertical" style="display: none;">
+                    <defs>
+                        <pattern id="grid-v" width="20" height="20" patternUnits="userSpaceOnUse">
+                            <path d="M 20 0 L 0 0 0 20" fill="none" stroke="var(--metal-border)" stroke-width="0.5" opacity="0.3"/>
+                        </pattern>
+                        <filter id="glow-v">
+                            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                            <feMerge> 
+                                <feMergeNode in="coloredBlur"/>
+                                <feMergeNode in="SourceGraphic"/>
+                            </feMerge>
+                        </filter>
+                    </defs>
+                    <rect width="100%" height="100%" fill="url(#grid-v)"/>
+                    
+                    <path id="input-to-prima-v" d="M 175 70 L 175 130" stroke="var(--metal-border)" stroke-width="2" fill="none" 
+                          stroke-dasharray="4,4" class="connection-line"/>
+                    <path id="prima-to-solutio-v" d="M 175 170 L 175 230" stroke="var(--metal-border)" stroke-width="2" fill="none" 
+                          stroke-dasharray="4,4" class="connection-line"/>
+                    <path id="solutio-to-coagulatio-v" d="M 175 270 L 175 330" stroke="var(--metal-border)" stroke-width="2" fill="none" 
+                          stroke-dasharray="4,4" class="connection-line"/>
+                    <path id="coagulatio-to-result-v" d="M 175 370 L 175 430" stroke="var(--metal-border)" stroke-width="2" fill="none" 
+                          stroke-dasharray="4,4" class="connection-line"/>
+                    
+                    <path id="optimization-branch-v" d="M 110 250 L 155 250" stroke="var(--metal-border)" stroke-width="2" fill="none" 
+                          stroke-dasharray="2,3" class="connection-line side-branch"/>
+                    <path id="judging-branch-v" d="M 240 350 L 195 350" stroke="var(--metal-border)" stroke-width="2" fill="none" 
+                          stroke-dasharray="2,3" class="connection-line side-branch"/>
+                    
+                    <g id="database-bubble-v" style="opacity: 0;" transform="translate(120, 180)">
+                        <circle cx="0" cy="0" r="16" fill="var(--metal-surface)" stroke="var(--liquid-emerald)" stroke-width="1.5" class="bubble-node"/>
+                        <text x="0" y="4" text-anchor="middle" fill="var(--liquid-emerald)" font-size="12">🗄️</text>
+                        <text x="-35" y="4" text-anchor="middle" fill="var(--metal-muted)" font-size="8" class="bubble-label">DB</text>
+                    </g>
+                    
+                    <circle id="input-node-v" cx="175" cy="50" r="18" fill="var(--metal-surface)" stroke="var(--liquid-gold)" stroke-width="2" class="rune-node"/>
+                    <circle id="prima-node-v" cx="175" cy="150" r="22" fill="var(--metal-surface)" stroke="var(--liquid-red)" stroke-width="2" class="rune-node phase-node" data-phase="prima-materia"/>
+                    <circle id="solutio-node-v" cx="175" cy="250" r="22" fill="var(--metal-surface)" stroke="var(--liquid-blue)" stroke-width="2" class="rune-node phase-node" data-phase="solutio"/>
+                    <circle id="coagulatio-node-v" cx="175" cy="350" r="22" fill="var(--metal-surface)" stroke="var(--liquid-emerald)" stroke-width="2" class="rune-node phase-node" data-phase="coagulatio"/>
+                    <circle id="result-node-v" cx="175" cy="450" r="18" fill="var(--metal-surface)" stroke="var(--liquid-gold)" stroke-width="2" class="rune-node"/>
+                    
+                    <circle id="optimization-node-v" cx="90" cy="250" r="16" fill="var(--metal-surface)" stroke="var(--liquid-emerald)" stroke-width="2" class="rune-node side-node"/>
+                    <circle id="judging-node-v" cx="260" cy="350" r="16" fill="var(--metal-surface)" stroke="var(--liquid-purple)" stroke-width="2" class="rune-node side-node"/>
+                    
+                    <image x="160" y="40" width="30" height="30" href="/static/assets/prima_materia.png" class="rune-png-icon" preserveAspectRatio="xMidYMid meet"/>
+                    <image x="160" y="142" width="30" height="30" href="/static/assets/prima_materia.png" class="rune-png-icon" preserveAspectRatio="xMidYMid meet"/>
+                    <image x="160" y="242" width="30" height="30" href="/static/assets/solutio.png" class="rune-png-icon" preserveAspectRatio="xMidYMid meet"/>
+                    <image x="160" y="342" width="30" height="30" href="/static/assets/coagulatio.png" class="rune-png-icon" preserveAspectRatio="xMidYMid meet"/>
+                    <text x="175" y="455" text-anchor="middle" fill="var(--liquid-gold)" font-size="16" class="rune-symbol">✨</text>
+                    <text x="90" y="257" text-anchor="middle" fill="var(--liquid-emerald)" font-size="14" class="rune-symbol">🔍</text>
+                    <text x="260" y="357" text-anchor="middle" fill="var(--liquid-purple)" font-size="14" class="rune-symbol">⚖️</text>
+                    
+                    <text x="80" y="110" text-anchor="middle" fill="var(--metal-muted)" font-size="9" class="phase-label" transform="rotate(-90, 80, 110)">EXTRACT</text>
+                    <text x="80" y="200" text-anchor="middle" fill="var(--metal-muted)" font-size="9" class="phase-label" transform="rotate(-90, 80, 200)">FLOW</text>
+                    <text x="80" y="300" text-anchor="middle" fill="var(--metal-muted)" font-size="9" class="phase-label" transform="rotate(-90, 80, 300)">CRYSTALLIZE</text>
+                    <text x="80" y="400" text-anchor="middle" fill="var(--metal-muted)" font-size="9" class="phase-label" transform="rotate(-90, 80, 400)">RESULT</text>
+                </svg>
+            `;
+            
+            runeSystem.insertAdjacentHTML('beforeend', verticalSVG);
+        }
+        
+        function updateRuneLayout() {
+            const horizontalSVG = document.getElementById('rune-svg');
+            const verticalSVG = document.getElementById('rune-svg-vertical');
+            
+            const isMobile = window.innerWidth <= 768;
+            const isPortrait = window.innerHeight > window.innerWidth;
+            
+            if (isMobile || isPortrait) {
+                if (horizontalSVG) horizontalSVG.style.display = 'none';
+                if (verticalSVG) verticalSVG.style.display = 'block';
+                
+                window.activeRuneSVG = verticalSVG;
+            } else {
+                if (horizontalSVG) horizontalSVG.style.display = 'block';
+                if (verticalSVG) verticalSVG.style.display = 'none';
+                
+                window.activeRuneSVG = horizontalSVG;
+            }
+            
+            resetZoom();
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            createVerticalLayout();
+            updateRuneLayout();
+            
+            window.addEventListener('resize', updateRuneLayout);
+            window.addEventListener('orientationchange', updateRuneLayout);
+        });
+
+        const animationStyles = document.createElement('style');
+        animationStyles.textContent = `
+            @keyframes floatUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(10px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(-20px);
+                }
+            }
+            
+            @keyframes pulse-outline {
+                0%, 100% {
+                    stroke-width: 2;
+                    opacity: 0.5;
+                }
+                50% {
+                    stroke-width: 4;
+                    opacity: 1;
+                }
+            }
+            
+            .agent-message {
+                transition: all 0.3s ease;
+            }
+            
+            .phase-node {
+                transition: all 0.6s ease;
+            }
+            
+            .connection-line {
+                transition: all 0.8s ease;
+            }
+            
+            .phase-node[style*="display: none"] {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+        `;
+        document.head.appendChild(animationStyles);
+        
+        function updatePhaseDisplay(phaseName) {
+            const display = document.getElementById('current-phase-display');
+            if (display) {
+                const phaseDescriptions = {
+                    'prima-materia': '🔬 Prima Materia: Extracting raw essence from input...',
+                    'solutio': '💧 Solutio: Flowing into natural language form...',
+                    'coagulatio': '💎 Coagulatio: Crystallizing final structure...',
+                    'optimization': '🔍 Optimization: Applying historical patterns...',
+                    'judging': '⚖️ Evaluation: AI-powered quality assessment...'
+                };
+                
+                display.innerHTML = `
+                    <div class="fragmented-text" style="justify-content: flex-start;">
+                        <span style="--index: 0; color: var(--liquid-gold);">${phaseDescriptions[phaseName] || 'Processing...'}</span>
+                    </div>
+                `;
+            }
+        }
+        
+        window.activeRuneSVG = document.getElementById('rune-svg');
+        
+        function zoomRunes(direction) {
+            const zoomBtn = document.getElementById('zoom-btn');
+            if (zoomBtn) {
+                zoomBtn.textContent = '100%';
+            }
+        }
+        
+        function resetZoom() {
+            const activeRunes = window.activeRuneSVG || document.getElementById('rune-svg');
+            if (activeRunes) {
+                activeRunes.style.transform = 'scale(1)';
+                activeRunes.style.transformOrigin = 'center center';
+            }
+            
+            const zoomBtn = document.getElementById('zoom-btn');
+            if (zoomBtn) {
+                zoomBtn.textContent = '100%';
+            }
+        }
+        
+        // Manual panning and zoom disabled - automated zoom only
+        let currentZoom = 1.0;
+        let autoZoomInterval = null;
+        
+        const runeSystem = document.getElementById('rune-system');
+        const hexFlowBoard = document.getElementById('hex-flow-board');
+        
+        // Disable manual interactions but preserve element references
+        if (runeSystem) {
+            runeSystem.style.cursor = 'default';
+            
+            // Prevent all manual zoom/scroll interactions
+            runeSystem.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+            
+            runeSystem.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+            
+            runeSystem.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+        }
+        
+        // Automated zoom functionality
+        function autoZoom(targetZoom, duration = 1000) {
+            if (!hexFlowBoard) return;
+            
+            const startZoom = currentZoom;
+            const zoomDiff = targetZoom - startZoom;
+            const startTime = performance.now();
+            
+            function animate(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const easeProgress = 1 - Math.pow(1 - progress, 3); // Ease out cubic
+                
+                currentZoom = startZoom + (zoomDiff * easeProgress);
+                hexFlowBoard.style.transform = `scale(${currentZoom})`;
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                }
+            }
+            
+            requestAnimationFrame(animate);
+        }
+        
+        // Automated zoom behavior triggered by prompts/system events
+        function triggerAutoZoom(zoomLevel = 'auto') {
+            switch(zoomLevel) {
+                case 'in':
+                    autoZoom(Math.min(currentZoom * 1.3, 2.0));
+                    break;
+                case 'out':
+                    autoZoom(Math.max(currentZoom * 0.7, 0.5));
+                    break;
+                case 'reset':
+                    autoZoom(1.0);
+                    break;
+                case 'auto':
+                    // Smart zoom based on content
+                    const contentBounds = hexFlowBoard?.getBoundingClientRect();
+                    if (contentBounds) {
+                        const containerBounds = hexFlowBoard.parentElement?.getBoundingClientRect();
+                        if (containerBounds) {
+                            const scaleX = containerBounds.width / contentBounds.width;
+                            const scaleY = containerBounds.height / contentBounds.height;
+                            const optimalZoom = Math.min(scaleX, scaleY, 1.2);
+                            autoZoom(optimalZoom);
+                        }
+                    }
+                    break;
+            }
+        }
+        
+        // Make auto zoom available globally for prompt triggers
+        window.triggerAutoZoom = triggerAutoZoom;
+        
+        // Listen for system events that should trigger auto zoom
+        document.addEventListener('DOMContentLoaded', function() {
+            // Trigger initial auto zoom
+            setTimeout(() => triggerAutoZoom('auto'), 500);
+            
+            // Listen for HTMX events that indicate new content
+            document.body.addEventListener('htmx:afterSwap', function(evt) {
+                if (evt.detail.target.closest('#hex-flow-board')) {
+                    setTimeout(() => triggerAutoZoom('auto'), 300);
+                }
+            });
+            
+            // Listen for board state changes
+            document.body.addEventListener('board-refresh', function() {
+                setTimeout(() => triggerAutoZoom('auto'), 300);
+            });
+            
+            // Auto-adjust zoom when window resizes
+            window.addEventListener('resize', function() {
+                setTimeout(() => triggerAutoZoom('auto'), 100);
+            });
+        });
+        
+        function toggleCentralOptions() {
+            const panel = document.getElementById('central-options');
+            const optionsBtn = document.querySelector('.options-btn');
+            
+            panel.classList.toggle('expanded');
+            optionsBtn.classList.toggle('active');
+        }
+
+        function toggleFloatingOptions() {
+            const panel = document.getElementById('floating-options');
+            const optionsBtn = document.querySelector('.config-btn');
+            
+            panel.classList.toggle('expanded');
+            if (optionsBtn) {
+                optionsBtn.classList.toggle('active');
+            }
+        }
+
+        function toggleAdvancedSettings(event) {
+            const content = document.getElementById('advanced-settings-content');
+            const header = event.target.closest('.advanced-header');
+            
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                header.classList.add('expanded');
+                content.style.animation = 'fadeIn 0.3s ease-in-out';
+            } else {
+                content.style.display = 'none';
+                header.classList.remove('expanded');
+            }
+        }
+
+        function toggleConfigGuide(event) {
+            const img = event.target;
+            if (img.style.maxWidth === '100%') {
+                img.style.maxWidth = '180px';
+                img.style.position = 'static';
+                img.style.zIndex = 'auto';
+            } else {
+                img.style.maxWidth = '100%';
+                img.style.position = 'relative';
+                img.style.zIndex = '1000';
+            }
+        }
+        
+        function adjustCentralInput(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 160) + 'px';
+            
+            const charDisplay = document.getElementById('char-display');
+            if (charDisplay) {
+                const count = textarea.value.length;
+                charDisplay.textContent = `${count} chars`;
+                
+                if (count > 1800) {
+                    charDisplay.style.color = 'var(--liquid-red)';
+                } else if (count > 1200) {
+                    charDisplay.style.color = 'var(--liquid-gold)';
+                } else {
+                    charDisplay.style.color = 'var(--metal-muted)';
+                }
+            }
+            
+            const sendBtn = document.getElementById('central-send');
+            if (sendBtn) {
+                sendBtn.disabled = textarea.value.trim().length === 0;
+            }
+        }
+
+        function adjustInputHeight(textarea) {
+            textarea.style.height = 'auto';
+            
+            const minHeight = 60;
+            const maxHeight = 400;
+            const newHeight = Math.max(minHeight, Math.min(textarea.scrollHeight, maxHeight));
+            
+            textarea.style.height = newHeight + 'px';
+            
+            const sendBtn = document.getElementById('central-send');
+            if (sendBtn) {
+                sendBtn.disabled = textarea.value.trim().length === 0;
+            }
+        }
+        
+        function handleCentralKeydown(event) {
+            if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+                event.preventDefault();
+                const form = event.target.closest('form');
+                if (form && !document.getElementById('central-send').disabled) {
+                    form.requestSubmit();
+                }
+            }
+        }
+        
+        function clearCentralInput() {
+            const input = document.getElementById('input');
+            if (input) {
+                input.value = '';
+                adjustCentralInput(input);
+                input.focus();
+            }
+        }
+        
+        function toggleSettings() {
+            toggleCentralOptions();
+        }
+        
+        function adjustTextareaHeight(textarea) {
+            adjustCentralInput(textarea);
+        }
+        
+        function handleInputKeydown(event) {
+            handleCentralKeydown(event);
+        }
+        
+        function clearInput() {
+            clearCentralInput();
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            const particleSystem = new ParticleSystem();
+            
+            // Enhanced Temperature Validation System
+            const tempSlider = document.getElementById('temperature');
+            const tempDisplay = document.querySelector('.slider-display');
+            
+            // Provider temperature constraints mapping
+            const providerConstraints = {
+                'anthropic': { min: 0, max: 1.0, default: 0.7, name: 'Anthropic Claude' },
+                'openai': { min: 0, max: 2.0, default: 0.7, name: 'OpenAI GPT' },
+                'google': { min: 0, max: 2.0, default: 0.7, name: 'Google Gemini' },
+                'ollama': { min: 0, max: 2.0, default: 0.7, name: 'Ollama' },
+                'openrouter': { min: 0, max: 2.0, default: 0.7, name: 'OpenRouter' },
+                'grok': { min: 0, max: 2.0, default: 0.7, name: 'Grok' },
+                'auto': { min: 0, max: 1.0, default: 0.7, name: 'Auto Select (Conservative)' }
+            };
+            
+            // Create notification element for user feedback
+            function createTemperatureNotification() {
+                let notification = document.getElementById('temp-notification');
+                if (!notification) {
+                    notification = document.createElement('div');
+                    notification.id = 'temp-notification';
+                    notification.style.cssText = `
+                        position: absolute;
+                        top: -35px;
+                        left: 0;
+                        right: 0;
+                        background: linear-gradient(135deg, #ff6b35, #ff8c5a);
+                        color: white;
+                        padding: 8px 12px;
+                        border-radius: 6px;
+                        font-size: 0.75rem;
+                        font-weight: 600;
+                        text-align: center;
+                        transform: translateY(-10px);
+                        opacity: 0;
+                        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+                        z-index: 1000;
+                        box-shadow: 0 4px 20px rgba(255, 107, 53, 0.3);
+                        pointer-events: none;
+                    `;
+                    
+                    const sliderContainer = document.querySelector('.slider-container');
+                    if (sliderContainer) {
+                        sliderContainer.style.position = 'relative';
+                        sliderContainer.appendChild(notification);
+                    }
+                }
+                return notification;
+            }
+            
+            // Show notification with auto-hide
+            function showTemperatureNotification(message, type = 'adjustment') {
+                const notification = createTemperatureNotification();
+                notification.textContent = message;
+                
+                // Color based on type
+                if (type === 'adjustment') {
+                    notification.style.background = 'linear-gradient(135deg, #ff6b35, #ff8c5a)';
+                } else if (type === 'info') {
+                    notification.style.background = 'linear-gradient(135deg, #3498db, #5dade2)';
+                } else if (type === 'warning') {
+                    notification.style.background = 'linear-gradient(135deg, #f39c12, #f1c40f)';
+                }
+                
+                // Animate in
+                notification.style.transform = 'translateY(0)';
+                notification.style.opacity = '1';
+                
+                // Auto-hide after 3 seconds
+                setTimeout(() => {
+                    notification.style.transform = 'translateY(-10px)';
+                    notification.style.opacity = '0';
+                }, 3000);
+            }
+            
+            // Update slider constraints and validate current value
+            function updateTemperatureConstraints(providerName) {
+                const constraints = providerConstraints[providerName] || providerConstraints['auto'];
+                const currentValue = parseFloat(tempSlider.value);
+                let adjustmentMade = false;
+                let newValue = currentValue;
+                
+                console.log(`🌡️ Temperature validation: Provider=${providerName}, Current=${currentValue}, Range=[${constraints.min}-${constraints.max}]`);
+                
+                // Update slider attributes
+                tempSlider.min = constraints.min;
+                tempSlider.max = constraints.max;
+                
+                // Validate and adjust current value if needed
+                if (currentValue > constraints.max) {
+                    newValue = constraints.max;
+                    adjustmentMade = true;
+                    showTemperatureNotification(
+                        `Temperature adjusted to ${newValue} (max for ${constraints.name})`, 
+                        'adjustment'
+                    );
+                } else if (currentValue < constraints.min) {
+                    newValue = constraints.min;
+                    adjustmentMade = true;
+                    showTemperatureNotification(
+                        `Temperature adjusted to ${newValue} (min for ${constraints.name})`, 
+                        'adjustment'
+                    );
+                }
+                
+                // Apply the adjustment
+                if (adjustmentMade) {
+                    tempSlider.value = newValue;
+                    tempDisplay.textContent = newValue.toString();
+                    
+                    // Log for debugging
+                    console.log(`🔧 Temperature auto-adjusted: ${currentValue} → ${newValue} for provider ${providerName}`);
+                    
+                    // Store the adjustment for persistence
+                    localStorage.setItem('alchemy-codex-temperature', newValue.toString());
+                }
+                
+                // Update slider visual range indicator
+                updateSliderRangeIndicator(constraints);
+            }
+            
+            // Visual indicator for valid range
+            function updateSliderRangeIndicator(constraints) {
+                const sliderContainer = document.querySelector('.slider-container');
+                let rangeIndicator = sliderContainer.querySelector('.range-indicator');
+                
+                if (!rangeIndicator) {
+                    rangeIndicator = document.createElement('div');
+                    rangeIndicator.className = 'range-indicator';
+                    rangeIndicator.style.cssText = `
+                        position: absolute;
+                        bottom: -18px;
+                        left: 0;
+                        right: 0;
+                        font-size: 0.7rem;
+                        color: var(--metal-muted);
+                        text-align: center;
+                        opacity: 0.8;
+                        font-family: 'JetBrains Mono', monospace;
+                    `;
+                    sliderContainer.appendChild(rangeIndicator);
+                }
+                
+                rangeIndicator.textContent = `Valid range: ${constraints.min} - ${constraints.max}`;
+            }
+            
+            if (tempSlider && tempDisplay) {
+                // Enhanced input handler with validation
+                tempSlider.addEventListener('input', function() {
+                    const value = parseFloat(this.value);
+                    tempDisplay.textContent = value.toString();
+                    
+                    // Real-time validation feedback
+                    const providerDropdown = document.getElementById('provider');
+                    const selectedProvider = providerDropdown.value;
+                    const constraints = providerConstraints[selectedProvider] || providerConstraints['auto'];
+                    
+                    if (value > constraints.max || value < constraints.min) {
+                        tempDisplay.style.color = 'var(--liquid-red)';
+                        tempDisplay.style.fontWeight = 'bold';
+                    } else {
+                        tempDisplay.style.color = 'var(--liquid-gold)';
+                        tempDisplay.style.fontWeight = 'normal';
+                    }
+                });
+
+                // Enhanced provider change handler
+                const providerDropdown = document.getElementById('provider');
+                if (providerDropdown) {
+                    providerDropdown.addEventListener('change', function() {
+                        const selectedProvider = this.value;
+                        updateTemperatureConstraints(selectedProvider);
+                        
+                        // Show informational message about provider constraints
+                        const constraints = providerConstraints[selectedProvider] || providerConstraints['auto'];
+                        showTemperatureNotification(
+                            `${constraints.name}: Temperature range ${constraints.min}-${constraints.max}`, 
+                            'info'
+                        );
+                    });
+                    
+                    // Initialize on page load
+                    const currentProvider = providerDropdown.value;
+                    updateTemperatureConstraints(currentProvider);
+                }
+            }
+            
+            document.addEventListener('click', function(event) {
+                const floatingPromptBox = document.querySelector('.horizontal-controls');
+                const optionsPanel = document.getElementById('floating-options');
+                const optionsBtn = document.querySelector('.config-btn');
+                
+                if (floatingPromptBox && optionsPanel && !floatingPromptBox.contains(event.target)) {
+                    optionsPanel.classList.remove('expanded');
+                    if (optionsBtn) {
+                        optionsBtn.classList.remove('active');
+                    }
+                }
+            });
+            
+            const floatingInput = document.getElementById('input');
+            if (floatingInput) {
+                floatingInput.addEventListener('input', function() {
+                    adjustInputHeight(this);
+                });
+                
+                floatingInput.addEventListener('keydown', function(event) {
+                    if (event.key === 'Enter' && !event.shiftKey) {
+                        event.preventDefault();
+                        const form = document.getElementById('generate-form');
+                        if (form) {
+                            form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+                        }
+                    }
+                    handleCentralKeydown(event);
+                });
+                
+                floatingInput.addEventListener('focus', function() {
+                    if (this.value === 'Insert your prompt here...') {
+                        this.value = '';
+                        this.style.color = 'var(--metal-text)';
+                    }
+                });
+                
+                floatingInput.addEventListener('blur', function() {
+                    if (this.value.trim() === '') {
+                        this.value = 'Insert your prompt here...';
+                        this.style.color = 'var(--metal-muted)';
+                    }
+                });
+                
+                adjustInputHeight(floatingInput);
+                
+                if (floatingInput.value === 'Insert your prompt here...') {
+                    floatingInput.style.color = 'var(--metal-muted)';
+                }
+                
+                floatingInput.focus();
+            }
+            
+            const legacyInput = document.querySelector('.ai-input-field');
+            if (legacyInput) {
+                adjustTextareaHeight(legacyInput);
+            }
+            
+            const legacyTempSlider = document.querySelector('.slider');
+            const legacyTempValue = document.querySelector('.slider-value');
+            
+            if (legacyTempSlider && legacyTempValue) {
+                legacyTempSlider.addEventListener('input', function() {
+                    legacyTempValue.textContent = this.value;
+                });
+            }
+        });
+
+        // AI Thinking Process System
+        class AIThinkingProcess {
+            constructor() {
+                this.stages = ['prima-materia', 'solutio', 'coagulatio'];
+                this.currentStage = 0;
+                this.thoughts = {
+                    'prima-materia': [
+                        "Analyzing input structure and semantic meaning...",
+                        "Identifying key concepts and context clues...",
+                        "Exploring creative interpretations and variations...",
+                        "Extracting core essence from raw material..."
+                    ],
+                    'solutio': [
+                        "Dissolving rigid structures into flowing language...",
+                        "Finding natural rhythm and conversational tone...",
+                        "Adapting to target audience and use case...",
+                        "Refining flow and readability..."
+                    ],
+                    'coagulatio': [
+                        "Crystallizing into precise, actionable format...",
+                        "Optimizing for clarity and effectiveness...",
+                        "Adding finishing touches and polish...",
+                        "Finalizing production-ready output..."
+                    ]
+                };
+                this.insights = [
+                    "Leveraging historical patterns from vector database...",
+                    "Cross-referencing with successful prompt templates...",
+                    "Applying cognitive science principles for engagement...",
+                    "Optimizing token efficiency while maintaining impact...",
+                    "Balancing creativity with practical constraints..."
+                ];
+            }
+
+            start(inputText) {
+                this.currentStage = 0;
+                this.updateCurrentInput(inputText);
+                this.processStage(0);
+            }
+
+            processStage(stageIndex) {
+                if (stageIndex >= this.stages.length) {
+                    this.complete();
+                    return;
+                }
+
+                const stageName = this.stages[stageIndex];
+                const stageElement = document.querySelector(`[data-stage="${stageName}"]`);
+                
+                // Activate current stage
+                document.querySelectorAll('.stage-item').forEach(el => el.classList.remove('active'));
+                stageElement.classList.add('active');
+
+                // Simulate thinking process
+                this.simulateThinking(stageName, stageIndex);
+            }
+
+            simulateThinking(stageName, stageIndex) {
+                const thoughts = this.thoughts[stageName];
+                const thoughtsElement = document.getElementById(`thoughts-${stageName}`);
+                let thoughtIndex = 0;
+                
+                const thinkingInterval = setInterval(() => {
+                    if (thoughtIndex < thoughts.length) {
+                        thoughtsElement.textContent = thoughts[thoughtIndex];
+                        
+                        // Update progress
+                        const progress = ((thoughtIndex + 1) / thoughts.length) * 100;
+                        this.updateProgress(stageName, progress);
+                        
+                        // Update insights randomly
+                        if (Math.random() > 0.6) {
+                            this.updateRandomInsight();
+                        }
+                        
+                        thoughtIndex++;
+                    } else {
+                        clearInterval(thinkingInterval);
+                        
+                        // Mark stage as completed
+                        const stageElement = document.querySelector(`[data-stage="${stageName}"]`);
+                        stageElement.classList.remove('active');
+                        stageElement.classList.add('completed');
+                        
+                        // Move to next stage after delay
+                        setTimeout(() => {
+                            this.processStage(stageIndex + 1);
+                        }, 800);
+                    }
+                }, 1500 + Math.random() * 1000); // Variable timing for realism
+            }
+
+            updateProgress(stageName, percent) {
+                const progressElement = document.querySelector(`[data-stage="${stageName}"] .progress-circle`);
+                const progressBar = progressElement.querySelector('.progress-bar');
+                const progressText = progressElement.querySelector('.progress-text');
+                
+                const circumference = 2 * Math.PI * 15.9155;
+                const offset = circumference - (percent / 100) * circumference;
+                
+                progressBar.style.strokeDasharray = `${circumference}, ${circumference}`;
+                progressBar.style.strokeDashoffset = offset;
+                progressText.textContent = `${Math.round(percent)}%`;
+            }
+
+            updateCurrentInput(text) {
+                const inputElement = document.getElementById('current-input');
+                const truncated = text.length > 50 ? text.substring(0, 50) + '...' : text;
+                inputElement.textContent = truncated;
+            }
+
+            updateRandomInsight() {
+                const decisionElement = document.getElementById('ai-decision');
+                const scoreElement = document.getElementById('quality-score');
+                
+                // Random insight
+                const randomInsight = this.insights[Math.floor(Math.random() * this.insights.length)];
+                decisionElement.textContent = randomInsight;
+                
+                // Random quality score between 7.5 and 9.5
+                const score = (7.5 + Math.random() * 2).toFixed(1);
+                scoreElement.textContent = `${score}/10`;
+            }
+
+            complete() {
+                const statusElement = document.querySelector('.thinking-status');
+                statusElement.textContent = '✅ Processing Complete!';
+                statusElement.style.color = 'var(--liquid-emerald)';
+                statusElement.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+                statusElement.style.background = 'rgba(16, 185, 129, 0.1)';
+                
+                // Final insights
+                document.getElementById('ai-decision').textContent = 'Optimal prompts selected based on quality metrics';
+                document.getElementById('quality-score').textContent = '9.2/10';
+            }
+        }
+
+        // Initialize thinking process system
+        window.aiThinking = new AIThinkingProcess();
+
+        function showThinkingProcess() {
+            const thinkingPanel = document.getElementById('thinking-process');
+            const inputText = document.getElementById('input').value || 'Processing your request...';
+            
+            thinkingPanel.style.display = 'block';
+            thinkingPanel.style.opacity = '0';
+            thinkingPanel.style.transform = 'translateY(20px)';
+            
+            setTimeout(() => {
+                thinkingPanel.style.transition = 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
+                thinkingPanel.style.opacity = '1';
+                thinkingPanel.style.transform = 'translateY(0)';
+                
+                // Start the thinking process
+                window.aiThinking.start(inputText);
+            }, 100);
+        }
+
+        function hideThinkingProcess() {
+            const thinkingPanel = document.getElementById('thinking-process');
+            
+            thinkingPanel.style.transition = 'all 0.4s ease-out';
+            thinkingPanel.style.opacity = '0';
+            thinkingPanel.style.transform = 'translateY(-20px)';
+            
+            setTimeout(() => {
+                thinkingPanel.style.display = 'none';
+                
+                // Reset all stages
+                document.querySelectorAll('.stage-item').forEach(el => {
+                    el.classList.remove('active', 'completed');
+                });
+                
+                // Reset progress circles
+                document.querySelectorAll('.progress-bar').forEach(bar => {
+                    bar.style.strokeDasharray = '0, 100';
+                });
+                
+                document.querySelectorAll('.progress-text').forEach(text => {
+                    text.textContent = '0%';
+                });
+                
+                // Reset thoughts
+                document.querySelectorAll('.stage-thoughts').forEach(thoughts => {
+                    thoughts.textContent = '';
+                });
+                
+                // Reset status
+                const statusElement = document.querySelector('.thinking-status');
+                statusElement.textContent = '🧠 Processing...';
+                statusElement.style.color = 'var(--liquid-blue)';
+                statusElement.style.borderColor = 'rgba(59, 130, 246, 0.3)';
+                statusElement.style.background = 'rgba(59, 130, 246, 0.1)';
+            }, 400);
+        }
+
+        // AI Thinking Display Integration with Flash Animations
+        class HexAIThoughts {
+            constructor() {
+                this.container = document.getElementById('hex-ai-thoughts');
+                this.thoughtStream = document.getElementById('thought-stream');
+                this.status = document.getElementById('hex-thoughts-status');
+                this.headerText = document.getElementById('ai-header-text');
+                this.headerContent = document.querySelector('.ai-header-content');
+                this.insights = {
+                    phase: document.getElementById('hex-current-phase'),
+                    node: document.getElementById('hex-active-node'),
+                    state: document.getElementById('hex-transform-state'),
+                    confidence: document.getElementById('hex-confidence')
+                };
+                this.thoughtQueue = [];
+                this.isVisible = false;
+                this.currentPhase = null;
+                this.isFlashing = false;
+                this.flashInterval = null;
+                this.currentThoughtIndex = 0;
+                this.isThinking = false; // Track thinking state for rainbow glow
+                
+                // Flash animation settings
+                this.flashDuration = 2500; // How long each thought stays visible
+                this.flashTransition = 400; // Animation duration
+                
+                // Initialize thought processes
+                this.initializeThoughts();
+                this.setupEventListeners();
+                this.initializeContentSummarizer();
+            }
+            
+            initializeThoughts() {
+                // Show the thoughts container
+                if (this.container) {
+                    this.show();
+                    this.addThought('system', 'Hex grid transmutation system initialized. Ready to analyze alchemical transformations.');
+                }
+            }
+            
+            setupEventListeners() {
+                // Listen for hex grid events
+                document.addEventListener('hex-node-activated', (e) => {
+                    this.handleNodeActivation(e.detail);
+                });
+                
+                document.addEventListener('hex-phase-change', (e) => {
+                    this.handlePhaseChange(e.detail);
+                });
+                
+                document.addEventListener('hex-processing-start', (e) => {
+                    this.handleProcessingStart(e.detail);
+                });
+                
+                document.addEventListener('hex-processing-complete', (e) => {
+                    this.handleProcessingComplete(e.detail);
+                });
+                
+                // Listen for form submissions to start analysis
+                document.addEventListener('htmx:beforeRequest', (e) => {
+                    if (e.detail.elt.closest('#generate-form')) {
+                        this.handleTransmutationStart(e.detail);
+                    }
+                });
+                
+                document.addEventListener('htmx:afterRequest', (e) => {
+                    if (e.detail.elt.closest('#generate-form')) {
+                        this.handleTransmutationComplete(e.detail);
+                    }
+                });
+            }
+            
+            show() {
+                if (this.container) {
+                    this.container.style.display = 'block';
+                    this.isVisible = true;
+                    this.updateStatus('Observing hex grid transformations...');
+                }
+            }
+            
+            hide() {
+                if (this.container) {
+                    this.container.style.display = 'none';
+                    this.isVisible = false;
+                }
+            }
+            
+            initializeContentSummarizer() {
+                // Content summarization templates for different processing stages
+                this.summaryTemplates = {
+                    'prima-materia': [
+                        'Analyzing input structure and semantic patterns',
+                        'Extracting core concepts from raw prompt material',
+                        'Identifying key themes and intent markers',
+                        'Processing linguistic patterns and context',
+                        'Evaluating prompt complexity and scope'
+                    ],
+                    'solutio': [
+                        'Refining language flow and coherence',
+                        'Optimizing syntax and readability patterns',
+                        'Balancing creativity with clarity',
+                        'Adapting tone for target audience',
+                        'Enhancing structural elements'
+                    ],
+                    'coagulatio': [
+                        'Crystallizing final prompt architecture',
+                        'Applying finishing polish and refinement',
+                        'Ensuring consistency and effectiveness',
+                        'Validating output quality metrics',
+                        'Finalizing optimized result structure'
+                    ],
+                    'system': [
+                        'Initializing AI processing framework',
+                        'Establishing prompt evaluation criteria',
+                        'Configuring transformation parameters',
+                        'Preparing transmutation pipeline',
+                        'Activating quality assessment protocols'
+                    ],
+                    'analysis': [
+                        'Deep-scanning prompt effectiveness patterns',
+                        'Cross-referencing with successful templates',
+                        'Evaluating semantic density and impact',
+                        'Measuring engagement optimization potential',
+                        'Assessing contextual relevance factors'
+                    ],
+                    'optimization': [
+                        'Leveraging historical performance data',
+                        'Applying machine learning insights',
+                        'Fine-tuning based on success metrics',
+                        'Implementing iterative improvements',
+                        'Calibrating for maximum effectiveness'
+                    ]
+                };
+            }
+            
+            async addThought(phase, text) {
+                if (!this.thoughtStream) return;
+                
+                // Summarize the input using AI-powered processing
+                const summarizedText = await this.summarizeContent(phase, text);
+                
+                // Add to thought queue instead of immediately displaying
+                this.thoughtQueue.push({
+                    phase: phase,
+                    text: summarizedText,
+                    processed: false
+                });
+                
+                // Update header with current processing phase
+                this.updateHeaderForPhase(phase, summarizedText);
+                
+                // Start flashing if not already active
+                if (!this.isFlashing) {
+                    this.startFlashSequence();
+                }
+                
+                // Update insights based on thought type
+                this.updateInsights(phase, summarizedText);
+            }
+            
+            updateHeaderForPhase(phase, text) {
+                if (!this.headerText) return;
+                
+                const phaseHeaders = {
+                    'prima-materia': 'Analyzing raw material and extracting essence...',
+                    'solutio': 'Dissolving and refining structure patterns...',
+                    'coagulatio': 'Crystallizing final optimization form...',
+                    'system': 'Initializing AI transmutation framework...',
+                    'analysis': 'Deep scanning prompt effectiveness patterns...',
+                    'optimization': 'Applying enhancement algorithms...'
+                };
+                
+                const headerText = phaseHeaders[phase] || `Processing ${phase} transformation...`;
+                
+                // Determine if this phase requires thinking glow
+                const thinkingPhases = ['prima-materia', 'solutio', 'coagulatio', 'analysis', 'optimization'];
+                const shouldThink = thinkingPhases.includes(phase);
+                
+                // Update thinking state
+                this.setThinkingState(shouldThink);
+                
+                // Smooth update with fade effect
+                this.headerText.style.transition = 'opacity 0.3s ease';
+                this.headerText.style.opacity = '0.5';
+                
+                setTimeout(() => {
+                    this.headerText.textContent = headerText;
+                    this.headerText.style.opacity = '0.9';
+                }, 150);
+            }
+            
+            summarizeContent(phase, originalText) {
+                // Try AI summarization first
+                return this.aiSummarize(phase, originalText)
+                    .then(summary => {
+                        if (summary) {
+                            return summary;
+                        }
+                        // Fallback to template-based summarization
+                        return this.templateSummarize(phase, originalText);
+                    })
+                    .catch(() => {
+                        // Fallback to template-based summarization on error
+                        return this.templateSummarize(phase, originalText);
+                    });
+            }
+            
+            async aiSummarize(phase, originalText) {
+                try {
+                    // const response = await fetch('/api/summarize', {
+            //     method: 'POST',
+            //     headers: { 'Content-Type': 'application/json' },
+            //     body: JSON.stringify({ content: thought })
+            // });
+            // if (response.ok) {
+            //     const data = await response.json();
+            //     thoughtElement.innerHTML += `<div class="summary">${data.summary}</div>`;
+            // }
+                } catch (error) {
+                    console.debug('AI summarization failed, using fallback:', error);
+                }
+                return null;
+            }
+            
+            templateSummarize(phase, originalText) {
+                // Get appropriate template based on phase
+                const templates = this.summaryTemplates[phase] || this.summaryTemplates['system'];
+                
+                // Simple content analysis to select most relevant summary
+                const textLower = originalText.toLowerCase();
+                let bestMatch = templates[0]; // Default
+                
+                if (textLower.includes('analyz') || textLower.includes('process')) {
+                    bestMatch = templates[Math.floor(Math.random() * 2)]; // First 2 options
+                } else if (textLower.includes('optim') || textLower.includes('refin')) {
+                    bestMatch = templates[Math.min(2, templates.length - 1)]; // Middle options
+                } else if (textLower.includes('complet') || textLower.includes('finish')) {
+                    bestMatch = templates[templates.length - 1]; // Last option
+                } else {
+                    // Random selection for variety
+                    bestMatch = templates[Math.floor(Math.random() * templates.length)];
+                }
+                
+                return bestMatch;
+            }
+            
+            startFlashSequence() {
+                if (this.isFlashing || this.thoughtQueue.length === 0) return;
+                
+                this.isFlashing = true;
+                this.currentThoughtIndex = 0;
+                
+                // Clear existing content and show first thought
+                this.thoughtStream.innerHTML = '';
+                this.showNextThought();
+            }
+            
+            showNextThought() {
+                if (this.currentThoughtIndex >= this.thoughtQueue.length) {
+                    this.stopFlashSequence();
+                    return;
+                }
+                
+                const thought = this.thoughtQueue[this.currentThoughtIndex];
+                if (thought.processed) {
+                    this.currentThoughtIndex++;
+                    this.showNextThought();
+                    return;
+                }
+                
+                // Create thought element without timestamps
+                const thoughtEntry = document.createElement('div');
+                thoughtEntry.className = `thought-entry flash-entry ${thought.phase}`;
+                
+                thoughtEntry.innerHTML = `
+                    <div class="thought-meta">
+                        <span class="thought-phase ${thought.phase}">${this.getPhaseLabel(thought.phase)}</span>
+                        <span class="thought-indicator">●</span>
+                    </div>
+                    <div class="thought-text">${thought.text}</div>
+                `;
+                
+                // Clear previous content and add new
+                this.thoughtStream.innerHTML = '';
+                this.thoughtStream.appendChild(thoughtEntry);
+                
+                // Trigger alchemy-inspired glow transition on container
+                this.thoughtStream.classList.add('glow-transition');
+                setTimeout(() => {
+                    this.thoughtStream.classList.remove('glow-transition');
+                }, 800);
+                
+                // Flash in animation
+                thoughtEntry.style.opacity = '0';
+                thoughtEntry.style.transform = 'translateY(10px) scale(0.95)';
+                
+                requestAnimationFrame(() => {
+                    thoughtEntry.style.transition = `all ${this.flashTransition}ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`;
+                    thoughtEntry.style.opacity = '1';
+                    thoughtEntry.style.transform = 'translateY(0) scale(1)';
+                });
+                
+                // Mark as processed and schedule next
+                thought.processed = true;
+                
+                // Schedule flash out and next thought
+                setTimeout(() => {
+                    this.flashOutCurrentThought(() => {
+                        this.currentThoughtIndex++;
+                        setTimeout(() => this.showNextThought(), 200); // Brief pause between thoughts
+                    });
+                }, this.flashDuration);
+            }
+            
+            flashOutCurrentThought(callback) {
+                const currentEntry = this.thoughtStream.querySelector('.flash-entry');
+                if (!currentEntry) {
+                    callback();
+                    return;
+                }
+                
+                // Flash out animation
+                currentEntry.style.transition = `all ${this.flashTransition}ms cubic-bezier(0.55, 0.085, 0.68, 0.53)`;
+                currentEntry.style.opacity = '0';
+                currentEntry.style.transform = 'translateY(-10px) scale(0.9)';
+                
+                setTimeout(callback, this.flashTransition);
+            }
+            
+            stopFlashSequence() {
+                this.isFlashing = false;
+                if (this.flashInterval) {
+                    clearInterval(this.flashInterval);
+                    this.flashInterval = null;
+                }
+                
+                // Show completion state
+                this.thoughtStream.innerHTML = `
+                    <div class="thought-entry completion-state">
+                        <div class="thought-meta">
+                            <span class="thought-phase system">Ready</span>
+                            <span class="thought-indicator pulse">◐</span>
+                        </div>
+                        <div class="thought-text">AI processing complete. Ready for new transmutation.</div>
+                    </div>
+                `;
+                
+                // Clear processed thoughts from queue
+                this.thoughtQueue = this.thoughtQueue.filter(t => !t.processed);
+            }
+            
+            getPhaseLabel(phase) {
+                const labels = {
+                    'system': 'System',
+                    'prima-materia': 'Prima Materia',
+                    'solutio': 'Solutio',
+                    'coagulatio': 'Coagulatio',
+                    'decision': 'Decision',
+                    'analysis': 'Analysis',
+                    'optimization': 'Optimization'
+                };
+                return labels[phase] || phase.charAt(0).toUpperCase() + phase.slice(1);
+            }
+            
+            updateStatus(text, isProcessing = false) {
+                if (!this.status) return;
+                
+                this.status.textContent = text;
+                if (isProcessing) {
+                    this.status.classList.add('processing');
+                } else {
+                    this.status.classList.remove('processing');
+                }
+                
+                // Update header with current AI thinking
+                this.updateHeader(text);
+            }
+            
+            updateHeader(text) {
+                if (!this.headerText) return;
+                
+                // Create condensed version for header
+                let headerText = text;
+                let shouldThink = false;
+                
+                // Convert status text to header-appropriate text and determine thinking state
+                if (text.includes('Observing')) {
+                    headerText = 'Observing hex grid transformations...';
+                    shouldThink = false; // Passive observation
+                } else if (text.includes('Processing')) {
+                    headerText = 'AI processing transmutation patterns...';
+                    shouldThink = true; // Active processing
+                } else if (text.includes('Analyzing')) {
+                    headerText = 'Deep analysis of alchemical structures...';
+                    shouldThink = true; // Active analysis
+                } else if (text.includes('complete') || text.includes('Ready')) {
+                    headerText = 'Ready for next transmutation sequence...';
+                    shouldThink = false; // Completed state
+                } else {
+                    // For other cases, create a condensed version
+                    headerText = text.length > 45 ? text.substring(0, 42) + '...' : text;
+                    shouldThink = true; // Default to thinking for active states
+                }
+                
+                // Update thinking state and rainbow glow
+                this.setThinkingState(shouldThink);
+                
+                // Smooth update with fade effect
+                this.headerText.style.transition = 'opacity 0.3s ease';
+                this.headerText.style.opacity = '0.5';
+                
+                setTimeout(() => {
+                    this.headerText.textContent = headerText;
+                    this.headerText.style.opacity = '0.9';
+                }, 150);
+            }
+            
+            setThinkingState(thinking) {
+                if (this.isThinking === thinking) return; // No change needed
+                
+                this.isThinking = thinking;
+                
+                if (thinking) {
+                    // Enable rainbow glow
+                    this.headerText?.classList.add('thinking');
+                    this.headerContent?.classList.add('thinking');
+                } else {
+                    // Disable rainbow glow
+                    this.headerText?.classList.remove('thinking');
+                    this.headerContent?.classList.remove('thinking');
+                }
+            }
+            
+            // Method to start thinking mode manually (for testing/demo)
+            startThinking(message = null) {
+                if (message) {
+                    this.headerText.textContent = message;
+                }
+                this.setThinkingState(true);
+            }
+            
+            // Method to stop thinking mode manually (for testing/demo)
+            stopThinking(message = null) {
+                if (message) {
+                    this.headerText.textContent = message;
+                }
+                this.setThinkingState(false);
+            }
+            
+            updateInsights(phase, text) {
+                if (!this.insights) return;
+                
+                // Update current phase
+                if (phase !== 'system' && this.insights.phase) {
+                    this.insights.phase.textContent = this.getPhaseLabel(phase);
+                    this.insights.phase.classList.add('active');
+                    setTimeout(() => this.insights.phase.classList.remove('active'), 500);
+                }
+                
+                // Update transformation state based on content
+                if (this.insights.state) {
+                    if (text.includes('processing') || text.includes('analyzing')) {
+                        this.insights.state.textContent = 'Processing';
+                        this.insights.state.classList.add('active');
+                    } else if (text.includes('complete') || text.includes('finished')) {
+                        this.insights.state.textContent = 'Complete';
+                        this.insights.state.classList.add('active');
+                    } else if (text.includes('error') || text.includes('failed')) {
+                        this.insights.state.textContent = 'Error';
+                        this.insights.state.classList.add('active');
+                    }
+                    setTimeout(() => this.insights.state.classList.remove('active'), 500);
+                }
+                
+                // Simulate confidence updates
+                if (this.insights.confidence) {
+                    const confidence = Math.random() * 20 + 80; // 80-100%
+                    this.insights.confidence.textContent = `${confidence.toFixed(1)}%`;
+                    this.insights.confidence.classList.add('active');
+                    setTimeout(() => this.insights.confidence.classList.remove('active'), 500);
+                }
+            }
+            
+            handleNodeActivation(detail) {
+                const { nodeId, nodeType, phase } = detail;
+                this.addThought('analysis', `Node "${nodeId}" activated. Initiating ${nodeType} transformation sequence. Analyzing input requirements and preparing phase-specific processing.`);
+                
+                if (this.insights.node) {
+                    this.insights.node.textContent = nodeId;
+                    this.insights.node.classList.add('active');
+                    setTimeout(() => this.insights.node.classList.remove('active'), 500);
+                }
+            }
+            
+            handlePhaseChange(detail) {
+                const { fromPhase, toPhase, reason } = detail;
+                this.currentPhase = toPhase;
+                
+                let reasoningText = '';
+                switch (toPhase) {
+                    case 'prima-materia':
+                        reasoningText = 'Initiating Prima Materia phase. Extracting raw essence from input. Analyzing semantic structure and identifying core conceptual elements for transformation.';
+                        break;
+                    case 'solutio':
+                        reasoningText = 'Transitioning to Solutio phase. Dissolving rigid structures into flowing, natural language. Applying contextual refinement and linguistic optimization.';
+                        break;
+                    case 'coagulatio':
+                        reasoningText = 'Entering Coagulatio phase. Crystallizing processed elements into final, structured form. Applying precision formatting and optimization rules.';
+                        break;
+                    default:
+                        reasoningText = `Phase transition detected: ${fromPhase} → ${toPhase}. ${reason || 'Continuing transformation sequence.'}`;
+                }
+                
+                this.addThought(toPhase, reasoningText);
+                this.updateStatus(`Processing ${this.getPhaseLabel(toPhase)} phase...`, true);
+            }
+            
+            handleProcessingStart(detail) {
+                const { input, phases, parameters } = detail;
+                this.addThought('analysis', `Transmutation request received. Input length: ${input?.length || 0} characters. Planned phases: ${phases?.join(' → ') || 'auto-select'}. Confidence level: High.`);
+                this.updateStatus('Analyzing transmutation requirements...', true);
+            }
+            
+            handleProcessingComplete(detail) {
+                const { results, duration, success } = detail;
+                if (success) {
+                    this.addThought('system', `Transmutation completed successfully in ${duration || 'unknown time'}. Generated ${results?.length || 0} variant(s). Quality assessment: ${this.assessQuality(results)}.`);
+                    this.updateStatus('Transmutation complete', false);
+                } else {
+                    this.addThought('system', `Transmutation encountered issues. Analyzing failure patterns and preparing diagnostic report.`);
+                    this.updateStatus('Transmutation incomplete', false);
+                }
+            }
+            
+            handleTransmutationStart(detail) {
+                const formData = new FormData(detail.elt);
+                const input = formData.get('input');
+                const phases = formData.get('phase') || 'auto';
+                
+                this.addThought('system', `Form submission detected. Preparing transmutation sequence for input analysis. Selected phase configuration: ${phases}.`);
+                this.updateStatus('Preparing transmutation...', true);
+                
+                // Simulate progressive thinking
+                setTimeout(() => {
+                    this.addThought('analysis', 'Validating input parameters. Checking semantic coherence and structural integrity. Input appears well-formed for alchemical processing.');
+                }, 1000);
+                
+                setTimeout(() => {
+                    this.addThought('decision', `Selected optimal processing strategy based on input characteristics. Confidence in approach: ${Math.random() * 10 + 90}%.`);
+                }, 2000);
+            }
+            
+            handleTransmutationComplete(detail) {
+                if (detail.successful) {
+                    this.addThought('system', 'Transmutation sequence completed. Results have been materialized and are ready for review. Quality metrics indicate successful transformation.');
+                    this.updateStatus('Ready for next transmutation', false);
+                } else {
+                    this.addThought('system', 'Transmutation encountered complications. Analyzing error patterns and system state for diagnostic insights.');
+                    this.updateStatus('Diagnostic mode active', false);
+                }
+            }
+            
+            assessQuality(results) {
+                if (!results || results.length === 0) return 'No results to assess';
+                
+                const qualityTerms = ['Excellent', 'Very Good', 'Good', 'Satisfactory', 'Needs Refinement'];
+                return qualityTerms[Math.floor(Math.random() * qualityTerms.length)];
+            }
+            
+            simulateRealtimeThinking(phase, baseText) {
+                // Add progressive thinking simulation during longer operations
+                const variations = [
+                    'Analyzing semantic patterns...',
+                    'Optimizing linguistic flow...',
+                    'Applying contextual refinements...',
+                    'Validating output coherence...',
+                    'Finalizing transformation...'
+                ];
+                
+                variations.forEach((text, index) => {
+                    setTimeout(() => {
+                        this.addThought(phase, text);
+                    }, (index + 1) * 800);
+                });
+            }
+            
+            clearThoughts() {
+                if (this.thoughtStream) {
+                    this.thoughtStream.innerHTML = '';
+                    this.addThought('system', 'Thought stream cleared. Ready for new transmutation analysis.');
+                }
+            }
+        }
+        
+        // Initialize the hex AI thoughts system
+        window.hexAIThoughts = new HexAIThoughts();
+        
+        // Debug and force hex grid initialization
+        setTimeout(() => {
+            console.log('=== HEX GRID DIAGNOSTIC ===');
+            
+            const container = document.getElementById('hex-flow-container');
+            const svg = document.getElementById('hex-flow-board');
+            const nodesGroup = document.getElementById('hex-nodes');
+            const pathsGroup = document.getElementById('connection-paths');
+            
+            console.log('Container:', container);
+            console.log('SVG:', svg);
+            console.log('Nodes Group:', nodesGroup);
+            console.log('UnifiedHexFlow available:', typeof UnifiedHexFlow);
+            console.log('window.unifiedHexFlow:', window.unifiedHexFlow);
+            
+            // Force creation if missing
+            if (nodesGroup && nodesGroup.children.length === 0) {
+                console.log('No hex nodes found, but UnifiedHexFlow should create them');
+                // Don't create basic nodes - let UnifiedHexFlow handle it
+                // createBasicHexNodes(nodesGroup);
+            }
+            
+            if (window.unifiedHexFlow) {
+                console.log('Nodes in instance:', window.unifiedHexFlow.nodes.size);
+            }
+        }, 1000);
+        
+        // Fallback: Create basic hex nodes if the main system fails
+        function createBasicHexNodes(nodesGroup) {
+            const basicNodes = [
+                { id: 'input', x: 200, y: 200, title: 'Input', color: '#ff6b35' },
+                { id: 'prima', x: 350, y: 150, title: 'Prima Materia', color: '#ff6b6b' },
+                { id: 'hub', x: 500, y: 200, title: 'Hub', color: '#ffd700' },
+                { id: 'solutio', x: 650, y: 150, title: 'Solutio', color: '#4ecdc4' },
+                { id: 'coagulatio', x: 800, y: 200, title: 'Coagulatio', color: '#45b7d1' },
+                { id: 'output', x: 650, y: 300, title: 'Output', color: '#ff6b35' }
+            ];
+            
+            basicNodes.forEach(node => {
+                const hexNode = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                hexNode.setAttribute('class', 'hex-node fallback-node');
+                hexNode.setAttribute('data-id', node.id);
+                hexNode.setAttribute('transform', `translate(${node.x}, ${node.y})`);
+                
+                // Create hexagon path
+                const hexPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                const size = 30;
+                const hexPoints = [];
+                for (let i = 0; i < 6; i++) {
+                    const angle = (Math.PI / 3) * i;
+                    const x = size * Math.cos(angle);
+                    const y = size * Math.sin(angle);
+                    hexPoints.push(`${x},${y}`);
+                }
+                hexPath.setAttribute('d', `M${hexPoints.join('L')}Z`);
+                hexPath.setAttribute('fill', node.color);
+                hexPath.setAttribute('fill-opacity', '0.3');
+                hexPath.setAttribute('stroke', node.color);
+                hexPath.setAttribute('stroke-width', '2');
+                
+                // Add text label
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('text-anchor', 'middle');
+                text.setAttribute('dy', '0.35em');
+                text.setAttribute('fill', 'white');
+                text.setAttribute('font-size', '10');
+                text.textContent = node.title;
+                
+                hexNode.appendChild(hexPath);
+                hexNode.appendChild(text);
+                nodesGroup.appendChild(hexNode);
+            });
+            
+            console.log('Created', basicNodes.length, 'fallback hex nodes');
+        }
+        
+        // Add developer test functions for rainbow glow testing
+        window.testThinking = function() {
+            if (window.hexAIThoughts) {
+                window.hexAIThoughts.startThinking('AI deep analysis in progress...');
+                console.log('🌈 Rainbow glow activated!');
+            }
+        };
+        
+        window.testNormal = function() {
+            if (window.hexAIThoughts) {
+                window.hexAIThoughts.stopThinking('Ready for next sequence...');
+                console.log('💡 Normal state restored');
+            }
+        };
+        
+        // Test thinking with different phases
+        window.testPhase = function(phase) {
+            if (window.hexAIThoughts) {
+                window.hexAIThoughts.updateHeaderForPhase(phase, 'test content');
+                console.log(`🔬 Testing phase: ${phase}`);
+            }
+        };
+        
+        console.log('🧠 AI Header Testing Functions Available:');
+        console.log('  testThinking() - Enable rainbow glow');
+        console.log('  testNormal() - Disable rainbow glow');
+        console.log('  testPhase("prima-materia") - Test specific phases');
+    </script>
+    
+    <script src="/static/js/hex-flow-unified.js?v={{.Timestamp}}"></script>
+    
+    <!-- Force initialization check -->
+    <script>
+        // Ensure hex flow is initialized after all scripts load
+        window.addEventListener('load', function() {
+            console.log('🔍 Window load - checking hex flow initialization...');
+            
+            setTimeout(function() {
+                if (!window.unifiedHexFlow) {
+                    console.error('❌ UnifiedHexFlow not initialized after window load!');
+                    console.log('Attempting manual initialization...');
+                    try {
+                        window.initializeUnifiedHexFlow();
+                        console.log('✅ Manual initialization successful');
+                    } catch (e) {
+                        console.error('❌ Manual initialization failed:', e);
+                    }
+                } else {
+                    console.log('✅ UnifiedHexFlow is initialized');
+                    console.log('Nodes:', window.unifiedHexFlow.nodes.size);
+                    console.log('DOM nodes:', document.querySelectorAll('.hex-node').length);
+                }
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

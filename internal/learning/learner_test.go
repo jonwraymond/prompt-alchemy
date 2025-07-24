@@ -7,20 +7,23 @@ import (
 	"github.com/google/uuid"
 	"github.com/jonwraymond/prompt-alchemy/internal/storage"
 	"github.com/jonwraymond/prompt-alchemy/pkg/models"
+	"github.com/jonwraymond/prompt-alchemy/pkg/providers"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestNewLearningEngine(t *testing.T) {
-	// Create test storage and logger
+	// Create test storage, registry, and logger
 	store := &storage.Storage{}
+	registry := providers.NewRegistry()
 	logger := logrus.New()
 
-	engine := NewLearningEngine(store, logger)
+	engine := NewLearningEngine(store, registry, logger)
 
 	assert.NotNil(t, engine)
 	assert.Equal(t, store, engine.storage)
+	assert.Equal(t, registry, engine.registry)
 	assert.Equal(t, logger, engine.logger)
 	assert.Equal(t, 0.1, engine.learningRate)
 	assert.Equal(t, 0.01, engine.decayRate)
@@ -31,12 +34,13 @@ func TestNewLearningEngine(t *testing.T) {
 }
 
 func TestRecordUsage(t *testing.T) {
-	// Create test storage and logger
+	// Create test storage, registry, and logger
 	store := &storage.Storage{}
+	registry := providers.NewRegistry()
 	logger := logrus.New()
 	logger.SetLevel(logrus.DebugLevel)
 
-	engine := NewLearningEngine(store, logger)
+	engine := NewLearningEngine(store, registry, logger)
 
 	// Create test usage analytics
 	usage := models.UsageAnalytics{
@@ -68,8 +72,9 @@ func TestRecordUsage(t *testing.T) {
 
 func TestDetectPattern(t *testing.T) {
 	store := &storage.Storage{}
+	registry := providers.NewRegistry()
 	logger := logrus.New()
-	engine := NewLearningEngine(store, logger)
+	engine := NewLearningEngine(store, registry, logger)
 
 	tests := []struct {
 		name               string
@@ -122,8 +127,9 @@ func TestDetectPattern(t *testing.T) {
 
 func TestCalculateTimeDecay(t *testing.T) {
 	store := &storage.Storage{}
+	registry := providers.NewRegistry()
 	logger := logrus.New()
-	engine := NewLearningEngine(store, logger)
+	engine := NewLearningEngine(store, registry, logger)
 
 	tests := []struct {
 		name        string
@@ -162,8 +168,9 @@ func TestCalculateTimeDecay(t *testing.T) {
 
 func TestGetLearningStats(t *testing.T) {
 	store := &storage.Storage{}
+	registry := providers.NewRegistry()
 	logger := logrus.New()
-	engine := NewLearningEngine(store, logger)
+	engine := NewLearningEngine(store, registry, logger)
 
 	// Add some test data
 	promptID := uuid.New()
@@ -195,8 +202,9 @@ func TestGetLearningStats(t *testing.T) {
 
 func TestApplyPatternFiltering(t *testing.T) {
 	store := &storage.Storage{}
+	registry := providers.NewRegistry()
 	logger := logrus.New()
-	engine := NewLearningEngine(store, logger)
+	engine := NewLearningEngine(store, registry, logger)
 
 	// Create test prompts
 	prompt1 := models.Prompt{
@@ -239,8 +247,9 @@ func TestApplyPatternFiltering(t *testing.T) {
 
 func TestConsolidatePatterns(t *testing.T) {
 	store := &storage.Storage{}
+	registry := providers.NewRegistry()
 	logger := logrus.New()
-	engine := NewLearningEngine(store, logger)
+	engine := NewLearningEngine(store, registry, logger)
 
 	// Add patterns with different confidence levels
 	engine.patterns["high:confidence"] = &Pattern{
@@ -262,8 +271,9 @@ func TestConsolidatePatterns(t *testing.T) {
 
 func TestCleanupOldMetrics(t *testing.T) {
 	store := &storage.Storage{}
+	registry := providers.NewRegistry()
 	logger := logrus.New()
-	engine := NewLearningEngine(store, logger)
+	engine := NewLearningEngine(store, registry, logger)
 
 	// Add old and new metrics
 	oldPromptID := uuid.New()

@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/jonwraymond/prompt-alchemy/pkg/models"
 	"github.com/jonwraymond/prompt-alchemy/pkg/providers"
 
@@ -179,6 +180,15 @@ type MockStorage struct {
 
 func (m *MockStorage) Close() error                                                { return nil }
 func (m *MockStorage) SavePrompt(ctx context.Context, prompt *models.Prompt) error { return nil }
+func (m *MockStorage) GetPromptByID(ctx context.Context, id uuid.UUID) (*models.Prompt, error) {
+	return nil, nil
+}
+func (m *MockStorage) GetPromptsWithoutEmbeddings(ctx context.Context, limit int) ([]*models.Prompt, error) {
+	return nil, nil
+}
+func (m *MockStorage) UpdatePromptRelevanceScore(ctx context.Context, id uuid.UUID, score float64) error {
+	return nil
+}
 func (m *MockStorage) SearchSimilarPrompts(ctx context.Context, embedding []float32, limit int) ([]*models.Prompt, error) {
 	return nil, nil
 }

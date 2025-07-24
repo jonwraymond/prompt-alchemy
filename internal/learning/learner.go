@@ -9,13 +9,15 @@ import (
 	"github.com/google/uuid"
 	"github.com/jonwraymond/prompt-alchemy/internal/storage"
 	"github.com/jonwraymond/prompt-alchemy/pkg/models"
+	"github.com/jonwraymond/prompt-alchemy/pkg/providers"
 	"github.com/sirupsen/logrus"
 )
 
 // LearningEngine handles adaptive learning for prompt optimization
 type LearningEngine struct {
-	storage storage.StorageInterface
-	logger  *logrus.Logger
+	storage  storage.StorageInterface
+	registry providers.RegistryInterface
+	logger   *logrus.Logger
 
 	// Learning parameters
 	learningRate   float64
@@ -70,9 +72,10 @@ type SessionMetrics struct {
 }
 
 // NewLearningEngine creates a new learning engine
-func NewLearningEngine(storage storage.StorageInterface, logger *logrus.Logger) *LearningEngine {
+func NewLearningEngine(storage storage.StorageInterface, registry providers.RegistryInterface, logger *logrus.Logger) *LearningEngine {
 	le := &LearningEngine{
 		storage:        storage,
+		registry:       registry,
 		logger:         logger,
 		learningRate:   0.1,
 		decayRate:      0.01,
@@ -84,7 +87,7 @@ func NewLearningEngine(storage storage.StorageInterface, logger *logrus.Logger) 
 			sessionMetrics: make(map[string]*SessionMetrics),
 		},
 	}
-	le.worker = NewBackgroundWorker(le.storage, le, le.logger)
+	le.worker = NewBackgroundWorker(le.storage, le, le.registry, le.logger)
 	return le
 }
 

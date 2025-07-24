@@ -29,10 +29,7 @@ func TestAISelector_Select(t *testing.T) {
 		EvaluationProvider: "mock",
 	}
 
-	mockResponse := `[
-		{"prompt_id": "` + prompts[0].ID.String() + `", "score": 0.8, "clarity": 0.7, "completeness": 0.9, "reasoning": "Good", "confidence": 0.85},
-		{"prompt_id": "` + prompts[1].ID.String() + `", "score": 0.7, "clarity": 0.6, "completeness": 0.8, "reasoning": "Fair", "confidence": 0.75}
-	]`
+	mockResponse := `[{"promptId":"` + prompts[0].ID.String() + `","score":0.8,"sub_scores":{"clarity":0.7,"completeness":0.9},"reasoning":"Good","confidence":0.85},{"promptId":"` + prompts[1].ID.String() + `","score":0.7,"sub_scores":{"clarity":0.6,"completeness":0.8},"reasoning":"Fair","confidence":0.75}]`
 	mockProv.GenerateFunc = func(ctx context.Context, req providers.GenerateRequest) (*providers.GenerateResponse, error) {
 		return &providers.GenerateResponse{Content: mockResponse}, nil
 	}

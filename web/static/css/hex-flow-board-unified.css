@@ -1,0 +1,50 @@
+/* Unified Hexagonal Grid System */
+
+/* Main container for the hex grid */
+.hex-flow-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.8s ease-in-out;
+}
+
+/* Zoom-in effect when the grid is active */
+.hex-flow-container.on-stage {
+    transform: scale(1.15);
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.5);
+}
+
+/* Pulsating background animation for active nodes */
+.hex-node.active .pulse-background {
+    opacity: 0.4 !important;
+    animation: pulse-background 2.5s ease-in-out infinite alternate;
+}
+
+@keyframes pulse-background {
+    0% { opacity: 0.2; transform: scale(1); }
+    100% { opacity: 0.6; transform: scale(1.15); }
+}
+
+/* Dotted line flow animations for paths */
+.flow-path.flowing {
+    stroke-dasharray: 12, 6; /* Dotted pattern */
+    animation: flow-direction 3s linear infinite;
+}
+
+@keyframes flow-direction {
+    0% { stroke-dashoffset: 0; }
+    100% { stroke-dashoffset: -100; } /* Creates flowing effect */
+}
+
+/* Responsive design for mobile devices */
+@media (max-width: 768px) {
+    .hex-flow-container.on-stage {
+        transform: scale(1.08);
+    }
+}
+
+@media (max-width: 480px) {
+    .hex-flow-container.on-stage {
+        transform: scale(1.05);
+    }
+}

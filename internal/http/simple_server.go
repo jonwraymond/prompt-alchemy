@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sort"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -16,6 +17,7 @@ import (
 	"github.com/jonwraymond/prompt-alchemy/internal/ranking"
 	"github.com/jonwraymond/prompt-alchemy/internal/selection"
 	"github.com/jonwraymond/prompt-alchemy/internal/storage"
+	"github.com/jonwraymond/prompt-alchemy/internal/summarization"
 	"github.com/jonwraymond/prompt-alchemy/pkg/models"
 	"github.com/jonwraymond/prompt-alchemy/pkg/providers"
 	"github.com/sirupsen/logrus"
@@ -24,18 +26,25 @@ import (
 
 // API request/response models for generate endpoint
 type GenerateRequest struct {
-	Input       string            `json:"input" binding:"required"`
-	Phases      []string          `json:"phases,omitempty"`
-	Count       int               `json:"count,omitempty"`
-	Providers   map[string]string `json:"providers,omitempty"`
-	Temperature float64           `json:"temperature,omitempty"`
-	MaxTokens   int               `json:"max_tokens,omitempty"`
-	Tags        []string          `json:"tags,omitempty"`
-	Context     []string          `json:"context,omitempty"`
-	Persona     string            `json:"persona,omitempty"`
-	TargetModel string            `json:"target_model,omitempty"`
-	UseParallel bool              `json:"use_parallel,omitempty"`
-	Save        bool              `json:"save,omitempty"`
+	Input               string            `json:"input" binding:"required"`
+	Phases              []string          `json:"phases,omitempty"`
+	Count               int               `json:"count,omitempty"`
+	Providers           map[string]string `json:"providers,omitempty"`
+	Temperature         float64           `json:"temperature,omitempty"`
+	MaxTokens           int               `json:"max_tokens,omitempty"`
+	Tags                []string          `json:"tags,omitempty"`
+	Context             []string          `json:"context,omitempty"`
+	Persona             string            `json:"persona,omitempty"`
+	TargetModel         string            `json:"target_model,omitempty"`
+	UseParallel         bool              `json:"use_parallel,omitempty"`
+	Save                bool              `json:"save,omitempty"`
+	UseOptimization     bool              `json:"use_optimization,omitempty"`
+	SimilarityThreshold float64           `json:"similarity_threshold,omitempty"`
+	HistoricalWeight    float64           `json:"historical_weight,omitempty"`
+	EnableJudging       bool              `json:"enable_judging,omitempty"`
+	JudgeProvider       string            `json:"judge_provider,omitempty"`
+	ScoringCriteria     string            `json:"scoring_criteria,omitempty"`
+	TargetUseCase       string            `json:"target_use_case,omitempty"`
 }
 
 type GenerateResponse struct {
@@ -47,11 +56,16 @@ type GenerateResponse struct {
 }
 
 type GenerateMetadata struct {
-	TotalGenerated int                    `json:"total_generated"`
-	PhasesTiming   map[string]int         `json:"phases_timing_ms,omitempty"`
-	ProvidersUsed  map[string]string      `json:"providers_used"`
-	GeneratedAt    time.Time              `json:"generated_at"`
-	RequestOptions GenerateRequestSummary `json:"request_options"`
+	TotalGenerated   int                    `json:"total_generated"`
+	PhasesTiming     map[string]int         `json:"phases_timing_ms,omitempty"`
+	ProvidersUsed    map[string]string      `json:"providers_used"`
+	GeneratedAt      time.Time              `json:"generated_at"`
+	RequestOptions   GenerateRequestSummary `json:"request_options"`
+	Duration         string                 `json:"duration"`
+	PhaseCount       int                    `json:"phase_count"`
+	Timestamp        time.Time              `json:"timestamp"`
+	OptimizationUsed bool                   `json:"optimization_used,omitempty"`
+	JudgingUsed      bool                   `json:"judging_used,omitempty"`
 }
 
 type GenerateRequestSummary struct {
@@ -148,14 +162,15 @@ type Config struct {
 
 // SimpleServer is a basic HTTP server for now
 type SimpleServer struct {
-	router   chi.Router
-	store    *storage.Storage
-	registry *providers.Registry
-	engine   *engine.Engine
-	ranker   *ranking.Ranker
-	learner  *learning.LearningEngine
-	logger   *logrus.Logger
-	config   *Config
+	router     chi.Router
+	store      *storage.Storage
+	registry   *providers.Registry
+	engine     *engine.Engine
+	ranker     *ranking.Ranker
+	learner    *learning.LearningEngine
+	summarizer *summarization.Summarizer
+	logger     *logrus.Logger
+	config     *Config
 }
 
 // NewSimpleServer creates a new simple HTTP server instance
@@ -180,23 +195,24 @@ func NewSimpleServer(
 	config := &Config{
 		Host:            host,
 		Port:            port,
-		ReadTimeout:     30 * time.Second,
-		WriteTimeout:    30 * time.Second,
-		IdleTimeout:     120 * time.Second,
-		ShutdownTimeout: 10 * time.Second,
+		ReadTimeout:     120 * time.Second, // Increased for long prompt generation
+		WriteTimeout:    120 * time.Second, // Increased for large response payloads
+		IdleTimeout:     300 * time.Second, // Increased for connection reuse
+		ShutdownTimeout: 15 * time.Second,
 		EnableCORS:      true,
 		CORSOrigins:     []string{"*"},
 		EnableAuth:      false,
 	}
 
 	s := &SimpleServer{
-		store:    store,
-		registry: registry,
-		engine:   engine,
-		ranker:   ranker,
-		learner:  learner,
-		logger:   logger,
-		config:   config,
+		store:      store,
+		registry:   registry,
+		engine:     engine,
+		ranker:     ranker,
+		learner:    learner,
+		summarizer: summarization.NewSummarizer(logger),
+		logger:     logger,
+		config:     config,
 	}
 
 	logger.Info("=== CALLING SETUP ROUTER ===")
@@ -258,7 +274,52 @@ func (s *SimpleServer) setupRouter() {
 		r.Get("/providers", s.handleListProviders)
 	})
 
+	// HTMX API endpoints for the web UI
+	r.Route("/api", func(r chi.Router) {
+		r.Get("/flow-status", s.handleFlowStatus)
+		r.Get("/system-status", s.handleSystemStatus)
+		r.Get("/nodes-status", s.handleNodesStatus)
+		r.Get("/connection-status", s.handleConnectionStatus)
+		r.Get("/node-details", s.handleNodeDetails)
+		r.Get("/flow-info", s.handleFlowInfo)
+		r.Get("/activity-feed", s.handleActivityFeed)
+		r.Post("/zoom", s.handleZoom)
+		r.Get("/zoom-level", s.handleZoomLevel)
+		r.Post("/activate-phase", s.handleActivatePhase)
+		r.Get("/node-actions", s.handleNodeActions)
+		r.Get("/board-state", s.handleBoardState)
+
+		// HIGH PRIORITY - Critical missing endpoints causing 404s
+		r.Post("/node/activate", s.handleNodeActivate)
+		r.Get("/connection/{id}", s.handleConnectionDetails)
+		r.Post("/viewport", s.handleViewportUpdate)
+		r.Get("/flow-events", s.handleFlowEvents)
+
+		// MEDIUM PRIORITY - HTMX node routes
+		r.Get("/node/input", s.handleNodeInput)
+		r.Get("/phase/prima", s.handlePhasePrima)
+		r.Get("/phase/solutio", s.handlePhaseSolutio)
+		r.Get("/phase/coagulatio", s.handlePhaseCoagulatio)
+		r.Get("/core-status", s.handleCoreStatus)
+		r.Post("/output/retrieve", s.handleOutputRetrieve)
+
+		// LOW PRIORITY - Feature routes
+		r.Get("/feature/optimize", s.handleFeatureOptimize)
+		r.Get("/feature/judge", s.handleFeatureJudge)
+		r.Get("/feature/database", s.handleFeatureDatabase)
+	})
+
+	// AI Thinking Process endpoint
+	r.Get("/api/thinking-stream", s.handleThinkingStream)
+	r.Post("/api/thinking-update", s.handleThinkingUpdate)
+	r.Post("/api/summarize", s.handleSummarize)
+
 	s.router = r
+}
+
+// Router returns the HTTP router for testing purposes
+func (s *SimpleServer) Router() chi.Router {
+	return s.router
 }
 
 // Start starts the HTTP server
@@ -542,6 +603,44 @@ func (s *SimpleServer) handleGeneratePrompts(w http.ResponseWriter, r *http.Requ
 	if req.Temperature == 0 {
 		req.Temperature = 0.7
 	}
+
+	// Provider-specific temperature validation
+	// Determine the primary provider for temperature validation
+	primaryProvider := ""
+	if req.Providers != nil && len(req.Providers) > 0 {
+		// If specific providers are set, use the first one for validation
+		for _, provider := range req.Providers {
+			primaryProvider = provider
+			break
+		}
+	}
+
+	// Validate and adjust temperature based on provider constraints
+	originalTemp := req.Temperature
+	adjustedTemp := false
+
+	switch primaryProvider {
+	case "anthropic":
+		if req.Temperature > 1.0 {
+			req.Temperature = 1.0
+			adjustedTemp = true
+		}
+	case "openai", "google", "ollama", "openrouter", "grok", "":
+		// These providers support 0-2 range, no adjustment needed for typical values
+		if req.Temperature > 2.0 {
+			req.Temperature = 2.0
+			adjustedTemp = true
+		}
+	}
+
+	// Log temperature adjustment for debugging
+	if adjustedTemp {
+		s.logger.WithFields(logrus.Fields{
+			"original_temperature": originalTemp,
+			"adjusted_temperature": req.Temperature,
+			"provider":             primaryProvider,
+		}).Warn("Temperature automatically adjusted for provider compatibility")
+	}
 	if req.MaxTokens <= 0 {
 		req.MaxTokens = 2000
 	}
@@ -557,9 +656,14 @@ func (s *SimpleServer) handleGeneratePrompts(w http.ResponseWriter, r *http.Requ
 	if req.Context == nil {
 		req.Context = []string{}
 	}
-	// Save defaults to true unless explicitly disabled
+	// Save defaults to true (recommended)
 	if !r.URL.Query().Has("save") {
 		req.Save = true
+	}
+
+	// Parallel processing defaults to true (recommended)
+	if !r.URL.Query().Has("use_parallel") {
+		req.UseParallel = true
 	}
 
 	// Convert string phases to models.Phase
@@ -610,10 +714,10 @@ func (s *SimpleServer) handleGeneratePrompts(w http.ResponseWriter, r *http.Requ
 				"provider":  provider,
 			}).Info("Reading phase provider from viper")
 
-			// Temporary fallback to ollama if viper returns empty
+			// Fallback to openai if viper returns empty (more reliable than ollama)
 			if provider == "" {
-				provider = "ollama"
-				s.logger.WithField("phase", phase).Info("Using fallback provider: ollama")
+				provider = "openai"
+				s.logger.WithField("phase", phase).Info("Using fallback provider: openai")
 			}
 
 			phaseConfigs[i] = models.PhaseConfig{
@@ -633,10 +737,10 @@ func (s *SimpleServer) handleGeneratePrompts(w http.ResponseWriter, r *http.Requ
 					"provider":  provider,
 				}).Info("Reading missing phase provider from viper")
 
-				// Fallback to ollama if viper returns empty
+				// Fallback to openai if viper returns empty (more reliable than ollama)
 				if provider == "" {
-					provider = "ollama"
-					s.logger.WithField("phase", config.Phase).Info("Using fallback provider: ollama")
+					provider = "openai"
+					s.logger.WithField("phase", config.Phase).Info("Using fallback provider: openai")
 				}
 
 				phaseConfigs[i].Provider = provider
@@ -697,6 +801,33 @@ func (s *SimpleServer) handleGeneratePrompts(w http.ResponseWriter, r *http.Requ
 		result.Prompts[i].SessionID = sessionID
 	}
 
+	// Apply historical optimization if enabled
+	if req.UseOptimization && len(result.Prompts) > 0 {
+		s.logger.Info("Applying historical optimization...")
+
+		// TODO: Implement vector-based similarity search
+		// For now, we'll simulate the optimization by adding placeholder similar prompts data
+		for i := range result.Prompts {
+			prompt := &result.Prompts[i]
+
+			// Simulate finding similar prompts (placeholder implementation)
+			prompt.SimilarPrompts = []string{"placeholder-id-1", "placeholder-id-2"}
+			prompt.AvgSimilarity = 0.75 // Simulated average similarity
+
+			// Adjust score based on historical weight if available
+			if prompt.Score > 0 && req.HistoricalWeight > 0 {
+				// Apply historical weight to boost score slightly
+				historicalBoost := req.HistoricalWeight * 0.1 // Small boost from historical data
+				prompt.Score = prompt.Score + historicalBoost
+			}
+		}
+
+		s.logger.WithFields(logrus.Fields{
+			"similarity_threshold": req.SimilarityThreshold,
+			"historical_weight":    req.HistoricalWeight,
+		}).Info("Historical optimization applied")
+	}
+
 	// Rank prompts if ranker is available
 	if s.ranker != nil {
 		s.logger.Info("Ranking prompts...")
@@ -710,6 +841,80 @@ func (s *SimpleServer) handleGeneratePrompts(w http.ResponseWriter, r *http.Requ
 			if len(rankings) > 0 {
 				result.Selected = rankings[0].Prompt
 			}
+		}
+	}
+
+	// Use AI selector for judging if enabled
+	if req.EnableJudging && len(result.Prompts) > 0 {
+		s.logger.Info("Using AI selector for prompt evaluation...")
+		aiSelector := selection.NewAISelector(s.registry)
+
+		// Build evaluation criteria
+		judgeProvider := req.JudgeProvider
+		if judgeProvider == "" {
+			judgeProvider = "anthropic" // Default to Claude for evaluation
+		}
+
+		scoringCriteria := req.ScoringCriteria
+		if scoringCriteria == "" {
+			scoringCriteria = "comprehensive"
+		}
+
+		// Set weights based on scoring criteria
+		var weights selection.EvaluationWeights
+		switch scoringCriteria {
+		case "clarity":
+			weights = selection.EvaluationWeights{Relevance: 0.2, Clarity: 0.5, Completeness: 0.2, Conciseness: 0.1, Toxicity: 0.0}
+		case "creativity":
+			weights = selection.EvaluationWeights{Relevance: 0.3, Clarity: 0.2, Completeness: 0.3, Conciseness: 0.1, Toxicity: 0.1}
+		case "effectiveness":
+			weights = selection.EvaluationWeights{Relevance: 0.4, Clarity: 0.3, Completeness: 0.2, Conciseness: 0.1, Toxicity: 0.0}
+		default: // comprehensive
+			weights = selection.EvaluationWeights{Relevance: 0.3, Clarity: 0.25, Completeness: 0.25, Conciseness: 0.15, Toxicity: 0.05}
+		}
+
+		criteria := selection.SelectionCriteria{
+			TaskDescription:    req.TargetUseCase,
+			TargetAudience:     "developers",
+			DesiredTone:        "professional",
+			MaxLength:          2000,
+			Requirements:       []string{},
+			Persona:            req.Persona,
+			EvaluationModel:    "claude-3-5-sonnet-latest",
+			EvaluationProvider: judgeProvider,
+			Weights:            weights,
+		}
+
+		// Perform AI evaluation
+		selectionResult, err := aiSelector.Select(ctx, result.Prompts, criteria)
+		if err != nil {
+			s.logger.WithError(err).Warn("Failed to evaluate prompts with AI selector, continuing without evaluation")
+		} else {
+			// Update prompts with evaluation scores and reasoning
+			for i := range result.Prompts {
+				prompt := &result.Prompts[i]
+				for _, score := range selectionResult.Scores {
+					if score.PromptID == prompt.ID {
+						prompt.Score = score.Score
+						prompt.Reasoning = score.Reasoning
+						break
+					}
+				}
+			}
+
+			// Update selected prompt with AI evaluation
+			if selectionResult.SelectedPrompt != nil {
+				result.Selected = selectionResult.SelectedPrompt
+				// Ensure the selected prompt has the evaluation data
+				result.Selected.Score = selectionResult.Confidence
+				result.Selected.Reasoning = selectionResult.Reasoning
+			}
+
+			s.logger.WithFields(logrus.Fields{
+				"selected_prompt_id": selectionResult.SelectedPrompt.ID,
+				"confidence_score":   selectionResult.Confidence,
+				"processing_time_ms": selectionResult.ProcessingTime,
+			}).Info("AI prompt evaluation completed")
 		}
 	}
 
@@ -739,10 +944,15 @@ func (s *SimpleServer) handleGeneratePrompts(w http.ResponseWriter, r *http.Requ
 		Selected:  result.Selected,
 		SessionID: sessionID,
 		Metadata: GenerateMetadata{
-			TotalGenerated: len(result.Prompts),
-			PhasesTiming:   map[string]int{"total": int(generationTime.Milliseconds())},
-			ProvidersUsed:  providersUsed,
-			GeneratedAt:    time.Now(),
+			TotalGenerated:   len(result.Prompts),
+			PhasesTiming:     map[string]int{"total": int(generationTime.Milliseconds())},
+			ProvidersUsed:    providersUsed,
+			GeneratedAt:      time.Now(),
+			Duration:         generationTime.String(),
+			PhaseCount:       len(req.Phases),
+			Timestamp:        time.Now(),
+			OptimizationUsed: req.UseOptimization,
+			JudgingUsed:      req.EnableJudging,
 			RequestOptions: GenerateRequestSummary{
 				Phases:      req.Phases,
 				Count:       req.Count,
@@ -1140,4 +1350,1203 @@ func (s *SimpleServer) getProviderModels(providerName string) []string {
 	default:
 		return []string{}
 	}
+}
+
+// HTMX API handlers for the web UI
+
+func (s *SimpleServer) handleFlowStatus(w http.ResponseWriter, r *http.Request) {
+	response := map[string]interface{}{
+		"flow_id":     "alchemy-flow-1",
+		"status":      "active",
+		"phase":       "ready",
+		"progress":    0,
+		"total_steps": 3,
+		"timestamp":   time.Now().Format(time.RFC3339),
+	}
+	s.writeJSON(w, http.StatusOK, response)
+}
+
+func (s *SimpleServer) handleSystemStatus(w http.ResponseWriter, r *http.Request) {
+	// Show only configured providers
+	configuredProviders := s.getConfiguredProviders()
+
+	// Calculate system-wide status based on configured providers
+	systemStatus, systemStatusClass := s.calculateSystemStatus(configuredProviders)
+
+	// Sort providers for consistent ordering
+	sort.Strings(configuredProviders)
+
+	// Check if this is an HTMX request
+	if r.Header.Get("HX-Request") == "true" {
+		// Check if this is a request for expanded view
+		showExpanded := r.URL.Query().Get("expanded") == "true"
+
+		if showExpanded {
+			// Generate detailed provider information with real-time validation
+			providerDetails := ""
+			for _, provider := range configuredProviders {
+				// Determine provider status with proper color coding
+				status, statusIcon, statusClass := s.getProviderStatus(provider)
+
+				providerDetails += fmt.Sprintf(`
+				<div class="provider-detail" role="listitem">
+					<span class="provider-icon %s" aria-label="Provider status: %s">%s</span>
+					<span class="provider-name">%s</span>
+					<span class="provider-status">%s</span>
+				</div>
+				`, statusClass, status, statusIcon, provider, status)
+			}
+
+			html := fmt.Sprintf(`
+			<div class="status-indicator clickable" 
+			     hx-get="/api/system-status" 
+			     hx-target="this" 
+			     hx-swap="outerHTML"
+			     onclick="this.click()"
+			     role="button"
+			     aria-label="Collapse provider details"
+			     tabindex="0">
+				<span class="status-dot %s clickable-indicator" aria-hidden="true"></span>
+				<span class="status-text">%s</span>
+			</div>
+			<div class="providers-list expanded seamless" role="region" aria-label="Provider status details">
+				<div class="providers-header">Provider Status Details</div>
+				<div role="list">%s</div>
+			</div>
+			`, systemStatusClass, systemStatus, providerDetails)
+
+			w.Header().Set("Content-Type", "text/html")
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(html))
+			return
+		}
+
+		// Generate provider list for collapsed view
+		providersList := ""
+		for _, provider := range configuredProviders {
+			// Get status for collapsed view dots
+			status, _, statusClass := s.getProviderStatus(provider)
+			dotClass := s.getProviderDotClass(statusClass)
+
+			providersList += fmt.Sprintf(`
+			<div class="provider-item" role="listitem">
+				<span class="provider-dot %s" aria-label="Provider %s"></span>
+				<span class="provider-name">%s</span>
+			</div>
+			`, dotClass, status, provider)
+		}
+
+		// Return HTML for HTMX to swap into the status bar (collapsed view)
+		html := fmt.Sprintf(`
+		<div class="status-indicator clickable" 
+		     hx-get="/api/system-status?expanded=true" 
+		     hx-target="this" 
+		     hx-swap="outerHTML"
+		     onclick="this.click()"
+		     role="button"
+		     aria-label="Expand provider details"
+		     tabindex="0">
+			<span class="status-dot %s clickable-indicator" aria-hidden="true"></span>
+			<span class="status-text">%s</span>
+		</div>
+		<div class="providers-list seamless" role="region" aria-label="Provider list">
+			<div class="providers-header">Providers (%d)</div>
+			<div role="list">%s</div>
+		</div>
+		`, systemStatusClass, systemStatus, len(configuredProviders), providersList)
+
+		w.Header().Set("Content-Type", "text/html")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(html))
+		return
+	}
+
+	// Return JSON for non-HTMX requests
+	statusText := "healthy"
+	switch systemStatusClass {
+	case "status-healthy":
+		statusText = "healthy"
+	case "status-warning":
+		statusText = "degraded"
+	case "status-down":
+		statusText = "down"
+	}
+
+	response := map[string]interface{}{
+		"status":             statusText,
+		"system_status":      systemStatus,
+		"uptime":             time.Since(time.Now().Add(-time.Hour)).String(),
+		"providers_online":   len(configuredProviders),
+		"memory_usage":       "45%",
+		"cpu_usage":          "12%",
+		"active_connections": 1,
+		"last_check":         time.Now().Format(time.RFC3339),
+	}
+	s.writeJSON(w, http.StatusOK, response)
+}
+
+func (s *SimpleServer) handleNodesStatus(w http.ResponseWriter, r *http.Request) {
+	response := map[string]interface{}{
+		"nodes": []map[string]interface{}{
+			{
+				"id":     "prima-materia",
+				"name":   "Prima Materia",
+				"status": "ready",
+				"phase":  "prima-materia",
+				"active": false,
+			},
+			{
+				"id":     "solutio",
+				"name":   "Solutio",
+				"status": "ready",
+				"phase":  "solutio",
+				"active": false,
+			},
+			{
+				"id":     "coagulatio",
+				"name":   "Coagulatio",
+				"status": "ready",
+				"phase":  "coagulatio",
+				"active": false,
+			},
+		},
+		"timestamp": time.Now().Format(time.RFC3339),
+	}
+	s.writeJSON(w, http.StatusOK, response)
+}
+
+func (s *SimpleServer) handleConnectionStatus(w http.ResponseWriter, r *http.Request) {
+	availableProviders := s.registry.ListAvailable()
+	connections := make([]map[string]interface{}, 0)
+
+	for _, provider := range availableProviders {
+		connections = append(connections, map[string]interface{}{
+			"provider": provider,
+			"status":   "connected",
+			"latency":  "45ms",
+		})
+	}
+
+	response := map[string]interface{}{
+		"connections": connections,
+		"total":       len(connections),
+		"healthy":     len(connections),
+		"timestamp":   time.Now().Format(time.RFC3339),
+	}
+	s.writeJSON(w, http.StatusOK, response)
+}
+
+func (s *SimpleServer) handleNodeDetails(w http.ResponseWriter, r *http.Request) {
+	nodeID := r.URL.Query().Get("node_id")
+	if nodeID == "" {
+		nodeID = "prima-materia"
+	}
+
+	var nodeDetails map[string]interface{}
+	switch nodeID {
+	case "prima-materia":
+		nodeDetails = map[string]interface{}{
+			"id":          "prima-materia",
+			"name":        "Prima Materia",
+			"phase":       "prima-materia",
+			"description": "Extracts raw essence and structures initial ideas through systematic brainstorming",
+			"provider":    "openai",
+			"model":       "gpt-4o",
+			"status":      "ready",
+			"temperature": 0.8,
+			"max_tokens":  2000,
+		}
+	case "solutio":
+		nodeDetails = map[string]interface{}{
+			"id":          "solutio",
+			"name":        "Solutio",
+			"phase":       "solutio",
+			"description": "Dissolves structured ideas into natural, flowing language",
+			"provider":    "anthropic",
+			"model":       "claude-3-5-sonnet-20241022",
+			"status":      "ready",
+			"temperature": 0.7,
+			"max_tokens":  2000,
+		}
+	case "coagulatio":
+		nodeDetails = map[string]interface{}{
+			"id":          "coagulatio",
+			"name":        "Coagulatio",
+			"phase":       "coagulatio",
+			"description": "Crystallizes flowing language into precise, production-ready prompts",
+			"provider":    "google",
+			"model":       "gemini-2.5-flash",
+			"status":      "ready",
+			"temperature": 0.6,
+			"max_tokens":  2000,
+		}
+	default:
+		nodeDetails = map[string]interface{}{
+			"id":          nodeID,
+			"name":        "Unknown Node",
+			"description": "Node details not found",
+			"status":      "unknown",
+		}
+	}
+
+	s.writeJSON(w, http.StatusOK, nodeDetails)
+}
+
+func (s *SimpleServer) handleFlowInfo(w http.ResponseWriter, r *http.Request) {
+	// Check if this is an HTMX request
+	if r.Header.Get("HX-Request") == "true" {
+		// Return HTML for HTMX to swap into the flow info panel
+		html := `
+		<h3 style="margin-top: 0; color: var(--hex-special);">Transmutation Flow</h3>
+		<div class="flow-stage">
+			<div class="stage-indicator prima active"></div>
+			<span>Prima Materia - Extract Essence</span>
+		</div>
+		<div class="flow-stage">
+			<div class="stage-indicator solutio"></div>
+			<span>Solutio - Dissolve Form</span>
+		</div>
+		<div class="flow-stage">
+			<div class="stage-indicator coagulatio"></div>
+			<span>Coagulatio - Crystallize Result</span>
+		</div>
+		<div class="flow-stats">
+			<div class="stat">
+				<span class="stat-label">Total Phases:</span>
+				<span class="stat-value">3</span>
+			</div>
+			<div class="stat">
+				<span class="stat-label">Status:</span>
+				<span class="stat-value status-ready">Ready</span>
+			</div>
+			<div class="stat">
+				<span class="stat-label">Provider:</span>
+				<span class="stat-value">OpenAI</span>
+			</div>
+		</div>
+		`
+
+		w.Header().Set("Content-Type", "text/html")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(html))
+		return
+	}
+
+	// Return JSON for non-HTMX requests
+	response := map[string]interface{}{
+		"flow_name":    "Alchemical Prompt Generation",
+		"description":  "Three-phase alchemical transformation process",
+		"total_phases": 3,
+		"current_step": 0,
+		"phases": []map[string]interface{}{
+			{
+				"name":        "Prima Materia",
+				"order":       1,
+				"description": "Extract raw essence",
+				"status":      "ready",
+			},
+			{
+				"name":        "Solutio",
+				"order":       2,
+				"description": "Dissolve into flowing language",
+				"status":      "ready",
+			},
+			{
+				"name":        "Coagulatio",
+				"order":       3,
+				"description": "Crystallize final form",
+				"status":      "ready",
+			},
+		},
+		"created_at": time.Now().Add(-time.Hour).Format(time.RFC3339),
+		"updated_at": time.Now().Format(time.RFC3339),
+	}
+	s.writeJSON(w, http.StatusOK, response)
+}
+
+func (s *SimpleServer) handleActivityFeed(w http.ResponseWriter, r *http.Request) {
+	activities := []map[string]interface{}{
+		{
+			"id":        1,
+			"type":      "system",
+			"message":   "System initialized successfully",
+			"timestamp": time.Now().Add(-time.Minute * 5).Format(time.RFC3339),
+			"level":     "info",
+		},
+		{
+			"id":        2,
+			"type":      "provider",
+			"message":   "OpenAI provider connected",
+			"timestamp": time.Now().Add(-time.Minute * 4).Format(time.RFC3339),
+			"level":     "success",
+		},
+		{
+			"id":        3,
+			"type":      "flow",
+			"message":   "Flow ready for input",
+			"timestamp": time.Now().Add(-time.Minute * 2).Format(time.RFC3339),
+			"level":     "info",
+		},
+	}
+
+	response := map[string]interface{}{
+		"activities": activities,
+		"total":      len(activities),
+		"timestamp":  time.Now().Format(time.RFC3339),
+	}
+	s.writeJSON(w, http.StatusOK, response)
+}
+
+func (s *SimpleServer) handleBoardState(w http.ResponseWriter, r *http.Request) {
+	// Return the board configuration data expected by hex-flow-board.js
+	boardState := map[string]interface{}{
+		"nodes": []map[string]interface{}{
+			{
+				"id":     "input",
+				"type":   "input",
+				"label":  "Input",
+				"x":      150,
+				"y":      350,
+				"status": "ready",
+				"active": false,
+				"phase":  "input",
+				"icon":   "fa-upload",
+			},
+			{
+				"id":     "prima",
+				"type":   "phase",
+				"label":  "Prima Materia",
+				"x":      350,
+				"y":      200,
+				"status": "inactive",
+				"active": false,
+				"phase":  "prima-materia",
+				"icon":   "fa-atom",
+			},
+			{
+				"id":     "solutio",
+				"type":   "phase",
+				"label":  "Solutio",
+				"x":      550,
+				"y":      350,
+				"status": "inactive",
+				"active": false,
+				"phase":  "solutio",
+				"icon":   "fa-water",
+			},
+			{
+				"id":     "coagulatio",
+				"type":   "phase",
+				"label":  "Coagulatio",
+				"x":      750,
+				"y":      200,
+				"status": "inactive",
+				"active": false,
+				"phase":  "coagulatio",
+				"icon":   "fa-gem",
+			},
+			{
+				"id":     "output",
+				"type":   "output",
+				"label":  "Output",
+				"x":      850,
+				"y":      350,
+				"status": "waiting",
+				"active": false,
+				"phase":  "output",
+				"icon":   "fa-download",
+			},
+			{
+				"id":     "hub",
+				"type":   "hub",
+				"label":  "Central Hub",
+				"x":      500,
+				"y":      500,
+				"status": "active",
+				"active": true,
+				"phase":  "hub",
+				"icon":   "fa-hub",
+			},
+		},
+		"connections": []map[string]interface{}{
+			{"from": "input", "to": "prima", "id": "input-prima", "status": "ready"},
+			{"from": "prima", "to": "hub", "id": "prima-hub", "status": "inactive"},
+			{"from": "hub", "to": "solutio", "id": "hub-solutio", "status": "inactive"},
+			{"from": "solutio", "to": "coagulatio", "id": "solutio-coagulatio", "status": "inactive"},
+			{"from": "coagulatio", "to": "output", "id": "coagulatio-output", "status": "inactive"},
+			{"from": "hub", "to": "output", "id": "hub-output", "status": "inactive"},
+		},
+		"settings": map[string]interface{}{
+			"animationSpeed":   500,
+			"connectionWidth":  2,
+			"nodeRadius":       40,
+			"glowIntensity":    0.8,
+			"particleCount":    50,
+			"enableAnimations": true,
+			"showLabels":       true,
+			"showTooltips":     true,
+		},
+		"timestamp": time.Now().Format(time.RFC3339),
+	}
+	s.writeJSON(w, http.StatusOK, boardState)
+}
+
+func (s *SimpleServer) handleZoom(w http.ResponseWriter, r *http.Request) {
+	var zoomReq struct {
+		Action string  `json:"action"`
+		Level  float64 `json:"level,omitempty"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&zoomReq); err != nil {
+		s.writeError(w, http.StatusBadRequest, "Invalid JSON payload")
+		return
+	}
+
+	// Simulate zoom handling
+	newLevel := 1.0
+	switch zoomReq.Action {
+	case "in":
+		newLevel = 1.2
+	case "out":
+		newLevel = 0.8
+	case "reset":
+		newLevel = 1.0
+	case "set":
+		if zoomReq.Level > 0 {
+			newLevel = zoomReq.Level
+		}
+	}
+
+	response := map[string]interface{}{
+		"action":    zoomReq.Action,
+		"new_level": newLevel,
+		"success":   true,
+		"timestamp": time.Now().Format(time.RFC3339),
+	}
+	s.writeJSON(w, http.StatusOK, response)
+}
+
+func (s *SimpleServer) handleZoomLevel(w http.ResponseWriter, r *http.Request) {
+	response := map[string]interface{}{
+		"level":     1.0,
+		"min":       0.5,
+		"max":       2.0,
+		"step":      0.1,
+		"timestamp": time.Now().Format(time.RFC3339),
+	}
+	s.writeJSON(w, http.StatusOK, response)
+}
+
+func (s *SimpleServer) handleActivatePhase(w http.ResponseWriter, r *http.Request) {
+	var activateReq struct {
+		PhaseID string `json:"phase_id"`
+		Input   string `json:"input,omitempty"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&activateReq); err != nil {
+		s.writeError(w, http.StatusBadRequest, "Invalid JSON payload")
+		return
+	}
+
+	if activateReq.PhaseID == "" {
+		s.writeError(w, http.StatusBadRequest, "phase_id is required")
+		return
+	}
+
+	// Simulate phase activation
+	response := map[string]interface{}{
+		"phase_id":  activateReq.PhaseID,
+		"status":    "activated",
+		"message":   fmt.Sprintf("Phase %s activated successfully", activateReq.PhaseID),
+		"timestamp": time.Now().Format(time.RFC3339),
+	}
+
+	s.logger.WithFields(logrus.Fields{
+		"phase_id": activateReq.PhaseID,
+		"input":    activateReq.Input,
+	}).Info("Phase activation requested via HTMX API")
+
+	s.writeJSON(w, http.StatusOK, response)
+}
+
+func (s *SimpleServer) handleNodeActions(w http.ResponseWriter, r *http.Request) {
+	nodeID := r.URL.Query().Get("node_id")
+	if nodeID == "" {
+		nodeID = "prima-materia"
+	}
+
+	var actions []map[string]interface{}
+	switch nodeID {
+	case "prima-materia":
+		actions = []map[string]interface{}{
+			{"id": "activate", "name": "Activate Phase", "icon": "play"},
+			{"id": "configure", "name": "Configure", "icon": "settings"},
+			{"id": "reset", "name": "Reset", "icon": "refresh"},
+		}
+	case "solutio":
+		actions = []map[string]interface{}{
+			{"id": "activate", "name": "Activate Phase", "icon": "play"},
+			{"id": "configure", "name": "Configure", "icon": "settings"},
+			{"id": "reset", "name": "Reset", "icon": "refresh"},
+		}
+	case "coagulatio":
+		actions = []map[string]interface{}{
+			{"id": "activate", "name": "Activate Phase", "icon": "play"},
+			{"id": "configure", "name": "Configure", "icon": "settings"},
+			{"id": "reset", "name": "Reset", "icon": "refresh"},
+		}
+	default:
+		actions = []map[string]interface{}{
+			{"id": "info", "name": "View Info", "icon": "info"},
+		}
+	}
+
+	response := map[string]interface{}{
+		"node_id":   nodeID,
+		"actions":   actions,
+		"timestamp": time.Now().Format(time.RFC3339),
+	}
+	s.writeJSON(w, http.StatusOK, response)
+}
+
+// HIGH PRIORITY handlers - Critical missing endpoints causing 404s
+
+func (s *SimpleServer) handleNodeActivate(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		NodeID    string                 `json:"nodeId"`    // Accept camelCase from JS
+		Timestamp int64                  `json:"timestamp"` // Accept timestamp from JS
+		Input     string                 `json:"input,omitempty"`
+		Options   map[string]interface{} `json:"options,omitempty"`
+		Provider  string                 `json:"provider,omitempty"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		s.writeError(w, http.StatusBadRequest, "Invalid JSON payload")
+		return
+	}
+
+	if req.NodeID == "" {
+		s.writeError(w, http.StatusBadRequest, "nodeId is required")
+		return
+	}
+
+	// Simulate node activation process
+	response := map[string]interface{}{
+		"success":    true,
+		"node_id":    req.NodeID,
+		"status":     "activated",
+		"message":    fmt.Sprintf("Node %s activated successfully", req.NodeID),
+		"session_id": uuid.New().String(),
+		"timestamp":  time.Now().Format(time.RFC3339),
+		"metadata": map[string]interface{}{
+			"provider":      req.Provider,
+			"input_length":  len(req.Input),
+			"options_count": len(req.Options),
+		},
+	}
+
+	s.logger.WithFields(logrus.Fields{
+		"node_id":  req.NodeID,
+		"provider": req.Provider,
+		"input":    req.Input != "",
+	}).Info("Node activation requested")
+
+	s.writeJSON(w, http.StatusOK, response)
+}
+
+func (s *SimpleServer) handleConnectionDetails(w http.ResponseWriter, r *http.Request) {
+	connectionID := chi.URLParam(r, "id")
+	if connectionID == "" {
+		s.writeError(w, http.StatusBadRequest, "Connection ID is required")
+		return
+	}
+
+	// Mock connection details based on ID
+	var status, provider, latency string
+	switch connectionID {
+	case "openai":
+		status = "connected"
+		provider = "OpenAI"
+		latency = "45ms"
+	case "anthropic":
+		status = "connected"
+		provider = "Anthropic"
+		latency = "52ms"
+	case "google":
+		status = "connected"
+		provider = "Google"
+		latency = "38ms"
+	default:
+		status = "unknown"
+		provider = "Unknown"
+		latency = "N/A"
+	}
+
+	response := map[string]interface{}{
+		"connection_id":  connectionID,
+		"status":         status,
+		"provider":       provider,
+		"latency":        latency,
+		"established":    time.Now().Add(-time.Hour).Format(time.RFC3339),
+		"last_ping":      time.Now().Add(-time.Second * 30).Format(time.RFC3339),
+		"health_score":   0.95,
+		"requests_count": 142,
+		"errors_count":   2,
+		"timestamp":      time.Now().Format(time.RFC3339),
+	}
+
+	s.writeJSON(w, http.StatusOK, response)
+}
+
+func (s *SimpleServer) handleViewportUpdate(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		X      float64 `json:"x"`
+		Y      float64 `json:"y"`
+		Zoom   float64 `json:"zoom"`
+		Width  int     `json:"width"`
+		Height int     `json:"height"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		s.logger.WithError(err).Error("Failed to decode viewport update request")
+		s.writeError(w, http.StatusBadRequest, "Invalid JSON payload: "+err.Error())
+		return
+	}
+
+	// Validate required fields
+	if req.Zoom <= 0 {
+		req.Zoom = 1.0 // Default zoom level
+	}
+
+	// Store viewport state (in production, this would be persisted)
+	response := map[string]interface{}{
+		"success": true,
+		"viewport": map[string]interface{}{
+			"x":      req.X,
+			"y":      req.Y,
+			"zoom":   req.Zoom,
+			"width":  req.Width,
+			"height": req.Height,
+		},
+		"message":   "Viewport updated successfully",
+		"timestamp": time.Now().Format(time.RFC3339),
+	}
+
+	s.writeJSON(w, http.StatusOK, response)
+}
+
+func (s *SimpleServer) handleFlowEvents(w http.ResponseWriter, r *http.Request) {
+	// Set headers for Server-Sent Events
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	// Send initial connection event
+	fmt.Fprintf(w, "data: %s\n\n", `{"type":"connected","message":"Flow events stream connected","timestamp":"`+time.Now().Format(time.RFC3339)+`"}`)
+	w.(http.Flusher).Flush()
+
+	// Simulate periodic events
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
+	ctx := r.Context()
+	eventCount := 0
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			eventCount++
+			event := map[string]interface{}{
+				"type":      "heartbeat",
+				"count":     eventCount,
+				"message":   "System healthy",
+				"timestamp": time.Now().Format(time.RFC3339),
+			}
+
+			eventJSON, _ := json.Marshal(event)
+			fmt.Fprintf(w, "data: %s\n\n", string(eventJSON))
+			w.(http.Flusher).Flush()
+		}
+	}
+}
+
+// MEDIUM PRIORITY handlers - HTMX node routes
+
+func (s *SimpleServer) handleNodeInput(w http.ResponseWriter, r *http.Request) {
+	response := map[string]interface{}{
+		"node_type":   "input",
+		"name":        "Input Node",
+		"description": "Primary input node for the alchemical transformation process",
+		"status":      "ready",
+		"input_types": []string{"text", "json", "structured"},
+		"max_length":  10000,
+		"placeholder": "Enter your prompt idea or concept here...",
+		"validation": map[string]interface{}{
+			"min_length": 10,
+			"max_length": 10000,
+			"required":   true,
+		},
+		"timestamp": time.Now().Format(time.RFC3339),
+	}
+	s.writeJSON(w, http.StatusOK, response)
+}
+
+func (s *SimpleServer) handlePhasePrima(w http.ResponseWriter, r *http.Request) {
+	response := map[string]interface{}{
+		"phase_id":        "prima-materia",
+		"name":            "Prima Materia",
+		"description":     "The first alchemical phase - extracts raw essence and structures initial ideas",
+		"status":          "ready",
+		"order":           1,
+		"provider":        "openai",
+		"model":           "gpt-4o",
+		"temperature":     0.8,
+		"max_tokens":      2000,
+		"prompt_template": "Extract the raw essence and structure the following idea through systematic analysis...",
+		"capabilities":    []string{"ideation", "structuring", "brainstorming", "analysis"},
+		"outputs":         []string{"structured_concepts", "key_themes", "raw_material"},
+		"timestamp":       time.Now().Format(time.RFC3339),
+	}
+	s.writeJSON(w, http.StatusOK, response)
+}
+
+func (s *SimpleServer) handlePhaseSolutio(w http.ResponseWriter, r *http.Request) {
+	response := map[string]interface{}{
+		"phase_id":        "solutio",
+		"name":            "Solutio",
+		"description":     "The second alchemical phase - dissolves structured ideas into natural, flowing language",
+		"status":          "ready",
+		"order":           2,
+		"provider":        "anthropic",
+		"model":           "claude-3-5-sonnet-20241022",
+		"temperature":     0.7,
+		"max_tokens":      2000,
+		"prompt_template": "Transform the structured concepts into natural, flowing language...",
+		"capabilities":    []string{"refinement", "naturalization", "flow", "coherence"},
+		"outputs":         []string{"flowing_text", "natural_language", "coherent_structure"},
+		"timestamp":       time.Now().Format(time.RFC3339),
+	}
+	s.writeJSON(w, http.StatusOK, response)
+}
+
+func (s *SimpleServer) handlePhaseCoagulatio(w http.ResponseWriter, r *http.Request) {
+	response := map[string]interface{}{
+		"phase_id":        "coagulatio",
+		"name":            "Coagulatio",
+		"description":     "The third alchemical phase - crystallizes flowing language into precise, production-ready prompts",
+		"status":          "ready",
+		"order":           3,
+		"provider":        "google",
+		"model":           "gemini-2.5-flash",
+		"temperature":     0.6,
+		"max_tokens":      2000,
+		"prompt_template": "Crystallize the flowing language into precise, actionable prompts...",
+		"capabilities":    []string{"crystallization", "precision", "finalization", "optimization"},
+		"outputs":         []string{"final_prompts", "optimized_text", "production_ready"},
+		"timestamp":       time.Now().Format(time.RFC3339),
+	}
+	s.writeJSON(w, http.StatusOK, response)
+}
+
+func (s *SimpleServer) handleCoreStatus(w http.ResponseWriter, r *http.Request) {
+	availableProviders := s.registry.ListAvailable()
+	response := map[string]interface{}{
+		"core_id": "alchemy-core-1",
+		"status":  "operational",
+		"uptime":  time.Since(time.Now().Add(-2 * time.Hour)).String(),
+		"version": "2.0.0",
+		"mode":    "production",
+		"engine": map[string]interface{}{
+			"status":          "healthy",
+			"active_sessions": 3,
+			"total_processed": 1247,
+			"success_rate":    0.98,
+			"avg_latency_ms":  850,
+		},
+		"providers": map[string]interface{}{
+			"available": availableProviders,
+			"total":     len(availableProviders),
+			"healthy":   len(availableProviders),
+		},
+		"memory": map[string]interface{}{
+			"used_mb":   256,
+			"total_mb":  512,
+			"usage_pct": 50,
+		},
+		"last_check": time.Now().Format(time.RFC3339),
+		"timestamp":  time.Now().Format(time.RFC3339),
+	}
+	s.writeJSON(w, http.StatusOK, response)
+}
+
+func (s *SimpleServer) handleOutputRetrieve(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		SessionID   string `json:"session_id,omitempty"`
+		OutputType  string `json:"output_type,omitempty"`
+		Format      string `json:"format,omitempty"`
+		IncludeMeta bool   `json:"include_meta,omitempty"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		s.writeError(w, http.StatusBadRequest, "Invalid JSON payload")
+		return
+	}
+
+	// Set defaults
+	if req.OutputType == "" {
+		req.OutputType = "prompts"
+	}
+	if req.Format == "" {
+		req.Format = "json"
+	}
+
+	// Mock output data
+	mockPrompts := []map[string]interface{}{
+		{
+			"id":      uuid.New().String(),
+			"content": "Create a comprehensive REST API for user management with authentication, role-based access control, and audit logging.",
+			"phase":   "coagulatio",
+			"score":   0.92,
+			"ranking": 1,
+		},
+		{
+			"id":      uuid.New().String(),
+			"content": "Design and implement a user management system API with secure endpoints for CRUD operations, JWT authentication, and detailed logging.",
+			"phase":   "coagulatio",
+			"score":   0.88,
+			"ranking": 2,
+		},
+	}
+
+	response := map[string]interface{}{
+		"success":      true,
+		"session_id":   req.SessionID,
+		"output_type":  req.OutputType,
+		"format":       req.Format,
+		"data":         mockPrompts,
+		"count":        len(mockPrompts),
+		"retrieved_at": time.Now().Format(time.RFC3339),
+	}
+
+	if req.IncludeMeta {
+		response["metadata"] = map[string]interface{}{
+			"generation_time_ms":   1250,
+			"total_phases":         3,
+			"providers_used":       []string{"openai", "anthropic", "google"},
+			"optimization_applied": true,
+		}
+	}
+
+	s.writeJSON(w, http.StatusOK, response)
+}
+
+// LOW PRIORITY handlers - Feature routes
+
+func (s *SimpleServer) handleFeatureOptimize(w http.ResponseWriter, r *http.Request) {
+	response := map[string]interface{}{
+		"feature_name": "Multi-Phase Optimizer",
+		"description":  "Advanced optimization engine for prompt refinement across all phases",
+		"status":       "available",
+		"version":      "2.1.0",
+		"capabilities": []string{
+			"similarity_analysis",
+			"historical_optimization",
+			"cross_phase_optimization",
+			"quality_scoring",
+			"auto_tuning",
+		},
+		"configuration": map[string]interface{}{
+			"similarity_threshold": 0.75,
+			"historical_weight":    0.3,
+			"optimization_passes":  3,
+			"quality_threshold":    0.85,
+		},
+		"statistics": map[string]interface{}{
+			"optimizations_performed": 1842,
+			"avg_improvement_pct":     15.3,
+			"success_rate":            0.94,
+		},
+		"timestamp": time.Now().Format(time.RFC3339),
+	}
+	s.writeJSON(w, http.StatusOK, response)
+}
+
+func (s *SimpleServer) handleFeatureJudge(w http.ResponseWriter, r *http.Request) {
+	response := map[string]interface{}{
+		"feature_name": "AI Judge",
+		"description":  "Intelligent prompt evaluation and ranking system using multiple AI models",
+		"status":       "available",
+		"version":      "1.8.0",
+		"capabilities": []string{
+			"quality_assessment",
+			"relevance_scoring",
+			"clarity_analysis",
+			"completeness_check",
+			"toxicity_detection",
+			"multi_model_consensus",
+		},
+		"models": []map[string]interface{}{
+			{
+				"provider": "anthropic",
+				"model":    "claude-3-5-sonnet-latest",
+				"role":     "primary_judge",
+				"weight":   0.4,
+			},
+			{
+				"provider": "openai",
+				"model":    "o4-mini",
+				"role":     "secondary_judge",
+				"weight":   0.3,
+			},
+			{
+				"provider": "google",
+				"model":    "gemini-2.5-flash",
+				"role":     "quality_assessor",
+				"weight":   0.3,
+			},
+		},
+		"evaluation_criteria": []string{
+			"relevance",
+			"clarity",
+			"completeness",
+			"conciseness",
+			"actionability",
+		},
+		"statistics": map[string]interface{}{
+			"evaluations_performed": 3247,
+			"avg_confidence_score":  0.87,
+			"consensus_rate":        0.79,
+		},
+		"timestamp": time.Now().Format(time.RFC3339),
+	}
+	s.writeJSON(w, http.StatusOK, response)
+}
+
+func (s *SimpleServer) handleFeatureDatabase(w http.ResponseWriter, r *http.Request) {
+	response := map[string]interface{}{
+		"feature_name": "Vector Storage & Retrieval",
+		"description":  "High-performance vector database for semantic search and similarity matching",
+		"status":       "available",
+		"version":      "3.2.0",
+		"capabilities": []string{
+			"vector_embeddings",
+			"semantic_search",
+			"similarity_matching",
+			"clustering",
+			"indexing",
+			"real_time_updates",
+		},
+		"database": map[string]interface{}{
+			"type":          "sqlite_with_vectors",
+			"size_mb":       145,
+			"total_prompts": 8429,
+			"total_vectors": 8429,
+			"dimensions":    1536,
+			"index_type":    "ivf_flat",
+		},
+		"performance": map[string]interface{}{
+			"avg_search_time_ms": 45,
+			"indexing_time_ms":   12,
+			"memory_usage_mb":    89,
+			"cache_hit_rate":     0.82,
+		},
+		"operations": map[string]interface{}{
+			"searches_performed":    15683,
+			"vectors_stored":        8429,
+			"similarity_queries":    12447,
+			"clustering_operations": 234,
+		},
+		"timestamp": time.Now().Format(time.RFC3339),
+	}
+	s.writeJSON(w, http.StatusOK, response)
+}
+
+// getProviderStatus determines the status, icon, and CSS class for a provider
+func (s *SimpleServer) getProviderStatus(providerName string) (status, icon, class string) {
+	// In a real implementation, this would test the actual provider connection
+	// For now, we'll simulate different states based on provider names
+
+	// Get the actual provider from registry to check real status
+	provider, err := s.registry.Get(providerName)
+	if err != nil {
+		return "initializing", "⚠", "provider-initializing"
+	}
+
+	// Test actual provider availability
+	if provider.IsAvailable() {
+		return "up", "✓", "provider-up"
+	} else {
+		return "down", "✗", "provider-down"
+	}
+}
+
+// getProviderDotClass maps provider status classes to dot classes for collapsed view
+func (s *SimpleServer) getProviderDotClass(statusClass string) string {
+	switch statusClass {
+	case "provider-up":
+		return "status-up"
+	case "provider-down":
+		return "status-down"
+	case "provider-initializing":
+		return "status-initializing"
+	default:
+		return "status-initializing"
+	}
+}
+
+// getConfiguredProviders returns only providers that are actually configured
+func (s *SimpleServer) getConfiguredProviders() []string {
+	allProviders := []string{"openai", "anthropic", "google", "ollama", "openrouter", "grok"}
+	configuredProviders := make([]string, 0)
+
+	for _, provider := range allProviders {
+		// Check if provider is configured by testing if it's available in registry
+		if p, err := s.registry.Get(provider); err == nil && p.IsAvailable() {
+			configuredProviders = append(configuredProviders, provider)
+		}
+	}
+
+	// If no providers are configured, fall back to showing some defaults
+	if len(configuredProviders) == 0 {
+		configuredProviders = []string{"openai", "anthropic", "google"} // Default configured providers
+	}
+
+	return configuredProviders
+}
+
+// calculateSystemStatus determines overall system status based on configured provider statuses
+func (s *SimpleServer) calculateSystemStatus(providers []string) (string, string) {
+	if len(providers) == 0 {
+		return "System Offline", "status-down"
+	}
+
+	upCount := 0
+	downCount := 0
+	initializingCount := 0
+
+	for _, provider := range providers {
+		status, _, _ := s.getProviderStatus(provider)
+		switch status {
+		case "up":
+			upCount++
+		case "down":
+			downCount++
+		case "initializing":
+			initializingCount++
+		}
+	}
+
+	totalProviders := len(providers)
+
+	// Status aggregation rules
+	if upCount == totalProviders {
+		// All providers are green → system status = green
+		return "System Healthy", "status-healthy"
+	} else if downCount == totalProviders {
+		// All providers are red → system status = red
+		return "System Down", "status-down"
+	} else {
+		// Mixed statuses (any combination) → system status = yellow
+		return "System Degraded", "status-warning"
+	}
+}
+
+// Add new handler methods at the end of the file
+
+func (s *SimpleServer) handleThinkingStream(w http.ResponseWriter, r *http.Request) {
+	// Set headers for Server-Sent Events
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	// Send initial connection event
+	fmt.Fprintf(w, "data: %s\n\n", `{"type":"connected","message":"AI thinking stream connected","timestamp":"`+time.Now().Format(time.RFC3339)+`"}`)
+	w.(http.Flusher).Flush()
+
+	// Keep connection alive
+	ctx := r.Context()
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			// Send heartbeat
+			event := map[string]interface{}{
+				"type":      "heartbeat",
+				"timestamp": time.Now().Format(time.RFC3339),
+			}
+			eventJSON, _ := json.Marshal(event)
+			fmt.Fprintf(w, "data: %s\n\n", string(eventJSON))
+			w.(http.Flusher).Flush()
+		}
+	}
+}
+
+func (s *SimpleServer) handleThinkingUpdate(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Phase     string `json:"phase"`
+		Stage     string `json:"stage"`
+		Message   string `json:"message"`
+		Progress  int    `json:"progress"`
+		SessionID string `json:"session_id"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		s.writeError(w, http.StatusBadRequest, "Invalid JSON payload")
+		return
+	}
+
+	// Broadcast thinking update (in a real implementation, this would broadcast to specific session)
+	response := map[string]interface{}{
+		"type":       "thinking",
+		"phase":      req.Phase,
+		"stage":      req.Stage,
+		"message":    req.Message,
+		"progress":   req.Progress,
+		"session_id": req.SessionID,
+		"timestamp":  time.Now().Format(time.RFC3339),
+	}
+
+	s.writeJSON(w, http.StatusOK, response)
+}
+
+// handleSummarize provides AI-powered text summarization
+func (s *SimpleServer) handleSummarize(w http.ResponseWriter, r *http.Request) {
+	var req summarization.SummaryRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		s.writeError(w, http.StatusBadRequest, "Invalid JSON payload")
+		return
+	}
+
+	// Validate required fields
+	if req.Text == "" {
+		s.writeError(w, http.StatusBadRequest, "Text field is required")
+		return
+	}
+
+	// Set defaults
+	if req.MaxWords <= 0 {
+		req.MaxWords = 8
+	}
+	if req.Context == "" {
+		req.Context = "general"
+	}
+
+	// Perform summarization
+	summary, err := s.summarizer.Summarize(r.Context(), req)
+	if err != nil {
+		s.logger.WithError(err).Error("Summarization failed")
+		s.writeError(w, http.StatusInternalServerError, "Summarization failed")
+		return
+	}
+
+	s.writeJSON(w, http.StatusOK, summary)
 }

@@ -56,7 +56,8 @@ func runServeAPI(cmd *cobra.Command, args []string) error {
 	// Initialize learner (optional)
 	var learner *learning.LearningEngine
 	if viper.GetBool("learning_mode") {
-		learner = learning.NewLearningEngine(store, logger)
+		learner = learning.NewLearningEngine(store, registry, logger)
+		learner.StartBackgroundLearning(ctx)
 	}
 
 	// Override port from flag if provided

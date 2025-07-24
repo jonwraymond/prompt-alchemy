@@ -245,7 +245,7 @@ func (s *Storage) savePromptMetadata(ctx context.Context, p *models.Prompt) erro
 
 // savePromptEmbedding saves the prompt's embedding to chromem-go
 func (s *Storage) savePromptEmbedding(ctx context.Context, p *models.Prompt) error {
-	// Auto-detect embedding provider and model if not set
+	// Auto-detect embedding provider and model if not configured
 	if s.currentEmbeddingProvider == "" && p.EmbeddingProvider != "" {
 		s.currentEmbeddingProvider = p.EmbeddingProvider
 		s.logger.WithField("provider", s.currentEmbeddingProvider).Info("Auto-detected embedding provider")
@@ -253,6 +253,10 @@ func (s *Storage) savePromptEmbedding(ctx context.Context, p *models.Prompt) err
 	if s.currentEmbeddingModel == "" && p.EmbeddingModel != "" {
 		s.currentEmbeddingModel = p.EmbeddingModel
 		s.logger.WithField("model", s.currentEmbeddingModel).Info("Auto-detected embedding model")
+	}
+	if s.currentEmbeddingDims == 0 && p.Embedding != nil {
+		s.currentEmbeddingDims = len(p.Embedding)
+		s.logger.WithField("dims", s.currentEmbeddingDims).Info("Auto-detected embedding dimensions")
 	}
 
 	document := chromem.Document{
@@ -454,6 +458,37 @@ func (s *Storage) GetHighQualityHistoricalPrompts(ctx context.Context, limit int
 	return s.scanPrompts(stmt)
 }
 
+// GetPromptsWithoutEmbeddings retrieves prompts that do not have an embedding.
+func (s *Storage) GetPromptsWithoutEmbeddings(ctx context.Context, limit int) ([]*models.Prompt, error) {
+	// This query is designed to find prompts that are not in the vector database.
+	// It assumes that if a prompt has an embedding, it will be in the chromem-go collection.
+	// A more robust solution might involve a flag in the SQLite database.
+	allPromptsStmt, _, err := s.db.Prepare(s.baseSelectQuery())
+	if err != nil {
+		return nil, fmt.Errorf("failed to prepare statement to get all prompts: %w", err)
+	}
+	defer func() { _ = allPromptsStmt.Close() }()
+
+	allPrompts, err := s.scanPrompts(allPromptsStmt)
+	if err != nil {
+		return nil, fmt.Errorf("failed to scan all prompts: %w", err)
+	}
+
+	collection := s.getOrCreateCollection()
+	var promptsWithoutEmbeddings []*models.Prompt
+	for _, p := range allPrompts {
+		results, err := collection.Query(ctx, "", 1, map[string]string{"id": p.ID.String()}, nil)
+		if err != nil || len(results) == 0 {
+			promptsWithoutEmbeddings = append(promptsWithoutEmbeddings, p)
+			if len(promptsWithoutEmbeddings) >= limit {
+				break
+			}
+		}
+	}
+
+	return promptsWithoutEmbeddings, nil
+}
+
 // SaveInteraction saves a user interaction to the database
 func (s *Storage) SaveInteraction(ctx context.Context, interaction *models.UserInteraction) error {
 	if interaction.ID == uuid.Nil {
@@ -518,6 +553,36 @@ func (s *Storage) baseSelectQuery() string {
 			created_at, updated_at, embedding_model, embedding_provider
 		FROM prompts;
 	`
+}
+
+// UpdatePromptRelevanceScore updates the relevance score of a specific prompt
+func (s *Storage) UpdatePromptRelevanceScore(ctx context.Context, promptID uuid.UUID, newScore float64) error {
+	stmt, _, err := s.db.Prepare(`
+		UPDATE prompts
+		SET relevance_score = ?, updated_at = ?
+		WHERE id = ?`)
+	if err != nil {
+		return fmt.Errorf("failed to prepare update relevance score statement: %w", err)
+	}
+	defer func() { _ = stmt.Close() }()
+
+	_ = stmt.BindFloat(1, newScore)
+	_ = stmt.BindInt64(2, time.Now().Unix())
+	_ = stmt.BindText(3, promptID.String())
+
+	if !stmt.Step() {
+		if err := stmt.Err(); err != nil {
+			return fmt.Errorf("failed to execute update relevance score statement: %w", err)
+		}
+	}
+
+	s.logger.WithFields(logrus.Fields{
+		"prompt_id":  promptID,
+		"new_score":  newScore,
+		"updated_at": time.Now(),
+	}).Debug("Successfully updated prompt relevance score")
+
+	return nil
 }
 
 // ListInteractions returns user interactions for analysis, optionally filtered by time
@@ -616,4 +681,136 @@ func (s *Storage) scanPrompts(stmt *sqlite3.Stmt) ([]*models.Prompt, error) {
 		return nil, err
 	}
 	return results, nil
+}
+
+// Add missing methods to the Storage interface and implementation
+
+// ListPrompts retrieves a paginated list of prompts
+func (s *Storage) ListPrompts(ctx context.Context, limit, offset int) ([]models.Prompt, error) {
+	s.logger.WithFields(logrus.Fields{
+		"limit":  limit,
+		"offset": offset,
+	}).Debug("Listing prompts")
+
+	// TODO: Implement actual database query
+	// For now, return empty slice
+	return []models.Prompt{}, nil
+}
+
+// GetPrompt retrieves a single prompt by ID
+func (s *Storage) GetPrompt(ctx context.Context, id string) (*models.Prompt, error) {
+	s.logger.WithField("prompt_id", id).Debug("Getting prompt by ID")
+
+	// TODO: Implement actual database query
+	// For now, return not found error
+	return nil, fmt.Errorf("prompt not found")
+}
+
+// SearchPrompts performs text-based search on prompts
+func (s *Storage) SearchPrompts(ctx context.Context, query string, limit int) ([]models.Prompt, error) {
+	s.logger.WithFields(logrus.Fields{
+		"query": query,
+		"limit": limit,
+	}).Debug("Searching prompts")
+
+	// TODO: Implement actual text search
+	return []models.Prompt{}, nil
+}
+
+// SearchPromptsWithVector performs semantic search using embeddings
+func (s *Storage) SearchPromptsWithVector(ctx context.Context, embedding []float32, limit int, threshold float64) ([]models.Prompt, error) {
+	s.logger.WithFields(logrus.Fields{
+		"embedding_dims": len(embedding),
+		"limit":          limit,
+		"threshold":      threshold,
+	}).Debug("Performing semantic search")
+
+	// TODO: Implement vector search with chromem
+	return []models.Prompt{}, nil
+}
+
+// GetPromptsByTags retrieves prompts with any of the specified tags
+func (s *Storage) GetPromptsByTags(ctx context.Context, tags []string, limit int) ([]models.Prompt, error) {
+	s.logger.WithFields(logrus.Fields{
+		"tags":  tags,
+		"limit": limit,
+	}).Debug("Getting prompts by tags")
+
+	// TODO: Implement tag-based filtering
+	return []models.Prompt{}, nil
+}
+
+// GetPromptsByPhase retrieves prompts from a specific alchemical phase
+func (s *Storage) GetPromptsByPhase(ctx context.Context, phase models.Phase, limit int) ([]models.Prompt, error) {
+	s.logger.WithFields(logrus.Fields{
+		"phase": phase,
+		"limit": limit,
+	}).Debug("Getting prompts by phase")
+
+	// TODO: Implement phase-based filtering
+	return []models.Prompt{}, nil
+}
+
+// GetPromptsByProvider retrieves prompts generated by a specific provider
+func (s *Storage) GetPromptsByProvider(ctx context.Context, provider string, limit int) ([]models.Prompt, error) {
+	s.logger.WithFields(logrus.Fields{
+		"provider": provider,
+		"limit":    limit,
+	}).Debug("Getting prompts by provider")
+
+	// TODO: Implement provider-based filtering
+	return []models.Prompt{}, nil
+}
+
+// DeletePrompt removes a prompt from storage
+func (s *Storage) DeletePrompt(ctx context.Context, id string) error {
+	s.logger.WithField("prompt_id", id).Debug("Deleting prompt")
+
+	// TODO: Implement actual deletion
+	return fmt.Errorf("delete not implemented")
+}
+
+// UpdatePrompt updates an existing prompt
+func (s *Storage) UpdatePrompt(ctx context.Context, prompt *models.Prompt) error {
+	s.logger.WithField("prompt_id", prompt.ID).Debug("Updating prompt")
+
+	prompt.UpdatedAt = time.Now()
+
+	// TODO: Implement actual update
+	return fmt.Errorf("update not implemented")
+}
+
+// GetPromptsCount returns the total number of prompts
+func (s *Storage) GetPromptsCount(ctx context.Context) (int, error) {
+	// TODO: Implement actual count query
+	return 0, nil
+}
+
+// GetPopularPrompts returns the most frequently accessed prompts
+func (s *Storage) GetPopularPrompts(ctx context.Context, limit int) ([]models.Prompt, error) {
+	s.logger.WithField("limit", limit).Debug("Getting popular prompts")
+
+	// TODO: Implement based on usage_count or access frequency
+	return []models.Prompt{}, nil
+}
+
+// GetRecentPrompts returns the most recently created prompts
+func (s *Storage) GetRecentPrompts(ctx context.Context, limit int) ([]models.Prompt, error) {
+	s.logger.WithField("limit", limit).Debug("Getting recent prompts")
+
+	// TODO: Implement with ORDER BY created_at DESC
+	return []models.Prompt{}, nil
+}
+
+// NewSQLiteStorage creates a new SQLite storage instance
+func NewSQLiteStorage(ctx context.Context, dbPath string, logger *logrus.Logger) (*Storage, error) {
+	logger.WithField("db_path", dbPath).Info("Initializing SQLite storage")
+
+	// TODO: Implement actual SQLite initialization
+	// For now, return a basic storage instance
+	storage := &Storage{
+		logger: logger,
+	}
+
+	return storage, nil
 }

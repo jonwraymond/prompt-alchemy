@@ -1,0 +1,1294 @@
+openapi: 3.1.0
+info:
+  title: Prompt Alchemy API
+  description: |
+    HTTP API for Prompt Alchemy - an alchemical prompt generation and optimization system.
+    
+    ## Overview
+    
+    Prompt Alchemy uses a three-phase alchemical process to generate and refine prompts:
+    - **Prima Materia**: Raw material extraction - generates initial prompt ideas
+    - **Solutio**: Dissolution - refines and humanizes prompts  
+    - **Coagulatio**: Crystallization - creates precise, optimized final prompts
+    
+    ## Authentication
+    
+    The API supports multiple authentication methods:
+    - API Key in header: `Authorization: Bearer <api_key>`
+    - API Key in header: `X-API-Key: <api_key>`
+    - API Key in query parameter: `?api_key=<api_key>`
+    
+    ## Rate Limiting
+    
+    Rate limits are applied per IP address:
+    - Default: 60 requests per minute
+    - Burst: 100 requests
+    
+    Rate limit headers are included in responses:
+    - `X-RateLimit-Limit`: Requests per minute
+    - `X-RateLimit-Remaining`: Remaining requests
+    - `X-RateLimit-Reset`: Reset time (Unix timestamp)
+    
+  version: 1.0.0
+  contact:
+    name: Prompt Alchemy Support
+    url: https://github.com/jonwraymond/prompt-alchemy
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+  - url: https://api.promptalchemy.dev
+    description: Production server
+
+security:
+  - ApiKeyAuth: []
+  - BearerAuth: []
+
+paths:
+  # Health and Info Endpoints
+  /health:
+    get:
+      summary: Health Check
+      description: Returns the health status of the API server
+      operationId: getHealth
+      tags:
+        - System
+      security: []
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                status: "healthy"
+                timestamp: "2024-01-15T10:30:00Z"
+                version: "1.0.0"
+
+  /version:
+    get:
+      summary: API Version
+      description: Returns the API version information
+      operationId: getVersion
+      tags:
+        - System
+      security: []
+      responses:
+        '200':
+          description: Version information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionResponse'
+
+  # API v1 Endpoints
+  /api/v1/status:
+    get:
+      summary: Detailed Status
+      description: Returns detailed status information including learning mode and uptime
+      operationId: getStatus
+      tags:
+        - System
+      responses:
+        '200':
+          description: Detailed status information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+
+  /api/v1/info:
+    get:
+      summary: API Information
+      description: Returns information about available endpoints and capabilities
+      operationId: getInfo
+      tags:
+        - System
+      responses:
+        '200':
+          description: API information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InfoResponse'
+
+  # Prompt Endpoints
+  /api/v1/prompts:
+    get:
+      summary: List Prompts
+      description: Retrieve a paginated list of prompts
+      operationId: listPrompts
+      tags:
+        - Prompts
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/TagsParam'
+        - $ref: '#/components/parameters/PhaseParam'
+        - $ref: '#/components/parameters/ProviderParam'
+      responses:
+        '200':
+          description: List of prompts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPromptsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      summary: Create Prompt
+      description: Create a new prompt manually
+      operationId: createPrompt
+      tags:
+        - Prompts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePromptRequest'
+      responses:
+        '201':
+          description: Prompt created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PromptResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/prompts/generate:
+    post:
+      summary: Generate Prompts
+      description: |
+        Generate prompts using the alchemical process.
+        
+        The system will process your input through multiple phases:
+        1. **Prima Materia** - Extract raw prompt material
+        2. **Solutio** - Dissolve and refine the prompts
+        3. **Coagulatio** - Crystallize into final optimized prompts
+        
+        You can customize which providers are used for each phase,
+        adjust generation parameters, and specify the number of variants to create.
+      operationId: generatePrompts
+      tags:
+        - Prompts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateRequest'
+            examples:
+              basic:
+                summary: Basic generation
+                value:
+                  input: "Create a REST API for user management"
+                  count: 3
+              advanced:
+                summary: Advanced generation
+                value:
+                  input: "Design a machine learning pipeline for image classification"
+                  phases: ["prima-materia", "solutio", "coagulatio"]
+                  count: 5
+                  providers:
+                    prima-materia: "openai"
+                    solutio: "anthropic"
+                    coagulatio: "google"
+                  temperature: 0.8
+                  max_tokens: 3000
+                  tags: ["ml", "computer-vision"]
+                  persona: "technical"
+                  save: true
+      responses:
+        '200':
+          description: Prompts generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerateResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/prompts/search:
+    get:
+      summary: Search Prompts
+      description: Search for prompts using text-based or semantic search
+      operationId: searchPrompts
+      tags:
+        - Prompts
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: Search query
+          schema:
+            type: string
+            example: "API design patterns"
+        - name: semantic
+          in: query
+          description: Use semantic search instead of text search
+          schema:
+            type: boolean
+            default: false
+        - $ref: '#/components/parameters/LimitParam'
+        - name: threshold
+          in: query
+          description: Minimum similarity threshold for semantic search (0.0-1.0)
+          schema:
+            type: number
+            format: float
+            minimum: 0.0
+            maximum: 1.0
+            default: 0.7
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/prompts/{id}:
+    get:
+      summary: Get Prompt
+      description: Retrieve a specific prompt by ID
+      operationId: getPrompt
+      tags:
+        - Prompts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Prompt ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Prompt details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PromptResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    put:
+      summary: Update Prompt
+      description: Update an existing prompt
+      operationId: updatePrompt
+      tags:
+        - Prompts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Prompt ID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePromptRequest'
+      responses:
+        '200':
+          description: Prompt updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PromptResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      summary: Delete Prompt
+      description: Delete a prompt
+      operationId: deletePrompt
+      tags:
+        - Prompts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Prompt ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Prompt deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # Provider Endpoints
+  /api/v1/providers:
+    get:
+      summary: List Providers
+      description: Get list of available AI providers and their capabilities
+      operationId: listProviders
+      tags:
+        - Providers
+      responses:
+        '200':
+          description: List of providers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProvidersResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # Optimization Endpoints
+  /api/v1/optimize:
+    post:
+      summary: Optimize Prompt
+      description: Optimize an existing prompt for better performance
+      operationId: optimizePrompt
+      tags:
+        - Optimization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OptimizeRequest'
+      responses:
+        '200':
+          description: Prompt optimized successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OptimizeResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '501':
+          $ref: '#/components/responses/NotImplemented'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # Selection Endpoints
+  /api/v1/select:
+    post:
+      summary: Select Best Prompt
+      description: Use AI to select the best prompt from a set of candidates
+      operationId: selectPrompt
+      tags:
+        - Selection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SelectRequest'
+      responses:
+        '200':
+          description: Best prompt selected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SelectResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '501':
+          $ref: '#/components/responses/NotImplemented'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # Batch Endpoints
+  /api/v1/batch:
+    post:
+      summary: Batch Generate
+      description: Generate prompts for multiple inputs in a single request
+      operationId: batchGenerate
+      tags:
+        - Batch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchRequest'
+      responses:
+        '200':
+          description: Batch generation completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '501':
+          $ref: '#/components/responses/NotImplemented'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+# Components section for reusable schemas, parameters, and responses
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerAuth:
+      type: http
+      scheme: bearer
+
+  parameters:
+    PageParam:
+      name: page
+      in: query
+      description: Page number (1-based)
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    
+    LimitParam:
+      name: limit
+      in: query
+      description: Number of items per page (max 100)
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    
+    TagsParam:
+      name: tags
+      in: query
+      description: Filter by tags (comma-separated)
+      schema:
+        type: string
+        example: "api,rest,design"
+    
+    PhaseParam:
+      name: phase
+      in: query
+      description: Filter by alchemical phase
+      schema:
+        type: string
+        enum: [prima-materia, solutio, coagulatio]
+    
+    ProviderParam:
+      name: provider
+      in: query
+      description: Filter by AI provider
+      schema:
+        type: string
+        enum: [openai, anthropic, google, openrouter, ollama, grok]
+
+  schemas:
+    # Base Response Schemas
+    BaseResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Whether the request was successful
+        timestamp:
+          type: string
+          format: date-time
+          description: Response timestamp
+        request_id:
+          type: string
+          description: Unique request identifier
+      required:
+        - success
+        - timestamp
+
+    ErrorResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            success:
+              enum: [false]
+            error:
+              $ref: '#/components/schemas/ErrorInfo'
+          required:
+            - error
+
+    ErrorInfo:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Error code
+          example: "INVALID_INPUT"
+        message:
+          type: string
+          description: Human-readable error message
+          example: "Input validation failed"
+        details:
+          type: string
+          description: Additional error details
+          example: "Field 'input' is required"
+      required:
+        - code
+        - message
+
+    PaginationInfo:
+      type: object
+      properties:
+        page:
+          type: integer
+          description: Current page number
+        limit:
+          type: integer
+          description: Items per page
+        total:
+          type: integer
+          description: Total number of items
+        total_pages:
+          type: integer
+          description: Total number of pages
+        has_next:
+          type: boolean
+          description: Whether there is a next page
+        has_prev:
+          type: boolean
+          description: Whether there is a previous page
+      required:
+        - page
+        - limit
+        - total
+        - total_pages
+        - has_next
+        - has_prev
+
+    # System Response Schemas
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy]
+        timestamp:
+          type: string
+          format: date-time
+        version:
+          type: string
+      required:
+        - status
+        - timestamp
+        - version
+
+    VersionResponse:
+      type: object
+      properties:
+        version:
+          type: string
+          example: "1.0.0"
+        mode:
+          type: string
+          example: "http"
+      required:
+        - version
+        - mode
+
+    StatusResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                server:
+                  type: string
+                  example: "running"
+                protocol:
+                  type: string
+                  example: "http"
+                version:
+                  type: string
+                  example: "v1"
+                learning_mode:
+                  type: boolean
+                uptime:
+                  type: string
+                  example: "2h15m30s"
+
+    InfoResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "Prompt Alchemy HTTP API"
+                version:
+                  type: string
+                  example: "v1"
+                description:
+                  type: string
+                endpoints:
+                  type: object
+                  additionalProperties:
+                    type: string
+
+    # Prompt Schemas
+    Prompt:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the prompt
+        content:
+          type: string
+          description: The prompt content
+        phase:
+          type: string
+          enum: [prima-materia, solutio, coagulatio]
+          description: Alchemical phase the prompt was generated in
+        provider:
+          type: string
+          description: AI provider used for generation
+        model:
+          type: string
+          description: Specific model used for generation
+        temperature:
+          type: number
+          description: Temperature used for generation
+        max_tokens:
+          type: integer
+          description: Maximum tokens used for generation
+        actual_tokens:
+          type: integer
+          description: Actual tokens consumed
+        tags:
+          type: array
+          items:
+            type: string
+          description: Tags associated with the prompt
+        parent_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: ID of parent prompt if derived
+        source_type:
+          type: string
+          description: How the prompt was created
+        enhancement_method:
+          type: string
+          description: Method used to enhance the prompt
+        relevance_score:
+          type: number
+          description: Dynamic relevance score (0.0-1.0)
+        usage_count:
+          type: integer
+          description: Number of times the prompt has been used
+        generation_count:
+          type: integer
+          description: Number of prompts this has generated
+        last_used_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Last time the prompt was used
+        original_input:
+          type: string
+          description: Original user input that generated this prompt
+        persona_used:
+          type: string
+          description: Persona used for generation
+        target_model_family:
+          type: string
+          description: Target model family specified
+        target_use_case:
+          type: string
+          description: Target use case (auto-inferred or user-specified)
+        created_at:
+          type: string
+          format: date-time
+          description: When the prompt was created
+        updated_at:
+          type: string
+          format: date-time
+          description: When the prompt was last updated
+        embedding_model:
+          type: string
+          description: Model used for embedding
+        embedding_provider:
+          type: string
+          description: Provider used for embedding
+        session_id:
+          type: string
+          format: uuid
+          description: Session ID for grouping related prompts
+        score:
+          type: number
+          description: UI display score
+        reasoning:
+          type: string
+          description: UI display reasoning
+        similar_prompts:
+          type: array
+          items:
+            type: string
+          description: Similar prompt IDs for UI
+        avg_similarity:
+          type: number
+          description: Average similarity score for UI
+      required:
+        - id
+        - content
+        - phase
+        - provider
+        - model
+        - created_at
+        - updated_at
+
+    PromptRanking:
+      type: object
+      properties:
+        prompt_id:
+          type: string
+          format: uuid
+        score:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 10.0
+        rank:
+          type: integer
+          minimum: 1
+        criteria:
+          type: object
+          additionalProperties: true
+      required:
+        - prompt_id
+        - score
+        - rank
+
+    GenerateMetadata:
+      type: object
+      properties:
+        duration:
+          type: string
+          description: Generation duration
+          example: "2.5s"
+        phase_count:
+          type: integer
+          description: Number of phases processed
+        total_tokens:
+          type: integer
+          description: Total tokens used across all phases
+        timestamp:
+          type: string
+          format: date-time
+      required:
+        - duration
+        - phase_count
+        - timestamp
+
+    # Request/Response Schemas
+    GenerateRequest:
+      type: object
+      required:
+        - input
+      properties:
+        input:
+          type: string
+          description: The input text to generate prompts from
+          example: "Write a function to calculate fibonacci numbers"
+        phases:
+          type: array
+          items:
+            type: string
+            enum: [prima-materia, solutio, coagulatio]
+          description: Alchemical phases to generate prompts for
+          example: ["prima-materia", "solutio", "coagulatio"]
+        count:
+          type: integer
+          minimum: 1
+          maximum: 10
+          default: 3
+          description: Number of prompts to generate per phase
+        providers:
+          type: object
+          additionalProperties:
+            type: string
+          description: Provider mapping for each phase
+          example:
+            prima-materia: openai
+            solutio: anthropic
+            coagulatio: openai
+        temperature:
+          type: number
+          minimum: 0.0
+          maximum: 2.0
+          default: 0.7
+          description: Temperature for generation (0.0 = deterministic, 2.0 = very random)
+        max_tokens:
+          type: integer
+          minimum: 1
+          maximum: 4000
+          default: 1000
+          description: Maximum tokens to generate
+        tags:
+          type: array
+          items:
+            type: string
+          description: Tags to associate with generated prompts
+          example: ["code", "algorithm", "recursion"]
+        context:
+          type: array
+          items:
+            type: string
+          description: Additional context for generation
+          example: ["User is a senior developer", "Project uses Python 3.9"]
+        persona:
+          type: string
+          description: Persona to use for generation (auto-infers target use case if not specified)
+          example: "programmer"
+        target_use_case:
+          type: string
+          description: Target use case for the prompts (auto-inferred from persona if not provided)
+          enum: [general, code, writing, analysis, creative, technical, educational, business, marketing, research, customer, sales, product, design, legal, medical, financial, hr, operations]
+          example: "code"
+        target_model:
+          type: string
+          description: Target model family for the prompts
+          example: "gpt-4"
+        use_parallel:
+          type: boolean
+          default: false
+          description: Whether to generate prompts in parallel
+        save:
+          type: boolean
+          default: false
+          description: Whether to save generated prompts to storage
+
+    GenerateResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                prompts:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Prompt'
+                rankings:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/PromptRanking'
+                selected:
+                  $ref: '#/components/schemas/Prompt'
+                session_id:
+                  type: string
+                  format: uuid
+                metadata:
+                  $ref: '#/components/schemas/GenerateMetadata'
+
+    CreatePromptRequest:
+      type: object
+      properties:
+        content:
+          type: string
+          description: Prompt content
+        phase:
+          type: string
+          enum: [prima-materia, solutio, coagulatio]
+          description: Alchemical phase
+        provider:
+          type: string
+          description: AI provider used
+        model:
+          type: string
+          description: Specific model used
+        temperature:
+          type: number
+          format: float
+        max_tokens:
+          type: integer
+        tags:
+          type: array
+          items:
+            type: string
+      required:
+        - content
+        - phase
+        - provider
+
+    UpdatePromptRequest:
+      type: object
+      properties:
+        content:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        notes:
+          type: string
+
+    PromptResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/Prompt'
+
+    PaginatedPromptsResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/Prompt'
+            pagination:
+              $ref: '#/components/schemas/PaginationInfo'
+
+    SearchResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                prompts:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Prompt'
+                query:
+                  type: string
+                count:
+                  type: integer
+                semantic:
+                  type: boolean
+
+    # Provider Schemas
+    Provider:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Provider name
+        available:
+          type: boolean
+          description: Whether the provider is configured and available
+        supports_embeddings:
+          type: boolean
+          description: Whether the provider supports embeddings
+        models:
+          type: array
+          items:
+            type: string
+          description: Available models
+      required:
+        - name
+        - available
+        - supports_embeddings
+        - models
+
+    ProvidersResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                providers:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Provider'
+                count:
+                  type: integer
+
+    # Future Enhancement Schemas
+    OptimizeRequest:
+      type: object
+      properties:
+        prompt:
+          type: string
+          description: Prompt to optimize
+        task:
+          type: string
+          description: Task description for optimization
+        target_score:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 10.0
+          default: 8.0
+        max_iterations:
+          type: integer
+          minimum: 1
+          maximum: 10
+          default: 5
+      required:
+        - prompt
+        - task
+
+    OptimizeResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                original_prompt:
+                  type: string
+                optimized_prompt:
+                  type: string
+                iterations:
+                  type: integer
+                final_score:
+                  type: number
+                  format: float
+                improvements:
+                  type: array
+                  items:
+                    type: string
+
+    SelectRequest:
+      type: object
+      properties:
+        prompts:
+          type: array
+          items:
+            type: string
+          description: Candidate prompts
+        criteria:
+          type: object
+          properties:
+            task_description:
+              type: string
+            target_audience:
+              type: string
+            quality_factors:
+              type: array
+              items:
+                type: string
+      required:
+        - prompts
+        - criteria
+
+    SelectResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                selected_prompt:
+                  type: string
+                reasoning:
+                  type: string
+                scores:
+                  type: object
+                  additionalProperties:
+                    type: number
+
+    BatchRequest:
+      type: object
+      properties:
+        inputs:
+          type: array
+          items:
+            $ref: '#/components/schemas/GenerateRequest'
+          description: Array of generation requests
+        workers:
+          type: integer
+          minimum: 1
+          maximum: 10
+          default: 3
+          description: Number of parallel workers
+      required:
+        - inputs
+
+    BatchResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                results:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/GenerateResponse'
+                summary:
+                  type: object
+                  properties:
+                    total_requests:
+                      type: integer
+                    successful:
+                      type: integer
+                    failed:
+                      type: integer
+                    total_duration:
+                      type: string
+
+  responses:
+    BadRequest:
+      description: Bad request - invalid input parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            timestamp: "2024-01-15T10:30:00Z"
+            error:
+              code: "INVALID_INPUT"
+              message: "Input validation failed"
+              details: "Field 'input' is required"
+
+    Unauthorized:
+      description: Unauthorized - invalid or missing API key
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            timestamp: "2024-01-15T10:30:00Z"
+            error:
+              code: "UNAUTHORIZED"
+              message: "API key required"
+
+    Forbidden:
+      description: Forbidden - insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            timestamp: "2024-01-15T10:30:00Z"
+            error:
+              code: "NOT_FOUND"
+              message: "Prompt not found"
+
+    RateLimitExceeded:
+      description: Rate limit exceeded
+      headers:
+        Retry-After:
+          description: Seconds to wait before next request
+          schema:
+            type: integer
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            timestamp: "2024-01-15T10:30:00Z"
+            error:
+              code: "RATE_LIMIT_EXCEEDED"
+              message: "Rate limit exceeded"
+
+    NotImplemented:
+      description: Feature not implemented yet
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            timestamp: "2024-01-15T10:30:00Z"
+            error:
+              code: "NOT_IMPLEMENTED"
+              message: "Feature not implemented yet"
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            timestamp: "2024-01-15T10:30:00Z"
+            error:
+              code: "INTERNAL_SERVER_ERROR"
+              message: "Something went wrong"
+
+tags:
+  - name: System
+    description: Health checks and system information
+  - name: Prompts
+    description: Prompt generation, management, and search
+  - name: Providers
+    description: AI provider information and capabilities
+  - name: Optimization
+    description: Prompt optimization and improvement
+  - name: Selection
+    description: AI-powered prompt selection
+  - name: Batch
+    description: Batch processing operations 

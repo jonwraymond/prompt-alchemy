@@ -1,0 +1,2296 @@
+/* Advanced Hexagonal Flow Board for Prompt Alchemy */
+
+:root {
+    --hex-bg: #0a0a0a;
+    --hex-grid: #1a1a1a;
+    --hex-node-border: #3a3a3a;
+    --hex-node-bg: #151515;
+    --hex-special: #ffcc33;
+    --hex-core: #ff6b35;
+    --hex-enhance: #3498db;
+    --hex-validate: #9b59b6;
+    --hex-active: #2ecc71;
+    --hex-path: #e74c3c;
+    --hex-text: #ecf0f1;
+    --hex-tooltip-bg: rgba(0, 0, 0, 0.95);
+    --hex-glow-prima: #ff6b6b;
+    --hex-glow-solutio: #4ecdc4;
+    --hex-glow-coagulatio: #45b7d1;
+}
+
+/* Main Flow Board Container */
+.hex-flow-container {
+    position: relative;
+    width: 100%;
+    height: 600px;
+    background: var(--hex-bg);
+    border: 2px solid var(--hex-grid);
+    border-radius: 10px;
+    overflow: hidden;
+    cursor: default; /* Disable grab cursor */
+    display: flex;
+    flex-direction: column;
+    pointer-events: auto; /* Preserve click interactions */
+}
+
+/* Hex Flow Wrapper - Contains the main visualization and legend */
+.hex-flow-wrapper {
+    display: flex;
+    flex: 1;
+    width: 100%;
+    height: 100%;
+}
+
+/* Main hex flow area with SVG and controls */
+.hex-flow-main {
+    flex: 1;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-width: 0; /* Prevents flex item from overflowing */
+}
+
+/* Hide any stray JSON or raw text content within the hex flow board */
+.hex-flow-container > text,
+.hex-flow-container > pre,
+.hex-flow-container > div:not([class]),
+.hex-flow-container > span:not([class]) {
+    display: none !important;
+}
+
+/* Additional protection against unwanted text content */
+.hex-flow-container {
+    font-size: 0; /* Hide any text that might leak through */
+}
+
+.hex-flow-container * {
+    font-size: initial; /* Restore font size for legitimate elements */
+}
+
+/* Ensure SVG content is properly contained */
+.hex-flow-container svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    user-select: none;
+}
+
+/* Disable grabbing cursor */
+.hex-flow-container.grabbing {
+    cursor: default;
+}
+
+/* SVG Board */
+.hex-flow-board {
+    width: 100%;
+    height: 100%;
+    transform-origin: center center;
+    transition: transform 0.3s ease;
+}
+
+/* Hexagonal Nodes - preserve click interactions */
+.hex-node {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    pointer-events: auto; /* Ensure clicks still work */
+}
+
+.hex-node:hover {
+    cursor: pointer; /* Keep as pointer for click interactions */
+}
+
+.hex-node.dragging {
+    cursor: grabbing;
+    filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.4));
+    transform: scale(1.05);
+    z-index: 1000;
+}
+
+.hex-node.dragging polygon {
+    stroke-width: 3;
+    fill-opacity: 0.8;
+    transition: none; /* Disable transitions during drag for better performance */
+}
+
+/* Smooth transitions when not dragging */
+.hex-node:not(.dragging) {
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.hex-node:not(.dragging) polygon {
+    transition: all 0.3s ease;
+}
+
+/* Radial Layout Enhancements */
+
+/* Enhanced hover state for radial layout */
+.hex-node.hover-state polygon {
+    stroke-width: 3;
+    filter: drop-shadow(0 0 15px currentColor);
+    transform: scale(1.08);
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Radial focus state */
+.hex-node.radial-focus polygon {
+    stroke-width: 4;
+    filter: drop-shadow(0 0 25px currentColor);
+    animation: radial-focus-pulse 2s ease-in-out infinite;
+}
+
+/* Core node special states */
+.hex-node.core-activated polygon {
+    animation: core-activation 2s ease-in-out;
+    filter: drop-shadow(0 0 30px var(--hex-core));
+}
+
+@keyframes radial-focus-pulse {
+    0%, 100% { 
+        opacity: 1; 
+        transform: scale(1);
+    }
+    50% { 
+        opacity: 0.9; 
+        transform: scale(1.12);
+    }
+}
+
+@keyframes core-activation {
+    0% { 
+        stroke-width: 4;
+        filter: drop-shadow(0 0 30px var(--hex-core));
+    }
+    50% { 
+        stroke-width: 6;
+        filter: drop-shadow(0 0 50px var(--hex-core));
+    }
+    100% { 
+        stroke-width: 4;
+        filter: drop-shadow(0 0 30px var(--hex-core));
+    }
+}
+
+/* Enhanced connection paths for radial layout */
+.hex-path.primary-radial {
+    stroke-width: 3;
+    opacity: 0.8;
+    filter: drop-shadow(0 0 8px currentColor);
+}
+
+.hex-path.gateway {
+    stroke-width: 4;
+    opacity: 0.9;
+    animation: gateway-flow 3s ease-in-out infinite;
+}
+
+.hex-path.phase-support {
+    stroke-width: 2;
+    opacity: 0.6;
+}
+
+.hex-path.flow-sequence {
+    stroke-width: 2.5;
+    opacity: 0.7;
+}
+
+.hex-path.feature {
+    stroke-width: 2;
+    opacity: 0.4;
+    stroke-dasharray: 5,5;
+}
+
+/* Connection highlighting for radial layout */
+.hex-path.radial-highlight {
+    stroke-width: 4;
+    opacity: 1;
+    filter: drop-shadow(0 0 10px currentColor);
+    animation: radial-highlight-pulse 1.5s ease-in-out infinite;
+}
+
+.hex-path.core-connection-pulse {
+    animation: core-connection-pulse 2s ease-in-out infinite;
+}
+
+.hex-path.core-pulse {
+    stroke-width: 5;
+    opacity: 1;
+    animation: core-pulse-wave 2s ease-in-out;
+}
+
+.hex-path.path-flow-active {
+    stroke-dasharray: 10, 5;
+    animation: path-flow-radial 2s linear infinite;
+}
+
+@keyframes gateway-flow {
+    0%, 100% { opacity: 0.9; }
+    50% { opacity: 0.6; }
+}
+
+@keyframes radial-highlight-pulse {
+    0%, 100% { 
+        opacity: 1; 
+        stroke-width: 4;
+    }
+    50% { 
+        opacity: 0.7; 
+        stroke-width: 5;
+    }
+}
+
+@keyframes core-connection-pulse {
+    0%, 100% { 
+        stroke-width: 3; 
+        opacity: 0.8;
+    }
+    50% { 
+        stroke-width: 5; 
+        opacity: 1;
+    }
+}
+
+@keyframes core-pulse-wave {
+    0% { 
+        stroke-width: 3; 
+        opacity: 0.8;
+    }
+    25% { 
+        stroke-width: 6; 
+        opacity: 1;
+    }
+    50% { 
+        stroke-width: 8; 
+        opacity: 0.9;
+    }
+    75% { 
+        stroke-width: 6; 
+        opacity: 1;
+    }
+    100% { 
+        stroke-width: 5; 
+        opacity: 0.9;
+    }
+}
+
+/* ENHANCED RADIAL PATH FLOW: Directional flow with pulsing intensity */
+@keyframes path-flow-radial {
+    0% {
+        stroke-dashoffset: 15;
+        opacity: 0.6;
+        stroke-width: 2.5;
+        filter: drop-shadow(0 0 5px currentColor);
+    }
+    25% {
+        opacity: 0.8;
+        stroke-width: 3;
+        filter: drop-shadow(0 0 7px currentColor);
+    }
+    50% {
+        opacity: 1;
+        stroke-width: 3.5;
+        filter: drop-shadow(0 0 10px currentColor);
+    }
+    75% {
+        opacity: 0.8;
+        stroke-width: 3;
+        filter: drop-shadow(0 0 7px currentColor);
+    }
+    100% {
+        stroke-dashoffset: -15; /* Creates directional wave movement */
+        opacity: 0.6;
+        stroke-width: 2.5;
+        filter: drop-shadow(0 0 5px currentColor);
+    }
+}
+
+/* Radial ripple effects */
+.radial-ripple {
+    pointer-events: none;
+    opacity: 0.8;
+}
+
+/* Active State Pulsation Animation */
+.hex-node.pulsating-active polygon {
+    animation: active-pulsation 1s ease-in-out infinite;
+    filter: drop-shadow(0 0 25px currentColor);
+    stroke-width: 4;
+}
+
+.hex-node.pulsating-active .hex-node-icon {
+    animation: icon-pulsation 1s ease-in-out infinite;
+}
+
+@keyframes active-pulsation {
+    0%, 100% { 
+        opacity: 1; 
+        transform: scale(1);
+        stroke-width: 4;
+    }
+    50% { 
+        opacity: 0.7; 
+        transform: scale(1.15);
+        stroke-width: 6;
+    }
+}
+
+@keyframes icon-pulsation {
+    0%, 100% { 
+        opacity: 1; 
+        transform: scale(1);
+    }
+    50% { 
+        opacity: 0.8; 
+        transform: scale(1.2);
+    }
+}
+
+/* Pulsation rings */
+.pulsation-ring {
+    pointer-events: none;
+}
+
+/* Hex-to-Hex Movement Animation */
+.hex-node.moving-to-target {
+    transition: transform 1.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    z-index: 1000;
+}
+
+.hex-node.moving-to-target polygon {
+    filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.4));
+    stroke-width: 3;
+}
+
+/* Processing State Connection Indicators */
+/* ACTIVE DATA FLOW: Shows directional wave movement toward destination */
+.hex-path.processing-active {
+    stroke-dasharray: 10, 6;
+    animation: directional-data-flow 2.5s linear infinite;
+    stroke-width: 3;
+    opacity: 1;
+    filter: drop-shadow(0 0 8px currentColor);
+}
+
+/* STANDBY CONNECTIONS: Subtle dotted pattern (no animation) */
+.hex-path.dotted-connection {
+    stroke-dasharray: 4, 4;
+    opacity: 0.6;
+    /* No animation - indicates available but inactive path */
+}
+
+/* ACTIVE FLOW ANIMATIONS: Directional wave that shows data moving toward target */
+@keyframes directional-data-flow {
+    0% {
+        stroke-dashoffset: 16; /* Start position */
+        opacity: 0.8;
+        stroke-width: 3;
+        filter: drop-shadow(0 0 6px currentColor);
+    }
+    25% {
+        opacity: 0.95;
+        stroke-width: 3.5;
+        filter: drop-shadow(0 0 8px currentColor);
+    }
+    50% {
+        opacity: 1;
+        stroke-width: 4;
+        filter: drop-shadow(0 0 10px currentColor);
+    }
+    75% {
+        opacity: 0.95;
+        stroke-width: 3.5;
+        filter: drop-shadow(0 0 8px currentColor);
+    }
+    100% {
+        stroke-dashoffset: -16; /* End position - creates wave moving forward */
+        opacity: 0.8;
+        stroke-width: 3;
+        filter: drop-shadow(0 0 6px currentColor);
+    }
+}
+
+/* PULSING READY STATE: For connections ready to activate */
+.hex-path.ready-to-flow {
+    stroke-dasharray: 6, 6;
+    animation: ready-pulse 3s ease-in-out infinite;
+    opacity: 0.7;
+}
+
+@keyframes ready-pulse {
+    0%, 100% { 
+        opacity: 0.4; 
+        stroke-width: 2;
+    }
+    50% { 
+        opacity: 0.8; 
+        stroke-width: 2.5;
+    }
+}
+
+/* Input/Output Relationship Indicators */
+/* INPUT FLOW: Shows data flowing FROM input gateway TO processing nodes */
+.hex-path.input-relationship {
+    stroke: #ffcc33;
+    stroke-width: 3;
+    stroke-dasharray: 12, 8;
+    animation: input-data-flow 2s linear infinite;
+    filter: drop-shadow(0 0 6px rgba(255, 204, 51, 0.5));
+}
+
+/* OUTPUT FLOW: Shows processed data flowing TO output gateway */
+.hex-path.output-relationship {
+    stroke: #ffd700; /* Golden for final output */
+    stroke-width: 3;
+    stroke-dasharray: 12, 8;
+    animation: output-data-flow 2s linear infinite;
+    filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.6));
+}
+
+/* ENHANCED DIRECTIONAL INPUT FLOW: Faster waves from input toward processing */
+@keyframes input-data-flow {
+    0% { 
+        stroke-dashoffset: 20;
+        opacity: 0.7;
+        stroke-width: 3;
+    }
+    25% {
+        opacity: 0.9;
+        stroke-width: 3.5;
+    }
+    50% { 
+        opacity: 1;
+        stroke-width: 4;
+    }
+    75% {
+        opacity: 0.9;
+        stroke-width: 3.5;
+    }
+    100% { 
+        stroke-dashoffset: -20; /* Creates forward wave motion */
+        opacity: 0.7;
+        stroke-width: 3;
+    }
+}
+
+/* ENHANCED DIRECTIONAL OUTPUT FLOW: Golden waves toward final output */
+@keyframes output-data-flow {
+    0% { 
+        stroke-dashoffset: 20;
+        opacity: 0.8;
+        stroke-width: 3;
+        filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.4));
+    }
+    25% {
+        opacity: 0.95;
+        stroke-width: 3.5;
+        filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.6));
+    }
+    50% { 
+        opacity: 1;
+        stroke-width: 4;
+        filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.8));
+    }
+    75% {
+        opacity: 0.95;
+        stroke-width: 3.5;
+        filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.6));
+    }
+    100% { 
+        stroke-dashoffset: -20; /* Creates forward wave motion */
+        opacity: 0.8;
+        stroke-width: 3;
+        filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.4));
+    }
+}
+
+/* Stage Completion Effects */
+.hex-node.stage-completed polygon {
+    animation: completion-glow 1.5s ease-in-out;
+    filter: drop-shadow(0 0 30px #2ecc71);
+}
+
+/* Golden Celebration Glow for Output Gateway */
+.hex-node.output-celebration polygon {
+    stroke: #ffd700 !important;
+    fill: rgba(255, 215, 0, 0.25) !important;
+    stroke-width: 4;
+    animation: golden-celebration 3s ease-in-out infinite;
+    filter: drop-shadow(0 0 40px #ffd700) drop-shadow(0 0 80px rgba(255, 215, 0, 0.6));
+    z-index: 1000;
+}
+
+.hex-node.output-celebration .hex-node-icon {
+    animation: golden-icon-dance 3s ease-in-out infinite;
+    filter: drop-shadow(0 0 15px #ffd700);
+}
+
+.hex-node.output-celebration .hex-node-text {
+    fill: #ffd700 !important;
+    font-weight: 700;
+    animation: golden-text-shimmer 2s ease-in-out infinite;
+}
+
+/* Golden celebration keyframes */
+@keyframes golden-celebration {
+    0%, 100% { 
+        opacity: 1; 
+        transform: scale(1);
+        stroke-width: 4;
+        filter: drop-shadow(0 0 40px #ffd700) drop-shadow(0 0 80px rgba(255, 215, 0, 0.6));
+    }
+    50% { 
+        opacity: 0.9; 
+        transform: scale(1.15);
+        stroke-width: 6;
+        filter: drop-shadow(0 0 60px #ffd700) drop-shadow(0 0 120px rgba(255, 215, 0, 0.8));
+    }
+}
+
+@keyframes golden-icon-dance {
+    0%, 100% { 
+        opacity: 1; 
+        transform: scale(1) rotate(0deg);
+    }
+    25% { 
+        opacity: 0.9; 
+        transform: scale(1.2) rotate(5deg);
+    }
+    50% { 
+        opacity: 1; 
+        transform: scale(1.3) rotate(0deg);
+    }
+    75% { 
+        opacity: 0.9; 
+        transform: scale(1.2) rotate(-5deg);
+    }
+}
+
+@keyframes golden-text-shimmer {
+    0%, 100% { 
+        opacity: 1; 
+        text-shadow: 0 0 10px #ffd700;
+    }
+    50% { 
+        opacity: 0.8; 
+        text-shadow: 0 0 20px #ffd700, 0 0 30px rgba(255, 215, 0, 0.8);
+    }
+}
+
+/* Golden celebration ripples */
+.golden-celebration-ripple {
+    pointer-events: none;
+    stroke: #ffd700;
+    fill: none;
+    opacity: 0.8;
+    animation: golden-ripple-expand 2s ease-out infinite;
+}
+
+@keyframes golden-ripple-expand {
+    0% { 
+        r: 0; 
+        opacity: 0.8; 
+        stroke-width: 4;
+    }
+    50% { 
+        r: 80; 
+        opacity: 0.4; 
+        stroke-width: 2;
+    }
+    100% { 
+        r: 120; 
+        opacity: 0; 
+        stroke-width: 1;
+    }
+}
+
+/* Enhanced output gateway base styling */
+.hex-node[data-id="output"] polygon {
+    stroke: #ffd700;
+    fill: rgba(255, 215, 0, 0.15);
+    filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.5));
+}
+
+.hex-node[data-id="output"]:hover polygon {
+    filter: drop-shadow(0 0 25px rgba(255, 215, 0, 0.7));
+}
+
+/* Input gateway enhanced styling for visual flow */
+.hex-node[data-id="input"] polygon {
+    stroke: #ffcc33;
+    fill: rgba(255, 204, 51, 0.15);
+    filter: drop-shadow(0 0 12px rgba(255, 204, 51, 0.4));
+}
+
+.hex-node[data-id="input"]:hover polygon {
+    filter: drop-shadow(0 0 20px rgba(255, 204, 51, 0.6));
+}
+
+.hex-node.movement-target-reached polygon {
+    animation: target-reached 1s ease-in-out;
+    filter: drop-shadow(0 0 20px currentColor);
+}
+
+@keyframes completion-glow {
+    0%, 100% { 
+        opacity: 1; 
+        stroke-width: 2;
+        filter: drop-shadow(0 0 10px #2ecc71);
+    }
+    50% { 
+        opacity: 1; 
+        stroke-width: 4;
+        filter: drop-shadow(0 0 30px #2ecc71);
+    }
+}
+
+@keyframes target-reached {
+    0%, 100% { 
+        opacity: 1; 
+        transform: scale(1);
+    }
+    50% { 
+        opacity: 0.9; 
+        transform: scale(1.1);
+    }
+}
+
+/* Connection Completion States */
+.hex-path.connection-completed {
+    stroke: #2ecc71;
+    stroke-width: 4;
+    opacity: 1;
+    animation: connection-complete 2s ease-in-out;
+}
+
+@keyframes connection-complete {
+    0% { 
+        stroke-width: 2; 
+        opacity: 0.8;
+    }
+    50% { 
+        stroke-width: 5; 
+        opacity: 1;
+        filter: drop-shadow(0 0 15px #2ecc71);
+    }
+    100% { 
+        stroke-width: 4; 
+        opacity: 1;
+    }
+}
+
+/* Completion Trail */
+.completion-trail {
+    pointer-events: none;
+}
+
+/* Energy Trail Particles */
+.energy-trail-particle {
+    pointer-events: none;
+    filter: drop-shadow(0 0 5px currentColor);
+}
+
+/* State Failure Visual Indicators */
+
+/* Red Pulsating Animation for Failed States */
+.hex-node.state-failed polygon {
+    stroke: #e74c3c !important;
+    fill: rgba(231, 76, 60, 0.2) !important;
+    animation: failure-pulsate 1.2s ease-in-out infinite;
+    filter: drop-shadow(0 0 20px #e74c3c);
+}
+
+.hex-node.state-failed .hex-node-icon {
+    animation: failure-icon-pulse 1.2s ease-in-out infinite;
+    filter: drop-shadow(0 0 10px #e74c3c);
+}
+
+.hex-node.state-failed .hex-node-text {
+    fill: #e74c3c !important;
+    animation: failure-text-glow 1.2s ease-in-out infinite;
+}
+
+/* Failure pulsation keyframes */
+@keyframes failure-pulsate {
+    0%, 100% { 
+        opacity: 1; 
+        transform: scale(1);
+        stroke-width: 3;
+        filter: drop-shadow(0 0 15px #e74c3c);
+    }
+    50% { 
+        opacity: 0.7; 
+        transform: scale(1.1);
+        stroke-width: 5;
+        filter: drop-shadow(0 0 30px #e74c3c);
+    }
+}
+
+@keyframes failure-icon-pulse {
+    0%, 100% { 
+        opacity: 1; 
+        transform: scale(1);
+    }
+    50% { 
+        opacity: 0.6; 
+        transform: scale(1.15);
+    }
+}
+
+@keyframes failure-text-glow {
+    0%, 100% { 
+        opacity: 1; 
+    }
+    50% { 
+        opacity: 0.7; 
+        filter: drop-shadow(0 0 8px #e74c3c);
+    }
+}
+
+/* Broken Connection Line Styling */
+.hex-path.connection-broken {
+    stroke: #e74c3c !important;
+    stroke-width: 2;
+    stroke-dasharray: 8, 8;
+    opacity: 0.8;
+    animation: broken-connection-pulse 2s ease-in-out infinite;
+    filter: drop-shadow(0 0 5px #e74c3c);
+}
+
+.hex-path.connection-severed {
+    stroke: #c0392b !important;
+    stroke-width: 3;
+    stroke-dasharray: 4, 12;
+    opacity: 0.6;
+    animation: severed-connection-flicker 1.5s linear infinite;
+}
+
+/* Broken connection animations */
+@keyframes broken-connection-pulse {
+    0%, 100% { 
+        opacity: 0.8; 
+        stroke-width: 2;
+    }
+    50% { 
+        opacity: 0.4; 
+        stroke-width: 3;
+        filter: drop-shadow(0 0 10px #e74c3c);
+    }
+}
+
+@keyframes severed-connection-flicker {
+    0% { 
+        opacity: 0.6; 
+        stroke-dashoffset: 0;
+    }
+    25% { 
+        opacity: 0.2; 
+        stroke-dashoffset: -4;
+    }
+    50% { 
+        opacity: 0.8; 
+        stroke-dashoffset: -8;
+    }
+    75% { 
+        opacity: 0.1; 
+        stroke-dashoffset: -12;
+    }
+    100% { 
+        opacity: 0.6; 
+        stroke-dashoffset: -16;
+    }
+}
+
+/* Connection Error Indicators */
+.hex-path.connection-error {
+    stroke: #e74c3c;
+    stroke-width: 2;
+    stroke-dasharray: 6, 6;
+    opacity: 0.7;
+    animation: error-connection-dash 3s linear infinite;
+}
+
+@keyframes error-connection-dash {
+    to {
+        stroke-dashoffset: -12;
+    }
+}
+
+/* Failed State Ripple Effect */
+.failure-ripple {
+    pointer-events: none;
+    stroke: #e74c3c;
+    fill: none;
+    opacity: 0.8;
+}
+
+/* Connection Breakdown Animation */
+.hex-path.connection-breaking {
+    animation: connection-breakdown 2s ease-in-out forwards;
+}
+
+@keyframes connection-breakdown {
+    0% {
+        stroke-dasharray: 0, 0;
+        opacity: 1;
+    }
+    50% {
+        stroke-dasharray: 10, 5;
+        opacity: 0.6;
+        stroke: #f39c12;
+    }
+    100% {
+        stroke-dasharray: 4, 12;
+        opacity: 0.4;
+        stroke: #e74c3c;
+    }
+}
+
+/* Multiple Failure States */
+.hex-node.critical-failure polygon {
+    stroke: #c0392b !important;
+    fill: rgba(192, 57, 43, 0.3) !important;
+    animation: critical-failure-shake 0.8s ease-in-out infinite;
+    filter: drop-shadow(0 0 25px #c0392b);
+}
+
+@keyframes critical-failure-shake {
+    0%, 100% { 
+        transform: translateX(0) scale(1); 
+    }
+    25% { 
+        transform: translateX(-2px) scale(1.05); 
+    }
+    75% { 
+        transform: translateX(2px) scale(1.05); 
+    }
+}
+
+/* Warning State (Pre-failure) */
+.hex-node.state-warning polygon {
+    stroke: #f39c12 !important;
+    fill: rgba(243, 156, 18, 0.15) !important;
+    animation: warning-blink 2s ease-in-out infinite;
+    filter: drop-shadow(0 0 15px #f39c12);
+}
+
+@keyframes warning-blink {
+    0%, 100% { 
+        opacity: 1; 
+    }
+    50% { 
+        opacity: 0.6; 
+    }
+}
+
+/* Grid snapping visual feedback */
+.hex-flow-container.grid-snap-enabled {
+    background-image: 
+        linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    background-size: 20px 20px;
+}
+
+/* Visual feedback for drag boundaries */
+.hex-flow-container.show-boundaries::before {
+    content: '';
+    position: absolute;
+    top: 50px;
+    left: 50px;
+    right: 50px;
+    bottom: 50px;
+    border: 2px dashed rgba(255, 255, 255, 0.2);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.hex-node polygon {
+    fill: var(--hex-node-bg);
+    stroke: var(--hex-node-border);
+    stroke-width: 2;
+    transition: all 0.3s ease;
+}
+
+/* Node Types */
+.hex-node.enhanced polygon {
+    stroke: var(--hex-enhance);
+    fill: rgba(52, 152, 219, 0.1);
+}
+
+.hex-node.special polygon {
+    stroke: var(--hex-special);
+    fill: rgba(255, 204, 51, 0.1);
+}
+
+.hex-node.core polygon {
+    stroke: var(--hex-core);
+    fill: rgba(255, 107, 53, 0.2);
+    filter: drop-shadow(0 0 10px var(--hex-core));
+}
+
+.hex-node.validator polygon {
+    stroke: var(--hex-validate);
+    fill: rgba(155, 89, 182, 0.1);
+}
+
+/* Phase Nodes */
+.hex-node.phase-prima polygon {
+    stroke: var(--hex-glow-prima);
+    fill: rgba(255, 107, 107, 0.15);
+}
+
+.hex-node.phase-solutio polygon {
+    stroke: var(--hex-glow-solutio);
+    fill: rgba(78, 205, 196, 0.15);
+}
+
+.hex-node.phase-coagulatio polygon {
+    stroke: var(--hex-glow-coagulatio);
+    fill: rgba(69, 183, 209, 0.15);
+}
+
+/* Feature Nodes */
+.hex-node.feature polygon {
+    stroke: #95a5a6;
+    fill: rgba(149, 165, 166, 0.1);
+    stroke-dasharray: 5, 3;
+}
+
+.hex-path.provider-active {
+    stroke: var(--hex-active);
+    stroke-width: 4;
+    opacity: 1;
+    filter: drop-shadow(0 0 10px var(--hex-active));
+    animation: provider-pulse 1s ease-in-out;
+}
+
+@keyframes provider-pulse {
+    0% {
+        stroke-width: 4;
+        opacity: 1;
+    }
+    50% {
+        stroke-width: 6;
+        opacity: 0.7;
+    }
+    100% {
+        stroke-width: 4;
+        opacity: 1;
+    }
+}
+
+.hex-path.provider-active {
+    stroke: var(--hex-active);
+    stroke-width: 4;
+    opacity: 1;
+    filter: drop-shadow(0 0 10px var(--hex-active));
+    animation: provider-pulse 1s ease-in-out;
+}
+
+@keyframes provider-pulse {
+    0% {
+        stroke-width: 4;
+        opacity: 1;
+    }
+    50% {
+        stroke-width: 6;
+        opacity: 0.7;
+    }
+    100% {
+        stroke-width: 4;
+        opacity: 1;
+    }
+}
+
+/* Active/Highlighted States */
+.hex-node.active polygon {
+    stroke: var(--hex-active);
+    stroke-width: 3;
+    filter: drop-shadow(0 0 15px var(--hex-active));
+    animation: hex-pulse 2s ease-in-out infinite;
+}
+
+.hex-node.processing polygon {
+    animation: hex-process 1s ease-in-out infinite;
+}
+
+@keyframes hex-pulse {
+    0%, 100% { 
+        opacity: 1; 
+        transform: scale(1);
+    }
+    50% { 
+        opacity: 0.8; 
+        transform: scale(1.05);
+    }
+}
+
+@keyframes hex-process {
+    0%, 100% { 
+        fill-opacity: 0.3;
+        stroke-width: 2;
+    }
+    50% { 
+        fill-opacity: 0.6;
+        stroke-width: 4;
+    }
+}
+
+/* Node Icons */
+.hex-node-icon {
+    pointer-events: none;
+    opacity: 0.8;
+    transition: opacity 0.3s ease;
+}
+
+.hex-node:hover .hex-node-icon {
+    opacity: 1;
+}
+
+.hex-node-text {
+    fill: var(--hex-text);
+    font-size: 10px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    text-anchor: middle;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.hex-node:hover .hex-node-text,
+.hex-node.active .hex-node-text {
+    opacity: 1;
+}
+
+/* Connection Paths */
+.hex-path {
+    fill: none;
+    stroke: var(--hex-grid);
+    stroke-width: 2;
+    opacity: 0.5;
+    transition: all 0.3s ease;
+}
+
+.hex-path.active {
+    stroke: var(--hex-path);
+    stroke-width: 3;
+    opacity: 1;
+    filter: drop-shadow(0 0 5px var(--hex-path));
+}
+
+/* ANIMATED STANDARD PATHS: Slow directional flow for general connections */
+.hex-path.animated {
+    stroke-dasharray: 8, 6;
+    animation: gentle-directional-flow 4s linear infinite;
+    opacity: 0.7;
+}
+
+@keyframes gentle-directional-flow {
+    0% {
+        stroke-dashoffset: 14;
+        opacity: 0.5;
+        stroke-width: 2;
+        filter: drop-shadow(0 0 3px currentColor);
+    }
+    25% {
+        opacity: 0.7;
+        stroke-width: 2.2;
+        filter: drop-shadow(0 0 5px currentColor);
+    }
+    50% {
+        opacity: 0.8;
+        stroke-width: 2.5;
+        filter: drop-shadow(0 0 7px currentColor);
+    }
+    75% {
+        opacity: 0.7;
+        stroke-width: 2.2;
+        filter: drop-shadow(0 0 5px currentColor);
+    }
+    100% {
+        stroke-dashoffset: -14; /* Creates gentle forward wave */
+        opacity: 0.5;
+        stroke-width: 2;
+        filter: drop-shadow(0 0 3px currentColor);
+    }
+}
+
+/* Flow Particles */
+.flow-particle {
+    r: 3;
+    fill: var(--hex-active);
+    filter: drop-shadow(0 0 5px currentColor);
+}
+
+/* Zoom Controls */
+.hex-zoom-controls {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid var(--hex-grid);
+    border-radius: 8px;
+    padding: 10px;
+}
+
+.zoom-button {
+    width: 40px;
+    height: 40px;
+    background: var(--hex-node-bg);
+    border: 1px solid var(--hex-node-border);
+    border-radius: 6px;
+    color: var(--hex-text);
+    font-size: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.zoom-button:hover {
+    background: var(--hex-grid);
+    border-color: var(--hex-active);
+}
+
+.zoom-level {
+    text-align: center;
+    color: var(--hex-text);
+    font-size: 12px;
+    font-family: 'Inter', sans-serif;
+}
+
+/* Tooltip */
+.hex-tooltip {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.95);
+    border: 2px solid var(--hex-node-border);
+    border-radius: 8px;
+    padding: 15px;
+    min-width: 250px;
+    max-width: 350px;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s ease;
+    z-index: 1000;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 20px rgba(255, 255, 255, 0.1);
+}
+
+.hex-tooltip.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.tooltip-title {
+    color: var(--hex-special);
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.tooltip-type {
+    color: var(--hex-text);
+    font-size: 12px;
+    opacity: 0.7;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.tooltip-description {
+    color: var(--hex-text);
+    font-size: 14px;
+    line-height: 1.6;
+    margin-bottom: 15px;
+}
+
+.tooltip-stats {
+    border-top: 1px solid var(--hex-node-border);
+    padding-top: 10px;
+}
+
+.tooltip-stat {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+    font-size: 13px;
+}
+
+.stat-label {
+    color: var(--hex-text);
+    opacity: 0.8;
+}
+
+.stat-value {
+    color: var(--hex-active);
+    font-weight: 600;
+}
+
+/* Flow Info Panel */
+.flow-info-panel {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid var(--hex-grid);
+    border-radius: 8px;
+    padding: 15px;
+    color: var(--hex-text);
+    font-size: 12px;
+    max-width: 250px;
+}
+
+.flow-stage {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.stage-indicator {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    margin-right: 10px;
+    border: 2px solid;
+}
+
+.stage-indicator.prima {
+    border-color: var(--hex-glow-prima);
+    background: rgba(255, 107, 107, 0.3);
+}
+
+.stage-indicator.solutio {
+    border-color: var(--hex-glow-solutio);
+    background: rgba(78, 205, 196, 0.3);
+}
+
+.stage-indicator.coagulatio {
+    border-color: var(--hex-glow-coagulatio);
+    background: rgba(69, 183, 209, 0.3);
+}
+
+/* Legend Dropdown Styling */
+.legend-dropdown {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    z-index: 1000;
+    font-family: 'Inter', sans-serif;
+}
+
+.legend-trigger {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    color: var(--hex-text);
+    padding: 8px 12px;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.legend-trigger:hover {
+    border-color: rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+
+.legend-content {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: transparent;
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 12px;
+    min-width: 260px;
+    max-width: 320px;
+    color: var(--hex-text);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+    z-index: 1001;
+    margin-top: 8px;
+}
+
+.legend-dropdown.open .legend-content {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.legend-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: none;
+}
+
+.legend-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--hex-special);
+    letter-spacing: 0.5px;
+    text-shadow: 0 0 8px rgba(0, 0, 0, 0.8), 0 0 16px rgba(0, 0, 0, 0.6);
+}
+
+.legend-toggle {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    color: var(--hex-text);
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: opacity 0.3s ease;
+    opacity: 0.7;
+}
+
+.legend-toggle:hover {
+    background: transparent;
+    border: none;
+    opacity: 1;
+}
+
+.legend-content {
+    display: block;
+    opacity: 1;
+    transition: all 0.3s ease;
+}
+
+.connection-legend.collapsed .legend-content {
+    display: none;
+    opacity: 0;
+}
+
+.legend-section {
+    margin-bottom: 14px;
+}
+
+.legend-section:last-child {
+    margin-bottom: 0;
+}
+
+.legend-section-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--hex-enhance);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 6px;
+    padding: 4px 6px;
+    border-radius: 4px;
+    background: transparent;
+    transition: background 0.3s ease;
+}
+
+.legend-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.legend-line-demo {
+    width: 24px;
+    height: 6px;
+    margin-right: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.legend-line-demo svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+
+.legend-description {
+    flex: 1;
+}
+
+.legend-label {
+    font-size: 12px;
+    color: var(--hex-text);
+    font-weight: 500;
+    line-height: 1.2;
+    text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
+    margin-bottom: 2px;
+}
+
+.legend-detail {
+    font-size: 10px;
+    color: var(--hex-muted);
+    opacity: 0.8;
+    line-height: 1.3;
+    text-shadow: 0 0 3px rgba(0, 0, 0, 0.8);
+}
+
+/* Enhanced Directional Line Animations */
+
+/* Legend Line Demonstrations */
+.demo-active-processing {
+    animation: legend-rightward-flow 2.5s linear infinite;
+}
+
+.demo-standby {
+    /* Static - no animation */
+}
+
+.demo-ready-pulse {
+    animation: legend-ready-pulse 2s ease-in-out infinite;
+}
+
+.demo-broken {
+    animation: legend-broken-flicker 1.5s ease-in-out infinite;
+}
+
+/* Legend Animation Keyframes */
+@keyframes legend-rightward-flow {
+    0% { 
+        stroke-dashoffset: 10;
+        opacity: 0.7;
+    }
+    50% { 
+        opacity: 1;
+    }
+    100% { 
+        stroke-dashoffset: -10;
+    }
+}
+
+@keyframes legend-ready-pulse {
+    0%, 100% { 
+        opacity: 0.6;
+        stroke-width: 2;
+    }
+    50% { 
+        opacity: 1;
+        stroke-width: 3;
+    }
+}
+
+@keyframes legend-broken-flicker {
+    0%, 100% { 
+        opacity: 0.8;
+        stroke-dashoffset: 0;
+    }
+    25% { 
+        opacity: 0.3;
+        stroke-dashoffset: -2;
+    }
+    50% { 
+        opacity: 0.9;
+        stroke-dashoffset: -4;
+    }
+    75% { 
+        opacity: 0.2;
+        stroke-dashoffset: -6;
+    }
+}
+
+/* DIRECTIONAL MOVEMENT ANIMATIONS FOR VISUALIZATION PATHS */
+
+/* VERTICAL DOWNWARD ANIMATIONS - Data flowing from top to bottom */
+.connection-line {
+    transition: all 0.3s ease;
+}
+
+/* Active vertical flow - data moving downward */
+.connection-line.active-downward {
+    stroke-dasharray: 8, 6;
+    animation: vertical-downward-flow 2.5s linear infinite;
+    stroke-width: 3;
+    opacity: 1;
+    filter: drop-shadow(0 0 6px currentColor);
+}
+
+/* Processing vertical flow - enhanced downward movement */
+.connection-line.processing-downward {
+    stroke-dasharray: 10, 6;
+    animation: enhanced-downward-flow 2s linear infinite;
+    stroke-width: 4;
+    opacity: 1;
+    filter: drop-shadow(0 0 8px currentColor);
+}
+
+/* HORIZONTAL ANIMATIONS - Side branch flows */
+
+/* Left-to-right flow for optimization branches */
+.side-branch.active-rightward {
+    stroke-dasharray: 6, 4;
+    animation: horizontal-rightward-flow 2.2s linear infinite;
+    stroke-width: 3;
+    opacity: 0.9;
+    filter: drop-shadow(0 0 5px currentColor);
+}
+
+/* Right-to-left flow for judging branches */
+.side-branch.active-leftward {
+    stroke-dasharray: 6, 4;
+    animation: horizontal-leftward-flow 2.2s linear infinite;
+    stroke-width: 3;
+    opacity: 0.9;
+    filter: drop-shadow(0 0 5px currentColor);
+}
+
+/* BIDIRECTIONAL FLOW - For connections that can flow both ways */
+.connection-line.bidirectional {
+    stroke-dasharray: 4, 4, 8, 4;
+    animation: bidirectional-pulse 3s ease-in-out infinite;
+    opacity: 0.8;
+}
+
+/* VERTICAL DOWNWARD FLOW KEYFRAMES */
+@keyframes vertical-downward-flow {
+    0% {
+        stroke-dashoffset: 14; /* Start from top */
+        opacity: 0.7;
+        stroke-width: 3;
+        filter: drop-shadow(0 0 4px currentColor);
+    }
+    25% {
+        opacity: 0.9;
+        stroke-width: 3.2;
+        filter: drop-shadow(0 0 6px currentColor);
+    }
+    50% {
+        opacity: 1;
+        stroke-width: 3.5;
+        filter: drop-shadow(0 0 8px currentColor);
+    }
+    75% {
+        opacity: 0.9;
+        stroke-width: 3.2;
+        filter: drop-shadow(0 0 6px currentColor);
+    }
+    100% {
+        stroke-dashoffset: -14; /* End at bottom - creates downward flow */
+        opacity: 0.7;
+        stroke-width: 3;
+        filter: drop-shadow(0 0 4px currentColor);
+    }
+}
+
+/* ENHANCED DOWNWARD FLOW - Faster, more prominent */
+@keyframes enhanced-downward-flow {
+    0% {
+        stroke-dashoffset: 16;
+        opacity: 0.8;
+        stroke-width: 4;
+        filter: drop-shadow(0 0 6px currentColor);
+    }
+    30% {
+        opacity: 1;
+        stroke-width: 4.5;
+        filter: drop-shadow(0 0 10px currentColor);
+    }
+    70% {
+        opacity: 1;
+        stroke-width: 4.5;
+        filter: drop-shadow(0 0 10px currentColor);
+    }
+    100% {
+        stroke-dashoffset: -16; /* Strong downward movement */
+        opacity: 0.8;
+        stroke-width: 4;
+        filter: drop-shadow(0 0 6px currentColor);
+    }
+}
+
+/* HORIZONTAL RIGHTWARD FLOW KEYFRAMES */
+@keyframes horizontal-rightward-flow {
+    0% {
+        stroke-dashoffset: 10; /* Start from left */
+        opacity: 0.7;
+        stroke-width: 3;
+        filter: drop-shadow(0 0 4px currentColor);
+    }
+    25% {
+        opacity: 0.85;
+        stroke-width: 3.2;
+        filter: drop-shadow(0 0 5px currentColor);
+    }
+    50% {
+        opacity: 1;
+        stroke-width: 3.5;
+        filter: drop-shadow(0 0 7px currentColor);
+    }
+    75% {
+        opacity: 0.85;
+        stroke-width: 3.2;
+        filter: drop-shadow(0 0 5px currentColor);
+    }
+    100% {
+        stroke-dashoffset: -10; /* End at right - creates rightward flow */
+        opacity: 0.7;
+        stroke-width: 3;
+        filter: drop-shadow(0 0 4px currentColor);
+    }
+}
+
+/* HORIZONTAL LEFTWARD FLOW KEYFRAMES */
+@keyframes horizontal-leftward-flow {
+    0% {
+        stroke-dashoffset: -10; /* Start from right */
+        opacity: 0.7;
+        stroke-width: 3;
+        filter: drop-shadow(0 0 4px currentColor);
+    }
+    25% {
+        opacity: 0.85;
+        stroke-width: 3.2;
+        filter: drop-shadow(0 0 5px currentColor);
+    }
+    50% {
+        opacity: 1;
+        stroke-width: 3.5;
+        filter: drop-shadow(0 0 7px currentColor);
+    }
+    75% {
+        opacity: 0.85;
+        stroke-width: 3.2;
+        filter: drop-shadow(0 0 5px currentColor);
+    }
+    100% {
+        stroke-dashoffset: 10; /* End at left - creates leftward flow */
+        opacity: 0.7;
+        stroke-width: 3;
+        filter: drop-shadow(0 0 4px currentColor);
+    }
+}
+
+/* BIDIRECTIONAL PULSE - For connections that can flow both ways */
+@keyframes bidirectional-pulse {
+    0%, 100% {
+        opacity: 0.6;
+        stroke-width: 2.5;
+        filter: drop-shadow(0 0 3px currentColor);
+    }
+    25% {
+        opacity: 0.8;
+        stroke-width: 3;
+        filter: drop-shadow(0 0 5px currentColor);
+        stroke-dashoffset: 6; /* Slight rightward movement */
+    }
+    50% {
+        opacity: 1;
+        stroke-width: 3.5;
+        filter: drop-shadow(0 0 8px currentColor);
+        stroke-dashoffset: 0; /* Center position */
+    }
+    75% {
+        opacity: 0.8;
+        stroke-width: 3;
+        filter: drop-shadow(0 0 5px currentColor);
+        stroke-dashoffset: -6; /* Slight leftward movement */
+    }
+}
+
+/* DIAGONAL MOVEMENT ANIMATIONS */
+
+/* Diagonal down-right flow */
+.connection-line.diagonal-down-right {
+    stroke-dasharray: 8, 5;
+    animation: diagonal-down-right-flow 2.8s linear infinite;
+    stroke-width: 3;
+    opacity: 0.9;
+    filter: drop-shadow(0 0 6px currentColor);
+}
+
+/* Diagonal down-left flow */
+.connection-line.diagonal-down-left {
+    stroke-dasharray: 8, 5;
+    animation: diagonal-down-left-flow 2.8s linear infinite;
+    stroke-width: 3;
+    opacity: 0.9;
+    filter: drop-shadow(0 0 6px currentColor);
+}
+
+/* Diagonal up-right flow */
+.connection-line.diagonal-up-right {
+    stroke-dasharray: 8, 5;
+    animation: diagonal-up-right-flow 2.8s linear infinite;
+    stroke-width: 3;
+    opacity: 0.9;
+    filter: drop-shadow(0 0 6px currentColor);
+}
+
+/* Diagonal up-left flow */
+.connection-line.diagonal-up-left {
+    stroke-dasharray: 8, 5;
+    animation: diagonal-up-left-flow 2.8s linear infinite;
+    stroke-width: 3;
+    opacity: 0.9;
+    filter: drop-shadow(0 0 6px currentColor);
+}
+
+/* CURVED PATH ANIMATIONS */
+
+/* Clockwise curved flow */
+.connection-line.curved-clockwise {
+    stroke-dasharray: 12, 8;
+    animation: curved-clockwise-flow 3.2s linear infinite;
+    stroke-width: 3;
+    opacity: 0.8;
+    filter: drop-shadow(0 0 7px currentColor);
+}
+
+/* Counter-clockwise curved flow */
+.connection-line.curved-counter-clockwise {
+    stroke-dasharray: 12, 8;
+    animation: curved-counter-clockwise-flow 3.2s linear infinite;
+    stroke-width: 3;
+    opacity: 0.8;
+    filter: drop-shadow(0 0 7px currentColor);
+}
+
+/* DIAGONAL FLOW KEYFRAMES */
+
+/* Diagonal down-right movement */
+@keyframes diagonal-down-right-flow {
+    0% {
+        stroke-dashoffset: 13;
+        opacity: 0.7;
+        stroke-width: 3;
+        filter: drop-shadow(0 0 4px currentColor);
+    }
+    25% {
+        opacity: 0.85;
+        stroke-width: 3.3;
+        filter: drop-shadow(0 0 6px currentColor);
+    }
+    50% {
+        opacity: 1;
+        stroke-width: 3.6;
+        filter: drop-shadow(0 0 8px currentColor);
+    }
+    75% {
+        opacity: 0.85;
+        stroke-width: 3.3;
+        filter: drop-shadow(0 0 6px currentColor);
+    }
+    100% {
+        stroke-dashoffset: -13; /* Creates down-right movement */
+        opacity: 0.7;
+        stroke-width: 3;
+        filter: drop-shadow(0 0 4px currentColor);
+    }
+}
+
+/* Diagonal down-left movement */
+@keyframes diagonal-down-left-flow {
+    0% {
+        stroke-dashoffset: -13;
+        opacity: 0.7;
+        stroke-width: 3;
+        filter: drop-shadow(0 0 4px currentColor);
+    }
+    25% {
+        opacity: 0.85;
+        stroke-width: 3.3;
+        filter: drop-shadow(0 0 6px currentColor);
+    }
+    50% {
+        opacity: 1;
+        stroke-width: 3.6;
+        filter: drop-shadow(0 0 8px currentColor);
+    }
+    75% {
+        opacity: 0.85;
+        stroke-width: 3.3;
+        filter: drop-shadow(0 0 6px currentColor);
+    }
+    100% {
+        stroke-dashoffset: 13; /* Creates down-left movement */
+        opacity: 0.7;
+        stroke-width: 3;
+        filter: drop-shadow(0 0 4px currentColor);
+    }
+}
+
+/* Diagonal up-right movement */
+@keyframes diagonal-up-right-flow {
+    0% {
+        stroke-dashoffset: -13;
+        opacity: 0.7;
+        stroke-width: 3;
+        filter: drop-shadow(0 0 4px currentColor);
+    }
+    25% {
+        opacity: 0.85;
+        stroke-width: 3.3;
+        filter: drop-shadow(0 0 6px currentColor);
+    }
+    50% {
+        opacity: 1;
+        stroke-width: 3.6;
+        filter: drop-shadow(0 0 8px currentColor);
+    }
+    75% {
+        opacity: 0.85;
+        stroke-width: 3.3;
+        filter: drop-shadow(0 0 6px currentColor);
+    }
+    100% {
+        stroke-dashoffset: 13; /* Creates up-right movement */
+        opacity: 0.7;
+        stroke-width: 3;
+        filter: drop-shadow(0 0 4px currentColor);
+    }
+}
+
+/* Diagonal up-left movement */
+@keyframes diagonal-up-left-flow {
+    0% {
+        stroke-dashoffset: 13;
+        opacity: 0.7;
+        stroke-width: 3;
+        filter: drop-shadow(0 0 4px currentColor);
+    }
+    25% {
+        opacity: 0.85;
+        stroke-width: 3.3;
+        filter: drop-shadow(0 0 6px currentColor);
+    }
+    50% {
+        opacity: 1;
+        stroke-width: 3.6;
+        filter: drop-shadow(0 0 8px currentColor);
+    }
+    75% {
+        opacity: 0.85;
+        stroke-width: 3.3;
+        filter: drop-shadow(0 0 6px currentColor);
+    }
+    100% {
+        stroke-dashoffset: -13; /* Creates up-left movement */
+        opacity: 0.7;
+        stroke-width: 3;
+        filter: drop-shadow(0 0 4px currentColor);
+    }
+}
+
+/* CURVED FLOW KEYFRAMES */
+
+/* Clockwise curved movement */
+@keyframes curved-clockwise-flow {
+    0% {
+        stroke-dashoffset: 20;
+        opacity: 0.6;
+        stroke-width: 3;
+        filter: drop-shadow(0 0 5px currentColor);
+    }
+    20% {
+        opacity: 0.8;
+        stroke-width: 3.2;
+        filter: drop-shadow(0 0 6px currentColor);
+    }
+    40% {
+        opacity: 1;
+        stroke-width: 3.5;
+        filter: drop-shadow(0 0 8px currentColor);
+    }
+    60% {
+        opacity: 1;
+        stroke-width: 3.5;
+        filter: drop-shadow(0 0 8px currentColor);
+    }
+    80% {
+        opacity: 0.8;
+        stroke-width: 3.2;
+        filter: drop-shadow(0 0 6px currentColor);
+    }
+    100% {
+        stroke-dashoffset: -20; /* Creates clockwise movement */
+        opacity: 0.6;
+        stroke-width: 3;
+        filter: drop-shadow(0 0 5px currentColor);
+    }
+}
+
+/* Counter-clockwise curved movement */
+@keyframes curved-counter-clockwise-flow {
+    0% {
+        stroke-dashoffset: -20;
+        opacity: 0.6;
+        stroke-width: 3;
+        filter: drop-shadow(0 0 5px currentColor);
+    }
+    20% {
+        opacity: 0.8;
+        stroke-width: 3.2;
+        filter: drop-shadow(0 0 6px currentColor);
+    }
+    40% {
+        opacity: 1;
+        stroke-width: 3.5;
+        filter: drop-shadow(0 0 8px currentColor);
+    }
+    60% {
+        opacity: 1;
+        stroke-width: 3.5;
+        filter: drop-shadow(0 0 8px currentColor);
+    }
+    80% {
+        opacity: 0.8;
+        stroke-width: 3.2;
+        filter: drop-shadow(0 0 6px currentColor);
+    }
+    100% {
+        stroke-dashoffset: 20; /* Creates counter-clockwise movement */
+        opacity: 0.6;
+        stroke-width: 3;
+        filter: drop-shadow(0 0 5px currentColor);
+    }
+}
+
+/* SPECIALIZED MOVEMENT PATTERNS */
+
+/* Pulsing standby - For inactive connections ready to activate */
+.connection-line.standby-ready {
+    stroke-dasharray: 6, 6;
+    animation: standby-ready-pulse 4s ease-in-out infinite;
+    opacity: 0.5;
+    stroke-width: 2;
+}
+
+/* Error/broken connection animation */
+.connection-line.connection-error {
+    stroke-dasharray: 4, 8;
+    animation: error-flicker 1.8s ease-in-out infinite;
+    opacity: 0.6;
+    stroke-width: 2.5;
+    stroke: #e74c3c;
+}
+
+/* SPECIALIZED ANIMATION KEYFRAMES */
+
+@keyframes standby-ready-pulse {
+    0%, 100% {
+        opacity: 0.3;
+        stroke-width: 2;
+        filter: drop-shadow(0 0 2px currentColor);
+    }
+    50% {
+        opacity: 0.7;
+        stroke-width: 2.5;
+        filter: drop-shadow(0 0 5px currentColor);
+    }
+}
+
+@keyframes error-flicker {
+    0%, 100% {
+        opacity: 0.6;
+        stroke-dashoffset: 0;
+        filter: drop-shadow(0 0 3px #e74c3c);
+    }
+    25% {
+        opacity: 0.2;
+        stroke-dashoffset: -3;
+        filter: drop-shadow(0 0 1px #e74c3c);
+    }
+    50% {
+        opacity: 0.9;
+        stroke-dashoffset: -6;
+        filter: drop-shadow(0 0 6px #e74c3c);
+    }
+    75% {
+        opacity: 0.1;
+        stroke-dashoffset: -9;
+        filter: drop-shadow(0 0 1px #e74c3c);
+    }
+}
+
+
+/* PROVIDER ANIMATION STYLES */
+
+/* Provider node activation */
+.hex-node.provider-active {
+    animation: provider-pulse 1.5s ease-in-out;
+}
+
+@keyframes provider-pulse {
+    0% {
+        transform: scale(1);
+        filter: brightness(1) drop-shadow(0 0 0 transparent);
+    }
+    50% {
+        transform: scale(1.15);
+        filter: brightness(1.5) drop-shadow(0 0 20px currentColor);
+    }
+    100% {
+        transform: scale(1);
+        filter: brightness(1) drop-shadow(0 0 0 transparent);
+    }
+}
+
+/* Provider forward animation path (hub to provider) */
+.provider-animation-path.provider-forward {
+    stroke-dasharray: 10, 10;
+    stroke-dashoffset: 0;
+    animation: provider-forward-flow 1s ease-out forwards;
+}
+
+@keyframes provider-forward-flow {
+    0% {
+        stroke-dashoffset: 20;
+        opacity: 0;
+        stroke-width: 0;
+        filter: drop-shadow(0 0 0 transparent);
+    }
+    20% {
+        opacity: 1;
+        stroke-width: 3;
+        filter: drop-shadow(0 0 8px #ffcc33);
+    }
+    100% {
+        stroke-dashoffset: -20;
+        opacity: 0.8;
+        stroke-width: 3;
+        filter: drop-shadow(0 0 12px #ffcc33);
+    }
+}
+
+/* Provider backward animation path (provider to hub) */
+.provider-animation-path.provider-backward {
+    stroke-dasharray: 10, 10;
+    stroke-dashoffset: 0;
+    animation: provider-backward-flow 1s ease-out forwards;
+    stroke: #4ecdc4;
+}
+
+@keyframes provider-backward-flow {
+    0% {
+        stroke-dashoffset: -20;
+        opacity: 0;
+        stroke-width: 0;
+        filter: drop-shadow(0 0 0 transparent);
+    }
+    20% {
+        opacity: 1;
+        stroke-width: 3;
+        filter: drop-shadow(0 0 8px #4ecdc4);
+    }
+    100% {
+        stroke-dashoffset: 20;
+        opacity: 0.8;
+        stroke-width: 3;
+        filter: drop-shadow(0 0 12px #4ecdc4);
+    }
+}
+
+/* Provider connection paths */
+.hex-path.provider {
+    stroke: #95a5a6;
+    stroke-width: 2;
+    stroke-opacity: 0.3;
+    stroke-dasharray: 5, 5;
+    transition: all 0.3s ease;
+}
+
+.hex-path.provider:hover {
+    stroke-opacity: 0.6;
+    stroke-width: 2.5;
+    filter: drop-shadow(0 0 8px currentColor);
+}
+
+/* Phase node activation */
+.hex-node.phase-active {
+    animation: phase-activate 2s ease-in-out;
+}
+
+@keyframes phase-activate {
+    0%, 100% {
+        filter: brightness(1) drop-shadow(0 0 10px transparent);
+    }
+    50% {
+        filter: brightness(1.3) drop-shadow(0 0 25px currentColor);
+    }
+}
+
+/* Phase incoming animation */
+.hex-node.phase-incoming {
+    animation: phase-incoming-pulse 1s ease-out;
+}
+
+@keyframes phase-incoming-pulse {
+    0% {
+        transform: scale(1);
+        filter: brightness(1);
+    }
+    50% {
+        transform: scale(1.1);
+        filter: brightness(1.4) drop-shadow(0 0 15px currentColor);
+    }
+    100% {
+        transform: scale(1);
+        filter: brightness(1);
+    }
+}
+
+/* Phase transition path animation */
+.hex-path.phase-transition-active {
+    animation: phase-transition-flow 1.5s ease-out;
+}
+
+@keyframes phase-transition-flow {
+    0% {
+        stroke-width: 2;
+        stroke-opacity: 0.3;
+        filter: drop-shadow(0 0 0 transparent);
+    }
+    50% {
+        stroke-width: 4;
+        stroke-opacity: 1;
+        filter: drop-shadow(0 0 15px currentColor);
+    }
+    100% {
+        stroke-width: 2;
+        stroke-opacity: 0.3;
+        filter: drop-shadow(0 0 0 transparent);
+    }
+}
+
+/* Flow animations for hub connections */
+.hex-path.flow-active-to-hub {
+    animation: flow-to-hub 0.3s ease-out forwards;
+}
+
+@keyframes flow-to-hub {
+    0% {
+        stroke-dasharray: 10, 10;
+        stroke-dashoffset: 0;
+        stroke-opacity: 0.3;
+        stroke-width: 2;
+    }
+    100% {
+        stroke-dasharray: 10, 10;
+        stroke-dashoffset: -20;
+        stroke-opacity: 1;
+        stroke-width: 3;
+        filter: drop-shadow(0 0 10px currentColor);
+    }
+}
+
+.hex-path.flow-active-from-hub {
+    animation: flow-from-hub 0.3s ease-out forwards;
+}
+
+@keyframes flow-from-hub {
+    0% {
+        stroke-dasharray: 10, 10;
+        stroke-dashoffset: -20;
+        stroke-opacity: 0.3;
+        stroke-width: 2;
+    }
+    100% {
+        stroke-dasharray: 10, 10;
+        stroke-dashoffset: 0;
+        stroke-opacity: 1;
+        stroke-width: 3;
+        filter: drop-shadow(0 0 10px currentColor);
+    }
+}
+
+/* Generation complete celebration */
+.hex-node.generation-complete {
+    animation: generation-celebrate 2s ease-out;
+}
+
+@keyframes generation-celebrate {
+    0%, 100% {
+        transform: scale(1) rotate(0deg);
+        filter: brightness(1) drop-shadow(0 0 10px transparent);
+    }
+    25% {
+        transform: scale(1.2) rotate(5deg);
+        filter: brightness(1.5) drop-shadow(0 0 30px #ffd700);
+    }
+    50% {
+        transform: scale(1.3) rotate(-5deg);
+        filter: brightness(2) drop-shadow(0 0 40px #ffd700);
+    }
+    75% {
+        transform: scale(1.2) rotate(3deg);
+        filter: brightness(1.5) drop-shadow(0 0 30px #ffd700);
+    }
+}
+
+/* Success particle burst */
+.success-particle {
+    animation: particle-burst 1.5s ease-out forwards;
+    animation-delay: var(--delay);
+}
+
+@keyframes particle-burst {
+    0% {
+        transform: translate(0, 0) scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(
+            calc(cos(var(--angle)) * 100px),
+            calc(sin(var(--angle)) * 100px)
+        ) scale(0);
+        opacity: 0;
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .hex-flow-container {
+        height: 500px;
+    }
+    
+    .legend-dropdown {
+        top: 12px;
+        right: 12px;
+    }
+    
+    .legend-trigger {
+        padding: 6px 10px;
+        font-size: 13px;
+    }
+    
+    .legend-content {
+        min-width: 240px;
+        max-width: calc(100vw - 32px);
+        right: -12px;
+    }
+    
+    .flow-info-panel {
+        display: none;
+    }
+    
+    .hex-tooltip {
+        max-width: 250px;
+    }
+}

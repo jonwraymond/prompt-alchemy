@@ -32,10 +32,9 @@ func (p *OpenRouterProvider) Generate(ctx context.Context, req GenerateRequest) 
 	}, nil
 }
 
-// GetEmbedding generates an embedding for the given text
+// GetEmbedding delegates to standardized embedding to ensure 1536 dimensions
 func (p *OpenRouterProvider) GetEmbedding(ctx context.Context, text string, registry RegistryInterface) ([]float32, error) {
-	// Placeholder implementation
-	return []float32{0.4, 0.5, 0.6}, nil
+	return getStandardizedEmbedding(ctx, text, registry)
 }
 
 // Name returns the name of the provider

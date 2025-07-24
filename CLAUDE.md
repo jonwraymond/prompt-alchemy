@@ -2,6 +2,42 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## IMPORTANT: Docker Development Workflow
+
+### Always Rebuild After Changes
+**CRITICAL**: After making any code changes, especially to the web UI or API endpoints, you MUST rebuild the Docker containers to see the changes:
+
+```bash
+# Rebuild with no cache to ensure all changes are included
+docker-compose build --no-cache
+
+# Then restart the containers
+docker-compose --profile hybrid up -d
+```
+
+Without rebuilding, the containers will continue running old code and you won't see your changes reflected.
+
+### Live Reload for UI Development
+To enable live reload during development, use the development compose configuration:
+
+```bash
+# Start containers with live reload enabled
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml --profile hybrid up -d
+
+# Now any changes to these files will be instantly visible:
+# - web/static/js/*.js
+# - web/static/css/*.css  
+# - web/templates/*.html
+```
+
+The development configuration mounts local directories as volumes, so changes are reflected immediately without rebuilding. This includes:
+- ✅ JavaScript files (instant updates)
+- ✅ CSS files (instant updates)
+- ✅ HTML templates (instant updates)
+- ⚠️ Go code changes still require rebuild
+
+For production deployments, always use the standard docker-compose.yml with a full rebuild.
+
 ## IMPORTANT: MCP Tool Usage for Prompts
 
 **ALWAYS use the prompt-alchemy MCP tools for any prompt-related tasks:**

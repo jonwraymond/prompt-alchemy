@@ -16,8 +16,9 @@ COPY . .
 # Ensure schema.sql is available at runtime
 COPY internal/storage/schema.sql /app/schema.sql
 
-# Build the binary with CGO enabled for SQLite support
+# Build the binaries with CGO enabled for SQLite support
 RUN CGO_ENABLED=1 GOOS=linux go build -o prompt-alchemy ./cmd/prompt-alchemy
+RUN CGO_ENABLED=1 GOOS=linux go build -o prompt-alchemy-web ./cmd/web
 
 # Stage 2: Create the final image
 FROM debian:12-slim
@@ -25,12 +26,16 @@ FROM debian:12-slim
 # Install ca-certificates and curl for HTTPS requests and health checks
 RUN apt-get update && apt-get install -y ca-certificates curl && rm -rf /var/lib/apt/lists/*
 
-# Copy the binary from the builder stage
+# Copy the binaries from the builder stage
 COPY --from=builder /app/prompt-alchemy /usr/local/bin/prompt-alchemy
+COPY --from=builder /app/prompt-alchemy-web /usr/local/bin/prompt-alchemy-web
 
 # Copy schema file to expected location
 COPY --from=builder /app/schema.sql /app/schema.sql
 COPY --from=builder /app/internal/storage/schema.sql /app/internal/storage/schema.sql
+
+# Copy web templates and static files for the web UI
+COPY --from=builder /app/web /app/web
 
 # Create app directory for data
 RUN mkdir -p /app/data /app/internal/storage

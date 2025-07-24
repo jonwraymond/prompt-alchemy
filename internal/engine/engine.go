@@ -373,32 +373,20 @@ func (e *Engine) generateSinglePrompt(ctx context.Context, phase models.Phase, p
 
 // getEmbeddingModelName returns the embedding model name for a provider
 func getEmbeddingModelName(providerName string) string {
-	// Use default embedding model from config for OpenAI provider
-	if providerName == providers.ProviderOpenAI {
-		defaultEmbeddingModel := viper.GetString("generation.default_embedding_model")
-		if defaultEmbeddingModel != "" {
-			return defaultEmbeddingModel
-		}
+	// Use standardized embedding model for all providers to ensure compatibility
+	defaultEmbeddingModel := viper.GetString("embeddings.model")
+	if defaultEmbeddingModel != "" {
+		return defaultEmbeddingModel
 	}
 
-	switch providerName {
-	case providers.ProviderOpenAI:
-		return "text-embedding-3-small"
-	case providers.ProviderOpenRouter:
-		return "openai/text-embedding-3-small"
-	case providers.ProviderAnthropic:
-		// Anthropic doesn't have native embeddings
-		return "none"
-	case providers.ProviderGoogle:
-		return "text-embedding-004"
-	case providers.ProviderGrok:
-		// Grok doesn't have native embeddings, falls back to OpenAI
-		return "none"
-	case providers.ProviderOllama:
-		return "nomic-embed-text"
-	default:
-		return "unknown"
+	// Fallback to generation config
+	defaultEmbeddingModel = viper.GetString("generation.default_embedding_model")
+	if defaultEmbeddingModel != "" {
+		return defaultEmbeddingModel
 	}
+
+	// All providers now use standardized OpenAI embedding model
+	return "text-embedding-3-small"
 }
 
 // calculateInputTokens estimates input tokens (simple approximation)

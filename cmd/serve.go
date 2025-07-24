@@ -134,7 +134,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 
 	var learner *learning.LearningEngine
 	if viper.GetBool("learning_mode") {
-		learner = learning.NewLearningEngine(store, logger)
+		learner = learning.NewLearningEngine(store, registry, logger)
 		learner.StartBackgroundLearning(ctx)
 	}
 

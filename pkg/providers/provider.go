@@ -218,3 +218,13 @@ func (r *Registry) ListEmbeddingCapableProviders() []string {
 	}
 	return capable
 }
+
+// ListProviders returns a list of all registered provider names
+func (r *Registry) ListProviders() []string {
+	names := make([]string, 0, len(r.providers))
+	for name := range r.providers {
+		names = append(names, name)
+	}
+
+	return names
+}

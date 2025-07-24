@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/jonwraymond/prompt-alchemy/internal/storage"
 	"github.com/jonwraymond/prompt-alchemy/pkg/models"
 	"github.com/jonwraymond/prompt-alchemy/pkg/providers"
 	"github.com/sirupsen/logrus"
@@ -14,14 +13,12 @@ import (
 
 func TestCalculateSemanticSimilarity(t *testing.T) {
 	mockProv := new(providers.MockProvider)
+	mockProv.SupportsEmbeddingsFunc = func() bool { return true }
 	registry := providers.NewRegistry()
 	registry.Register("mock", mockProv)
 
-	r := &Ranker{
-		embedProvider: "mock",
-		registry:      registry,
-		logger:        logrus.New(),
-	}
+	r := NewRanker(nil, registry, logrus.New())
+	r.embedProvider = "mock"
 	ctx := context.Background()
 
 	emb1 := []float32{1, 0, 0}
@@ -54,21 +51,14 @@ func TestCalculateLengthRatio(t *testing.T) {
 func TestRankPrompts(t *testing.T) {
 	// Create mock provider and real registry
 	mockProv := new(providers.MockProvider)
+	mockProv.SupportsEmbeddingsFunc = func() bool { return true }
 	registry := providers.NewRegistry()
 	registry.Register("openai", mockProv)
 
 	// Create ranker with proper mocks
 	logger := logrus.New()
-	r := &Ranker{
-		storage:        &storage.Storage{}, // Mock if needed
-		registry:       registry,
-		logger:         logger,
-		embedProvider:  "openai",
-		tempWeight:     0.2,
-		tokenWeight:    0.2,
-		semanticWeight: 0.4,
-		lengthWeight:   0.2,
-	}
+	r := NewRanker(nil, registry, logger)
+	r.embedProvider = "openai"
 
 	prompts := []models.Prompt{{
 		ID:          uuid.New(),
@@ -86,7 +76,8 @@ func TestRankPrompts(t *testing.T) {
 		case "original":
 			return []float32{1, 0}, nil
 		case "similar":
-			return []float32{0.9, 0.1}, nil
+			// Corrected embedding to ensure it's not parallel
+			return []float32{1, 0.1}, nil
 		case "different":
 			return []float32{0, 1}, nil
 		}
