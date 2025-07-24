@@ -34,6 +34,7 @@
     <link rel="stylesheet" href="/static/css/header-rainbow-glow.css">
     <script src="/static/js/hex-flow-unified.js" defer></script>
     <script src="/static/js/header-check.js" defer></script>
+    <script src="/static/js/header-debug.js" defer></script>
     
     <!-- Emergency inline styles to force display -->
     <style>
@@ -2908,17 +2909,43 @@
             // Clear and create nodes
             nodesGroup.innerHTML = '';
             
-            // Create test nodes to verify it works
-            const testNodes = [
-                { id: 'hub', x: 500, y: 350, color: '#ff6b35', title: 'Hub' },
-                { id: 'prima', x: 500, y: 250, color: '#ff6b6b', title: 'Prima' },
-                { id: 'solutio', x: 600, y: 350, color: '#4ecdc4', title: 'Solutio' },
-                { id: 'coagulatio', x: 400, y: 350, color: '#45b7d1', title: 'Coagulatio' },
-                { id: 'input', x: 300, y: 350, color: '#ffcc33', title: 'Input' },
-                { id: 'output', x: 700, y: 350, color: '#ffd700', title: 'Output' }
+            // Create FULL rich node set from generateRadialLayout definition
+            const fullNodes = [
+                // Core (radius 0)
+                { id: 'hub', x: 500, y: 350, color: '#ff6b35', icon: '⚛', title: 'Transmutation Core', type: 'core' },
+                
+                // Main Phases (radius 140, start -90°)
+                { id: 'prima', x: 500, y: 210, color: '#ff6b6b', icon: '🔬', title: 'Prima Materia', type: 'phase-prima' },
+                { id: 'solutio', x: 621, y: 280, color: '#4ecdc4', icon: '💧', title: 'Solutio', type: 'phase-solutio' },
+                { id: 'coagulatio', x: 379, y: 280, color: '#45b7d1', icon: '💎', title: 'Coagulatio', type: 'phase-coagulatio' },
+                
+                // Gateways (radius 320, start 180°)
+                { id: 'input', x: 180, y: 350, color: '#ffcc33', icon: '⚡', title: 'Input Gateway', type: 'special' },
+                { id: 'output', x: 820, y: 350, color: '#ffd700', icon: '✨', title: 'Output Gateway', type: 'special' },
+                
+                // Processors (radius 200, start -30°)
+                { id: 'parse', x: 673, y: 247, color: '#3498db', icon: '🔍', title: 'Parse Structure', type: 'enhanced' },
+                { id: 'extract', x: 673, y: 453, color: '#e74c3c', icon: '💡', title: 'Extract Concepts', type: 'enhanced' },
+                { id: 'flow', x: 500, y: 550, color: '#4ecdc4', icon: '🌊', title: 'Language Flow', type: 'enhanced' },
+                { id: 'refine', x: 327, y: 453, color: '#4ecdc4', icon: '✨', title: 'Refine Style', type: 'enhanced' },
+                { id: 'validate', x: 327, y: 247, color: '#2ecc71', icon: '✅', title: 'Quality Check', type: 'validator' },
+                { id: 'finalize', x: 500, y: 150, color: '#2ecc71', icon: '📋', title: 'Finalize', type: 'validator' },
+                
+                // Features (radius 320, start 210°)
+                { id: 'optimize', x: 274, y: 534, color: '#9b59b6', icon: '🔧', title: 'Multi-Phase Optimizer', type: 'feature' },
+                { id: 'judge', x: 726, y: 534, color: '#e67e22', icon: '⚖️', title: 'AI Judge', type: 'feature' },
+                { id: 'database', x: 500, y: 670, color: '#34495e', icon: '💾', title: 'Vector Storage', type: 'feature' },
+                
+                // Providers (radius 450, start 0°)
+                { id: 'openai', x: 950, y: 350, color: '#10a37f', icon: '🤖', title: 'OpenAI', type: 'provider' },
+                { id: 'anthropic', x: 50, y: 350, color: '#d07d5b', icon: '📚', title: 'Anthropic', type: 'provider' },
+                { id: 'google', x: 500, y: 50, color: '#4285f4', icon: '✨', title: 'Google', type: 'provider' },
+                { id: 'grok', x: 890, y: 166, color: '#fbbc05', icon: '🚀', title: 'Grok', type: 'provider' },
+                { id: 'openrouter', x: 110, y: 166, color: '#9b59b6', icon: '↔️', title: 'OpenRouter', type: 'provider' },
+                { id: 'ollama', x: 500, y: 650, color: '#e74c3c', icon: '💻', title: 'Ollama', type: 'provider' }
             ];
             
-            testNodes.forEach(nodeData => {
+            fullNodes.forEach(nodeData => {
                 const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
                 group.setAttribute('class', 'hex-node ultra-force');
                 group.setAttribute('data-id', nodeData.id);
@@ -2941,15 +2968,57 @@
                 text.setAttribute('text-anchor', 'middle');
                 text.setAttribute('dy', '0.35em');
                 text.setAttribute('fill', 'white');
-                text.setAttribute('font-size', '10');
-                text.textContent = nodeData.title;
+                text.setAttribute('font-size', '9');
+                text.setAttribute('font-weight', 'bold');
+                text.textContent = (nodeData.icon || '') + ' ' + nodeData.title;
                 
                 group.appendChild(hex);
                 group.appendChild(text);
                 nodesGroup.appendChild(group);
             });
             
-            console.log('🎉 ULTRA FORCE: Created', testNodes.length, 'hex nodes');
+            console.log('🎉 ULTRA FORCE: Created', fullNodes.length, 'hex nodes');
+            
+            // Add connection lines between key nodes
+            const pathsGroup = document.getElementById('connection-paths');
+            if (pathsGroup) {
+                pathsGroup.innerHTML = '';
+                
+                // Core connections
+                const connections = [
+                    // Hub to main phases
+                    { from: 'hub', to: 'prima' },
+                    { from: 'hub', to: 'solutio' },  
+                    { from: 'hub', to: 'coagulatio' },
+                    // Phase flow
+                    { from: 'prima', to: 'solutio' },
+                    { from: 'solutio', to: 'coagulatio' },
+                    // Input/Output
+                    { from: 'input', to: 'hub' },
+                    { from: 'hub', to: 'output' },
+                    // Some processor connections
+                    { from: 'prima', to: 'parse' },
+                    { from: 'solutio', to: 'flow' },
+                    { from: 'coagulatio', to: 'validate' }
+                ];
+                
+                connections.forEach(conn => {
+                    const fromNode = fullNodes.find(n => n.id === conn.from);
+                    const toNode = fullNodes.find(n => n.id === conn.to);
+                    
+                    if (fromNode && toNode) {
+                        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                        path.setAttribute('d', `M ${fromNode.x} ${fromNode.y} L ${toNode.x} ${toNode.y}`);
+                        path.setAttribute('stroke', '#666');
+                        path.setAttribute('stroke-width', '1');
+                        path.setAttribute('stroke-opacity', '0.6');
+                        path.setAttribute('stroke-dasharray', '2,2');
+                        pathsGroup.appendChild(path);
+                    }
+                });
+                
+                console.log('✅ Added', connections.length, 'connection lines');
+            }
             
             // Try to create UnifiedHexFlow instance after DOM is ready
             if (typeof UnifiedHexFlow !== 'undefined' && !window.unifiedHexFlow) {

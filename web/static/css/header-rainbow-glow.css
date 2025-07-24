@@ -22,21 +22,23 @@
 
 /* Individual letter styling */
 .main-title .letter {
-    display: inline-block;
-    position: relative;
+    display: inline-block !important;
+    position: relative !important;
     color: white !important;
     -webkit-text-fill-color: white !important;
     background: none !important;
     -webkit-background-clip: unset !important;
     background-clip: unset !important;
-    cursor: pointer;
-    transition: all 0.3s ease;
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+    z-index: 1 !important;
 }
 
 /* Rainbow glow effect on hover */
 .main-title .letter:hover {
-    transform: scale(1.05);
-    filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.3));
+    transform: scale(1.1) !important;
+    filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.5)) !important;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.8) !important;
 }
 
 /* Rainbow glow animation using pseudo-elements */
