@@ -3075,6 +3075,29 @@
                     
                     console.log('🎮 Test function available: testHexAnimation()');
                     
+                    // BYPASS BACKEND: Add direct animation trigger on form submit
+                    const generateForm = document.getElementById('generate-form');
+                    if (generateForm) {
+                        generateForm.addEventListener('submit', function(e) {
+                            console.log('🎬 Generate form submitted - triggering animation!');
+                            
+                            // Prevent HTMX request if backend is down
+                            if (e.target.getAttribute('data-bypass-backend') === 'true') {
+                                e.preventDefault();
+                                e.stopPropagation();
+                            }
+                            
+                            // Always trigger animation
+                            setTimeout(() => {
+                                if (window.unifiedHexFlow) {
+                                    window.unifiedHexFlow.startProcessFlowWithAnimation();
+                                }
+                            }, 100);
+                        });
+                        
+                        console.log('🔧 Form animation trigger added');
+                    }
+                    
                 } catch (e) {
                     console.log('⚠️ UnifiedHexFlow creation skipped:', e.message);
                 }

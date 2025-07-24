@@ -36,6 +36,12 @@
     animation: none !important;
     transform: none !important;
     filter: none !important;
+    margin-right: 0.1em !important;
+}
+
+/* Add extra space after "PROMPT" */
+.main-title .letter[data-letter="T"] {
+    margin-right: 0.5em !important;
 }
 
 /* Rainbow glow effect on hover */
