@@ -72,19 +72,11 @@ class UnifiedHexFlow {
     
     init() {
         console.log('UnifiedHexFlow: init() called');
-        // Check if nodes already exist from server-side rendering
-        const existingNodes = this.nodesGroup.querySelectorAll('.hex-node');
-        console.log('Existing nodes found:', existingNodes.length);
         
-        if (existingNodes.length > 0) {
-            console.log('Found existing server-rendered nodes, integrating them...');
-            this.integrateServerNodes();
-        } else {
-            console.log('No existing nodes, creating fresh network...');
-            // No existing nodes, create fresh
-            this.clearExistingNodes();
-            this.createNodeNetwork();
-        }
+        // FORCE FRESH NETWORK CREATION - Always create the rich visualization
+        console.log('🔥 FORCE: Creating fresh rich network visualization...');
+        this.clearExistingNodes();
+        this.createNodeNetwork();
         
         console.log('Creating connections...');
         // Always recreate connections and setup interactions
@@ -361,12 +353,21 @@ class UnifiedHexFlow {
     }
     
     createNodeNetwork() {
-        console.log('createNodeNetwork: Starting node creation...');
+        console.log('🚀 createNodeNetwork: Starting node creation...');
         
         try {
             // Calculate radial positions for a clean circular layout
             const nodeDefinitions = this.generateRadialLayout();
-            console.log('createNodeNetwork: Got node definitions:', nodeDefinitions.length);
+            console.log('📋 createNodeNetwork: Got node definitions:', nodeDefinitions.length);
+            
+            // Log the actual node definitions for debugging
+            console.log('📋 Node categories breakdown:');
+            const categories = {};
+            nodeDefinitions.forEach(node => {
+                if (!categories[node.type]) categories[node.type] = 0;
+                categories[node.type]++;
+            });
+            console.log(categories);
             
             if (!nodeDefinitions || nodeDefinitions.length === 0) {
                 console.error('❌ No node definitions generated!');
@@ -1394,6 +1395,25 @@ class UnifiedHexFlow {
             const { phase, provider } = event.detail;
             this.animateProviderCall(phase, provider);
         });
+    }
+    
+    getPhaseProviders() {
+        // Get provider configuration from form
+        const form = document.querySelector('form');
+        if (!form) {
+            return {
+                'prima-materia': 'openai',
+                'solutio': 'openai', 
+                'coagulatio': 'openai'
+            };
+        }
+        
+        const formData = new FormData(form);
+        return {
+            'prima-materia': formData.get('prima-materia-provider') || 'openai',
+            'solutio': formData.get('solutio-provider') || 'openai',
+            'coagulatio': formData.get('coagulatio-provider') || 'openai'
+        };
     }
     
     startProcessFlowWithAnimation() {
@@ -3096,37 +3116,3 @@ console.log('  • input-relationship: Input flow (golden waves from input)');
 console.log('  • output-relationship: Output flow (golden waves to output)');
 console.log('  • ready-to-flow: Ready state (pulsing dotted)');
 
-// Initialize global instance when DOM is ready
-function initializeUnifiedHexFlow() {
-    console.log('🚀 Initializing UnifiedHexFlow global instance...');
-    
-    if (typeof UnifiedHexFlow === 'undefined') {
-        console.error('❌ UnifiedHexFlow class not available!');
-        return false;
-    }
-    
-    if (window.unifiedHexFlow) {
-        console.log('⚠️ UnifiedHexFlow instance already exists');
-        return true;
-    }
-    
-    try {
-        window.unifiedHexFlow = new UnifiedHexFlow();
-        console.log('✅ UnifiedHexFlow global instance created successfully');
-        return true;
-    } catch (error) {
-        console.error('❌ Failed to create UnifiedHexFlow instance:', error);
-        return false;
-    }
-}
-
-// Auto-initialize when DOM is ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeUnifiedHexFlow);
-} else {
-    // DOM is already ready
-    initializeUnifiedHexFlow();
-}
-
-// Make initialization function globally available
-window.initializeUnifiedHexFlow = initializeUnifiedHexFlow;

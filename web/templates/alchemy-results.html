@@ -100,7 +100,7 @@
         </h3>
         
         {{range $index, $prompt := .Results}}
-        <div class="glass-card magnetic-hover" style="--delay-index: {{$index}}; animation: fadeIn 0.6s ease-out; animation-delay: calc(var(--delay-index) * 0.1s);">
+        <div class="glass-card magnetic-hover result-item" data-delay="{{$index}}">
             <!-- Result Header -->
             <div class="flex items-center justify-between mb-3 phase-{{.Phase}}" style="padding: 1rem; margin: -2rem -2rem 1rem -2rem; background: rgba(0,0,0,0.2); border-radius: 12px 12px 0 0;">
                 <div class="flex items-center space-x-3">
@@ -373,6 +373,12 @@ function attemptRetransmutation() {
 
 // Add magical hover effects and modern animations
 document.addEventListener('DOMContentLoaded', function() {
+    // Set animation delays for result items
+    document.querySelectorAll('.result-item').forEach((item, index) => {
+        const delay = item.dataset.delay || index;
+        item.style.animationDelay = `${delay * 100}ms`;
+    });
+    
     // Add ripple effect to buttons
     document.querySelectorAll('.ripple').forEach(button => {
         button.addEventListener('click', function(e) {
@@ -427,6 +433,10 @@ document.head.appendChild(style);
 // Add particle burst styles
 const burstStyle = document.createElement('style');
 burstStyle.textContent = `
+    .result-item {
+        animation: fadeIn 0.6s ease-out;
+    }
+    
     .burst-particle {
         position: absolute;
         width: 4px;
