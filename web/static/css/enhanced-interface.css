@@ -1,0 +1,276 @@
+/* Enhanced Interface Styles */
+
+/* Import modern fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* Root variables */
+:root {
+    --bg-primary: #0a0a0a;
+    --bg-secondary: #1a1a1a;
+    --text-primary: #ffffff;
+    --text-secondary: #a0a0a0;
+    --border-radius: 12px;
+    --transition-speed: 0.3s;
+}
+
+/* Main container */
+.enhanced-container {
+    min-height: 100vh;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: 'Inter', sans-serif;
+}
+
+/* Header Section */
+.main-header {
+    text-align: center;
+    padding: 3rem 2rem;
+    background: linear-gradient(180deg, rgba(102, 126, 234, 0.1) 0%, transparent 100%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.main-title {
+    font-size: 3rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem 0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.main-subtitle {
+    font-size: 1.125rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+/* Prompt Section */
+.prompt-section {
+    padding: 2rem;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.prompt-container {
+    background: var(--bg-secondary);
+    border-radius: var(--border-radius);
+    padding: 2rem;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+}
+
+/* Rainbow Input Container */
+.rainbow-input-container {
+    position: relative;
+    margin-bottom: 1.5rem;
+}
+
+/* Rainbow border effect */
+.rainbow-input-container::before {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: var(--border-radius);
+    padding: 3px;
+    background: linear-gradient(
+        45deg,
+        #ff0080,
+        #ff8c00,
+        #ffd700,
+        #00ff00,
+        #00ffff,
+        #ff00ff,
+        #ff0080
+    );
+    background-size: 300% 300%;
+    animation: rainbow-shift 4s ease-in-out infinite;
+    opacity: 0;
+    transition: opacity var(--transition-speed) ease;
+    filter: blur(8px);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: exclude;
+    mask-composite: exclude;
+}
+
+/* Active rainbow border */
+.rainbow-input-container:hover::before,
+.rainbow-input-container:focus-within::before {
+    opacity: 0.8;
+}
+
+/* Enhanced glow effect */
+.rainbow-input-container::after {
+    content: '';
+    position: absolute;
+    inset: -10px;
+    border-radius: var(--border-radius);
+    background: radial-gradient(
+        circle at center,
+        rgba(255, 255, 255, 0.1),
+        transparent 70%
+    );
+    opacity: 0;
+    transition: opacity var(--transition-speed) ease;
+    pointer-events: none;
+}
+
+.rainbow-input-container:hover::after,
+.rainbow-input-container:focus-within::after {
+    opacity: 1;
+}
+
+/* Prompt input */
+.prompt-input {
+    width: 100%;
+    padding: 1rem 1.25rem;
+    background: rgba(0, 0, 0, 0.5);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--border-radius);
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 100px;
+    transition: all var(--transition-speed) ease;
+    position: relative;
+    z-index: 1;
+}
+
+.prompt-input:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(0, 0, 0, 0.7);
+}
+
+.prompt-input::placeholder {
+    color: var(--text-secondary);
+}
+
+/* Button container */
+.button-container {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+}
+
+/* Base button styles */
+.btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: calc(var(--border-radius) / 2);
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-speed) ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Generate button */
+.btn-generate {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.btn-generate::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.5s ease, height 0.5s ease;
+}
+
+.btn-generate:hover::before {
+    width: 300px;
+    height: 300px;
+}
+
+.btn-generate:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+}
+
+/* Options button */
+.btn-options {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.btn-options:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+}
+
+/* Rainbow animation */
+@keyframes rainbow-shift {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+/* Icons */
+.icon {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .prompt-section {
+        padding: 1rem;
+    }
+    
+    .prompt-container {
+        padding: 1.5rem;
+    }
+    
+    .button-container {
+        flex-direction: column;
+    }
+    
+    .btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Focus visible for keyboard navigation */
+.btn:focus-visible,
+.prompt-input:focus-visible {
+    outline: 2px solid #667eea;
+    outline-offset: 2px;
+}
+
+/* Third section placeholder */
+.third-section {
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    /* Styles to be added later */
+} 

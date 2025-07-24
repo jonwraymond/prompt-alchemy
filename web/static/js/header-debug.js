@@ -58,27 +58,7 @@ function debugHeader() {
         }, 1000);
     }
     
-    // Add test button
-    const existingButton = document.querySelector('#header-test-button');
-    if (!existingButton) {
-        const testButton = document.createElement('button');
-        testButton.id = 'header-test-button';
-        testButton.textContent = 'Test Rainbow Effect';
-        testButton.style.cssText = 'position: fixed; top: 10px; right: 10px; z-index: 9999; padding: 10px; background: #333; color: white; border: none; border-radius: 5px; cursor: pointer;';
-        testButton.onclick = function() {
-            console.log('Manual test triggered');
-            const currentLetters = document.querySelectorAll('.main-title .letter');
-            currentLetters.forEach((letter, index) => {
-                setTimeout(() => {
-                    letter.dispatchEvent(new MouseEvent('mouseenter'));
-                    setTimeout(() => {
-                        letter.dispatchEvent(new MouseEvent('mouseleave'));
-                    }, 500);
-                }, index * 200);
-            });
-        };
-        document.body.appendChild(testButton);
-    }
+
     
     console.log('=== END HEADER DEBUG ===');
 }

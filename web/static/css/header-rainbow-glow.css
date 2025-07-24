@@ -41,7 +41,12 @@
 
 /* Add extra space after "PROMPT" */
 .main-title .letter[data-letter="T"] {
-    margin-right: 0.5em !important;
+    margin-right: 0.1em !important;
+}
+
+/* Add extra space for the space character between words */
+.main-title .letter[data-letter=" "] {
+    margin-right: 1em !important;
 }
 
 /* Rainbow glow effect on hover */
@@ -137,7 +142,76 @@
     transition: all 0.3s ease !important;
 }
 
+/* Fragmented Subtitle Letters */
+.fragmented-subtitle .letter {
+    display: inline-block !important;
+    opacity: 0 !important;
+    transform: translateY(15px) !important;
+    animation: subtitle-drop-in 0.5s ease-out forwards !important;
+    animation-delay: calc(1s + (var(--letter-index) * 0.03s)) !important;
+    transition: all 0.2s ease !important;
+}
+
+.fragmented-subtitle .letter:hover {
+    color: #ffffff !important;
+    transform: translateY(-1px) !important;
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.4) !important;
+}
+
+@keyframes subtitle-drop-in {
+    0% {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+    100% {
+        opacity: 0.9;
+        transform: translateY(0);
+    }
+}
+
 /* Subtle glow on subtitle when hovering title */
 .main-title:hover ~ .main-subtitle {
     text-shadow: 0 0 15px rgba(212, 175, 55, 0.5);
+}
+
+/* Fragmented Tagline Styling */
+.fragmented-text {
+    font-family: 'Orbitron', 'Bebas Neue', sans-serif !important;
+    font-weight: 700 !important;
+    font-size: 1.5rem !important;
+    letter-spacing: 0.1em !important;
+    text-transform: uppercase !important;
+    color: #a1a1aa !important;
+}
+
+.fragmented-word {
+    display: inline-block !important;
+    margin-right: 0.5em !important;
+}
+
+.fragmented-word .letter {
+    display: inline-block !important;
+    opacity: 0 !important;
+    transform: translateY(20px) !important;
+    animation: fragment-drop-in 0.6s ease-out forwards !important;
+    animation-delay: calc((var(--index) * 0.3s) + (var(--letter-index) * 0.05s)) !important;
+    color: #a1a1aa !important;
+    transition: all 0.3s ease !important;
+}
+
+.fragmented-word .letter:hover {
+    color: #ffffff !important;
+    transform: translateY(-2px) !important;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5) !important;
+}
+
+@keyframes fragment-drop-in {
+    0% {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
 } 

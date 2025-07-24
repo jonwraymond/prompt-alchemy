@@ -505,7 +505,7 @@ g.rune-symbol {
     animation: float-rotate 3s ease-in-out infinite;
 }
 
-/* Active state for PNG icons in phase runes */
+/* Active state for PNG icons in phase  find my  */
 .phase-rune.active image.rune-symbol {
     opacity: 1;
     filter: drop-shadow(0 0 20px var(--liquid-gold)) brightness(1.2);
@@ -2316,6 +2316,86 @@ body > * > * > *,
 
 .clean-input:focus::placeholder {
   opacity: 0.7;
+}
+
+/* Rainbow Glow Effect on Hover and Focus */
+.clean-input:hover::before,
+.clean-input:focus::before {
+  background: radial-gradient(
+    circle at center,
+    rgba(255, 0, 128, 0.1) 0%,
+    rgba(255, 140, 0, 0.08) 16%,
+    rgba(255, 215, 0, 0.08) 32%,
+    rgba(0, 255, 0, 0.08) 48%,
+    rgba(0, 255, 255, 0.08) 64%,
+    rgba(255, 0, 255, 0.08) 80%,
+    rgba(255, 0, 128, 0.06) 96%,
+    transparent 100%
+  );
+  animation: rainbow-pulse 3s ease-in-out infinite;
+  filter: blur(25px);
+}
+
+.clean-input:hover::after,
+.clean-input:focus::after {
+  background: radial-gradient(
+    circle at center,
+    rgba(255, 0, 128, 0.15) 0%,
+    rgba(255, 140, 0, 0.12) 20%,
+    rgba(255, 215, 0, 0.12) 40%,
+    rgba(0, 255, 0, 0.12) 60%,
+    rgba(0, 255, 255, 0.12) 80%,
+    rgba(255, 0, 255, 0.1) 100%
+  );
+  animation: rainbow-pulse 2s ease-in-out infinite reverse;
+  filter: blur(15px);
+}
+
+/* Rainbow border animation */
+.clean-input:hover,
+.clean-input:focus {
+  border-image: linear-gradient(
+    45deg,
+    #ff0080,
+    #ff8c00,
+    #ffd700,
+    #00ff00,
+    #00ffff,
+    #ff00ff,
+    #ff0080
+  ) 1;
+  border-image-slice: 1;
+  animation: rainbow-border-shift 2s linear infinite;
+}
+
+/* Rainbow animations */
+@keyframes rainbow-pulse {
+  0%, 100% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes rainbow-border-shift {
+  0% {
+    filter: hue-rotate(0deg) brightness(1.1);
+  }
+  25% {
+    filter: hue-rotate(90deg) brightness(1.2);
+  }
+  50% {
+    filter: hue-rotate(180deg) brightness(1.1);
+  }
+  75% {
+    filter: hue-rotate(270deg) brightness(1.2);
+  }
+  100% {
+    filter: hue-rotate(360deg) brightness(1.1);
+  }
 }
 
 /* Horizontal Controls */
