@@ -92,14 +92,16 @@
   opacity: 0;
   transition: opacity 0.3s ease;
   
-  /* Multi-layer shadow effect */
+  /* Electric multi-layer shadow effect */
   text-shadow: 
     0 0 8px rgba(255, 0, 128, 0.4),
     0 0 16px rgba(255, 140, 0, 0.3),
-    0 0 24px rgba(255, 215, 0, 0.2),
+    0 0 24px rgba(255, 215, 0, 0.3),
     0 0 32px rgba(0, 255, 0, 0.2),
-    0 0 40px rgba(0, 255, 255, 0.2),
-    0 0 48px rgba(255, 0, 255, 0.2);
+    0 0 40px rgba(0, 255, 255, 0.4),
+    0 0 48px rgba(0, 128, 255, 0.3),
+    0 0 56px rgba(128, 0, 255, 0.2),
+    0 0 64px rgba(255, 0, 255, 0.2);
 }
 
 .main-title .letter:hover::after {
