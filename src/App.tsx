@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { TwentyFirstToolbar } from '@21st-extension/toolbar-react';
 import { ReactPlugin } from '@21st-extension/react';
 import AlchemyInterface from './components/AlchemyInterface';
-import ToolbarStatus from './components/ToolbarStatus';
 import './components/AIInputComponent.css';
 
 function App() {
@@ -31,8 +30,7 @@ function App() {
         />
       )}
 
-      {/* Toolbar Status Indicator */}
-      {import.meta.env.DEV && <ToolbarStatus />}
+
 
       {/* Main Content - AlchemyInterface */}
       <AlchemyInterface />

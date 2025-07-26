@@ -2,6 +2,7 @@ package v1
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jonwraymond/prompt-alchemy/internal/domain/prompt"
@@ -62,7 +63,7 @@ func NewRouter(config RouterConfig, deps RouterDependencies) *Router {
 		deps.Logger,
 	)
 
-	systemHandler := NewSystemHandler(deps.Logger, deps.Metrics)
+	systemHandler := NewSystemHandler(deps.Logger, deps.Metrics, deps.LearningEng)
 	providerHandler := NewProviderHandler(deps.Registry, deps.Logger)
 
 	return &Router{
@@ -237,15 +238,19 @@ func (rt *Router) mountV1Routes(r chi.Router) {
 
 // SystemHandler handles system-level endpoints
 type SystemHandler struct {
-	logger  *logrus.Logger
-	metrics *metrics.Metrics
+	logger      *logrus.Logger
+	metrics     *metrics.Metrics
+	learningEng *learning.LearningEngine
+	startTime   time.Time
 }
 
 // NewSystemHandler creates a new system handler
-func NewSystemHandler(logger *logrus.Logger, metrics *metrics.Metrics) *SystemHandler {
+func NewSystemHandler(logger *logrus.Logger, metrics *metrics.Metrics, learningEng *learning.LearningEngine) *SystemHandler {
 	return &SystemHandler{
-		logger:  logger,
-		metrics: metrics,
+		logger:      logger,
+		metrics:     metrics,
+		learningEng: learningEng,
+		startTime:   time.Now(),
 	}
 }
 
@@ -266,7 +271,7 @@ func (h *SystemHandler) GetStatus(w http.ResponseWriter, r *http.Request) {
 		"protocol":      "http",
 		"version":       "v1",
 		"learning_mode": h.isLearningEnabled(),
-		"uptime":        "0s", // TODO: Track actual uptime
+		"uptime":        time.Since(h.startTime).String(),
 	}
 	httputil.OK(w, status)
 }
@@ -297,8 +302,8 @@ func (h *SystemHandler) GetInfo(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *SystemHandler) isLearningEnabled() bool {
-	// TODO: Check if learning engine is configured and enabled
-	return false
+	// Check if learning engine is configured and enabled
+	return h.learningEng != nil
 }
 
 // ProviderHandler handles provider-related endpoints
@@ -326,8 +331,8 @@ func (h *ProviderHandler) ListProviders(w http.ResponseWriter, r *http.Request) 
 			providers = append(providers, map[string]interface{}{
 				"name":                name,
 				"available":           true,
-				"supports_embeddings": false,      // TODO: Implement capability detection
-				"models":              []string{}, // TODO: Get available models
+				"supports_embeddings": provider.SupportsEmbeddings(),
+				"models":              h.getProviderModels(name),
 			})
 		}
 	}
@@ -357,9 +362,9 @@ func (h *ProviderHandler) GetProvider(w http.ResponseWriter, r *http.Request) {
 	response := map[string]interface{}{
 		"name":                providerName,
 		"available":           true,
-		"supports_embeddings": false,                    // TODO: Implement capability detection
-		"models":              []string{},               // TODO: Get available models
-		"configuration":       map[string]interface{}{}, // TODO: Get safe config info
+		"supports_embeddings": provider.SupportsEmbeddings(),
+		"models":              h.getProviderModels(providerName),
+		"configuration":       map[string]interface{}{}, // Sensitive info omitted
 	}
 
 	httputil.OK(w, response)
@@ -379,8 +384,8 @@ func (h *ProviderHandler) GetProviderModels(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// TODO: Implement model discovery for each provider
-	models := []string{}
+	// Get available models for the provider
+	models := h.getProviderModels(providerName)
 
 	response := map[string]interface{}{
 		"provider": providerName,
@@ -389,6 +394,29 @@ func (h *ProviderHandler) GetProviderModels(w http.ResponseWriter, r *http.Reque
 	}
 
 	httputil.OK(w, response)
+}
+
+// getProviderModels returns the available models for a provider
+func (h *ProviderHandler) getProviderModels(providerName string) []string {
+	// Define known models for each provider
+	switch providerName {
+	case providers.ProviderOpenAI:
+		return []string{"gpt-4-turbo-preview", "gpt-4", "gpt-3.5-turbo", "text-embedding-ada-002"}
+	case providers.ProviderAnthropic:
+		return []string{"claude-3-opus-20240229", "claude-3-sonnet-20240229", "claude-3-haiku-20240307"}
+	case providers.ProviderGoogle:
+		return []string{"gemini-1.5-pro", "gemini-1.5-flash", "gemini-pro"}
+	case providers.ProviderOllama:
+		// For Ollama, we could potentially query the API, but for now return common models
+		return []string{"llama3", "mistral", "codellama", "nomic-embed-text"}
+	case providers.ProviderOpenRouter:
+		// OpenRouter has many models, return some popular ones
+		return []string{"anthropic/claude-3-opus", "openai/gpt-4-turbo", "google/gemini-pro"}
+	case providers.ProviderGrok:
+		return []string{"grok-1", "grok-2", "grok-4"}
+	default:
+		return []string{}
+	}
 }
 
 // DefaultRouterConfig returns default router configuration

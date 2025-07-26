@@ -2,6 +2,10 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { AlchemyInputComponent } from './AlchemyInputComponent';
 import { SimpleHeader } from './SimpleHeader';
 import { HexagonGrid } from './HexagonGrid';
+import { ApiTestRunner } from './ApiTestRunner';
+import { StatusIndicator } from './StatusIndicator';
+import { UserFlowTester } from './UserFlowTester';
+import { api } from '../utils/api';
 import './AlchemyInterface.css';
 
 interface AlchemyResult {
@@ -22,6 +26,10 @@ export const AlchemyInterface: React.FC<AlchemyInterfaceProps> = ({ className = 
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentPhase, setCurrentPhase] = useState<string>('');
   const [error, setError] = useState<string>('');
+  const [showApiTests, setShowApiTests] = useState(false);
+  const [showUserFlowTests, setShowUserFlowTests] = useState(false);
+  const [apiHealthy, setApiHealthy] = useState<boolean | null>(null);
+  const [testResults, setTestResults] = useState<{ passed: number; failed: number; total: number } | null>(null);
 
   // Handle prompt generation
   const handleGenerate = useCallback(async (input: string, options?: any) => {
@@ -33,37 +41,31 @@ export const AlchemyInterface: React.FC<AlchemyInterfaceProps> = ({ className = 
     try {
       // Phase 1: Prima Materia
       setCurrentPhase('Prima Materia - Extracting essence...');
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 800));
       
       // Phase 2: Solutio  
       setCurrentPhase('Solutio - Dissolving barriers...');
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 800));
       
       // Phase 3: Coagulatio
       setCurrentPhase('Coagulatio - Crystallizing form...');
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 800));
 
-      // API call to backend
-      const response = await fetch('/api/v1/prompts/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          input,
-          phases: ['prima_materia', 'solutio', 'coagulatio'],
-          count: 1,
-          persona: options?.persona || 'creative',
-          temperature: options?.temperature || 0.7,
-          ...options
-        }),
+      // Use the API client for better error handling
+      const response = await api.generatePrompts({
+        input,
+        phases: ['prima_materia', 'solutio', 'coagulatio'],
+        count: 1,
+        persona: options?.persona || 'creative',
+        temperature: options?.temperature || 0.7,
+        ...options
       });
 
-      if (!response.ok) {
-        throw new Error(`Generation failed: ${response.statusText}`);
+      if (!response.success) {
+        throw new Error(response.error || 'Generation failed');
       }
 
-      const data = await response.json();
+      const data = response.data;
       
       // Create result
       const newResult: AlchemyResult = {
@@ -107,6 +109,21 @@ export const AlchemyInterface: React.FC<AlchemyInterfaceProps> = ({ className = 
             <span className="ai-header-text">
               {isGenerating ? currentPhase : 'AI-Powered Prompt Generation Ready'}
             </span>
+            {testResults && (
+              <span className="test-results-indicator">
+                🧪 {testResults.passed}/{testResults.total} tests passing
+              </span>
+            )}
+          </div>
+          
+          <div className="ai-header-actions">
+            <button
+              className="test-flow-btn"
+              onClick={() => setShowUserFlowTests(!showUserFlowTests)}
+              title="Run comprehensive user flow tests"
+            >
+              {showUserFlowTests ? 'Hide Tests' : '🧪 Test Flows'}
+            </button>
           </div>
         </div>
 
@@ -123,6 +140,14 @@ export const AlchemyInterface: React.FC<AlchemyInterfaceProps> = ({ className = 
             <div className="alchemy-error">
               <span className="error-icon">⚠️</span>
               <span>{error}</span>
+              {!apiHealthy && (
+                <button
+                  className="show-tests-btn"
+                  onClick={() => setShowApiTests(!showApiTests)}
+                >
+                  {showApiTests ? 'Hide' : 'Show'} API Tests
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -165,6 +190,16 @@ export const AlchemyInterface: React.FC<AlchemyInterfaceProps> = ({ className = 
           </div>
         )}
 
+        {/* API Test Runner */}
+        {showApiTests && (
+          <ApiTestRunner onConnectionStatus={setApiHealthy} />
+        )}
+
+        {/* User Flow Test Runner */}
+        {showUserFlowTests && (
+          <UserFlowTester onTestResults={setTestResults} />
+        )}
+
         {/* Phase Indicators */}
         {isGenerating && (
           <div className="phase-indicators">
@@ -183,6 +218,14 @@ export const AlchemyInterface: React.FC<AlchemyInterfaceProps> = ({ className = 
           </div>
         )}
       </div>
+
+      {/* Status Indicator - Fixed position overlay */}
+      <StatusIndicator 
+        position="bottom-right"
+        autoRefresh={true}
+        refreshInterval={30000}
+        showTooltips={true}
+      />
     </div>
   );
 };

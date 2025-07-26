@@ -2,8 +2,10 @@
 
 # Build configuration
 BINARY_NAME=prompt-alchemy
+MONOLITHIC_BINARY=prompt-alchemy-mono
 BUILD_DIR=bin
 MAIN_PATH=cmd/prompt-alchemy/main.go
+MONOLITHIC_PATH=cmd/monolithic/main.go
 TEST_DIR=tests
 RESULTS_DIR=test-results
 
@@ -58,6 +60,18 @@ build: deps
 	@mkdir -p $(BUILD_DIR)
 	@$(GOBUILD) $(GOFLAGS) -o $(BINARY_NAME) $(MAIN_PATH)
 	@echo "Build complete: $(BINARY_NAME)"
+
+# Build the monolithic binary  
+.PHONY: build-mono
+build-mono: deps
+	@echo "Building monolithic $(MONOLITHIC_BINARY)..."
+	@mkdir -p $(BUILD_DIR)
+	@$(GOBUILD) $(GOFLAGS) -o $(MONOLITHIC_BINARY) $(MONOLITHIC_PATH)
+	@echo "Monolithic build complete: $(MONOLITHIC_BINARY)"
+
+# Build both binaries
+.PHONY: build-both
+build-both: build build-mono
 
 # Run unit tests
 .PHONY: test-unit
@@ -374,6 +388,8 @@ help:
 	@echo ""
 	@echo "Build targets:"
 	@echo "  build          - Build the binary"
+	@echo "  build-mono     - Build monolithic binary (all services in one process)"
+	@echo "  build-both     - Build both regular and monolithic binaries"
 	@echo "  clean          - Clean build artifacts"
 	@echo "  deps           - Install dependencies"
 	@echo "  release        - Build release binaries for all platforms with archives"

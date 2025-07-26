@@ -15,6 +15,8 @@ export interface AIInputComponentProps {
   maxLength?: number;
   enableSuggestions?: boolean;
   enableThinking?: boolean;
+  isLoading?: boolean;
+  disabled?: boolean;
   onSubmit?: (value: string, options?: any) => void;
   onValueChange?: (value: string) => void;
   className?: string;
@@ -54,6 +56,8 @@ const AIInputComponent: React.FC<AIInputComponentProps> = ({
   maxLength = 5000,
   enableSuggestions = true,
   enableThinking = true,
+  isLoading: externalIsLoading = false,
+  disabled: externalDisabled = false,
   onSubmit,
   onValueChange,
   className = ''
@@ -62,6 +66,10 @@ const AIInputComponent: React.FC<AIInputComponentProps> = ({
   const [value, setValue] = useState(initialValue);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Use external loading state if provided
+  const actualIsLoading = externalIsLoading || isLoading;
+  const actualDisabled = externalDisabled || actualIsLoading;
   const [showThinking, setShowThinking] = useState(false);
   const [showProfilesMenu, setShowProfilesMenu] = useState(false);
   const [showPresetMenu, setShowPresetMenu] = useState(false);
@@ -134,16 +142,19 @@ const AIInputComponent: React.FC<AIInputComponentProps> = ({
   // Handle submit
   const handleSubmit = useCallback((e?: React.FormEvent) => {
     e?.preventDefault();
-    if (value.trim()) {
-      setIsLoading(true);
+    if (value.trim() && !actualDisabled) {
+      if (!externalIsLoading) {
+        setIsLoading(true);
+      }
       onSubmit?.(value);
       
-      // Simulate loading
-      setTimeout(() => {
-        setIsLoading(false);
-      }, 2000);
+      // Note: Loading state is managed by parent component for real API calls
+      // Internal loading is only used if no external loading state is provided
+      if (!externalIsLoading) {
+        setTimeout(() => setIsLoading(false), 2000);
+      }
     }
-  }, [value, onSubmit]);
+  }, [value, onSubmit, actualDisabled, externalIsLoading]);
 
   // Handle suggestion actions
   const handleSuggestionAction = useCallback((action: string) => {
@@ -214,7 +225,7 @@ const AIInputComponent: React.FC<AIInputComponentProps> = ({
 
   return (
     <div className={`ai-input-container ${className}`} ref={containerRef}>
-      <div className={`ai-input-wrapper ${isExpanded ? 'expanded' : ''} ${isLoading ? 'loading' : ''}`}>
+      <div className={`ai-input-wrapper ${isExpanded ? 'expanded' : ''} ${actualIsLoading ? 'loading' : ''}`}>
         {/* Main Input Area */}
         <div className="ai-input-main">
           <textarea
@@ -231,7 +242,7 @@ const AIInputComponent: React.FC<AIInputComponentProps> = ({
           />
           
           {/* Loading Overlay */}
-          {isLoading && (
+          {actualIsLoading && (
             <div className="ai-input-loading">
               <div className="ai-thinking-dots">
                 <div className="ai-dot"></div>
@@ -312,13 +323,13 @@ const AIInputComponent: React.FC<AIInputComponentProps> = ({
                 onClick={handleSubmit}
                 onContextMenu={handleGenerateRightClick}
                 title="Generate (Enter) | Right-click for presets"
-                disabled={isLoading || !value.trim()}
+                disabled={actualDisabled || !value.trim()}
               >
                 <svg className="btn-icon" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M12 2L15.5 8.5L22 12L15.5 15.5L12 22L8.5 15.5L2 12L8.5 8.5L12 2Z"/>
                   <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" strokeWidth="1"/>
                 </svg>
-                {isLoading ? 'Generating...' : 'Generate'}
+                {actualIsLoading ? 'Generating...' : 'Generate'}
               </button>
               
               <div

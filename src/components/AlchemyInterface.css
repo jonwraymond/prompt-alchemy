@@ -41,14 +41,18 @@
 /* AI Header */
 .ai-header {
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
+  align-items: center;
   padding: 1.5rem 0 2rem 0;
   margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 
 .ai-header-content {
-  display: inline-flex;
+  display: flex;
   align-items: center;
+  flex: 1;
   gap: 0.75rem;
   padding: 0.75rem 1.5rem;
   background: rgba(59, 130, 246, 0.08);
@@ -66,6 +70,38 @@
   font-size: 0.85rem;
   color: var(--text-secondary);
   opacity: 0.9;
+  flex: 1;
+}
+
+.test-results-indicator {
+  color: var(--liquid-gold, #fbbf24);
+  font-size: 0.8rem;
+  font-weight: 500;
+  margin-left: auto;
+}
+
+.ai-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.test-flow-btn {
+  background: rgba(59, 130, 246, 0.8);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.test-flow-btn:hover {
+  background: rgba(59, 130, 246, 1);
+  transform: translateY(-1px);
 }
 
 /* Input Section */
@@ -76,6 +112,7 @@
 .alchemy-error {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 0.5rem;
   margin-top: 1rem;
   padding: 1rem;
@@ -88,6 +125,24 @@
 
 .error-icon {
   font-size: 1rem;
+}
+
+.show-tests-btn {
+  background: rgba(59, 130, 246, 0.8);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.show-tests-btn:hover {
+  background: rgba(59, 130, 246, 1);
+  transform: translateY(-1px);
 }
 
 /* Results Section */

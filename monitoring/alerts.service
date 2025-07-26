@@ -1,0 +1,30 @@
+[Unit]
+Description=Prompt Alchemy Health Monitoring Service
+After=network.target docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+User=%i
+WorkingDirectory=/opt/prompt-alchemy
+Environment="PROMPT_ALCHEMY_MONITOR_ENDPOINT=http://localhost:5747"
+Environment="PROMPT_ALCHEMY_CHECK_INTERVAL=30s"
+Environment="PROMPT_ALCHEMY_ALERT_THRESHOLD=3"
+ExecStart=/opt/prompt-alchemy/monitoring/health-alerts
+Restart=always
+RestartSec=10
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=prompt-alchemy-monitor
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/tmp
+
+[Install]
+WantedBy=multi-user.target

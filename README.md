@@ -32,6 +32,21 @@ The project consists of:
 - **Docker Support**: Full containerization with docker-compose
 - **MCP Integration**: Claude Desktop integration via Model Context Protocol
 
+## 🚀 Quick Start
+
+See our [Quick Start Guide](QUICKSTART.md) for the fastest way to get up and running!
+
+```bash
+# 1. Configure a provider (interactive wizard)
+./scripts/setup-provider.sh
+
+# 2. Start the system
+docker-compose --profile hybrid up -d
+
+# 3. Open the UI
+open http://localhost:5173
+```
+
 ## 📦 Installation
 
 ### Backend Setup
@@ -214,7 +229,7 @@ The component uses CSS custom properties for theming. You can customize the appe
 ### Custom Suggestion Handling
 
 ```tsx
-import { AIInputComponent } from 'ai-input-component';
+import { AIInputComponent } from './src/components/AIInputComponent';
 
 function AdvancedExample() {
   const handleSubmit = async (value: string) => {
@@ -247,7 +262,7 @@ function AdvancedExample() {
 
 ```tsx
 import { useForm, Controller } from 'react-hook-form';
-import { AIInputComponent } from 'ai-input-component';
+import { AIInputComponent } from './src/components/AIInputComponent';
 
 function FormExample() {
   const { control, handleSubmit } = useForm();
@@ -328,8 +343,8 @@ Right-click the Generate button for quick preset templates:
 
 1. **Clone and install dependencies**:
 ```bash
-git clone https://github.com/yourusername/ai-input-component.git
-cd ai-input-component
+git clone https://github.com/yourusername/prompt-alchemy.git
+cd prompt-alchemy
 npm install
 ```
 

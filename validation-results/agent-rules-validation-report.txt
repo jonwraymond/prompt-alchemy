@@ -1,0 +1,39 @@
+Agent Ruleset Validation Report
+===============================
+
+Date: Sat Jul 26 14:22:44 MDT 2025
+Project: /Users/jraymond/Projects/prompt-alchemy
+Validation Results Directory: /Users/jraymond/Projects/prompt-alchemy/validation-results
+
+Test Summary:
+- Total Tests: 8
+- Passed: 2
+- Failed: 6
+- Success Rate: 25%
+
+Test Results:
+
+Failed Tests:
+- agent_metadata_structure: Metadata structure errors: go-backend-specialist.md: Missing YAML frontmatter react-frontend-specialist.md: Missing YAML frontmatter provider-integration-specialist.md: Missing YAML frontmatter provider-integration-specialist.md: Missing 'Architecture Understanding' section testing-qa-specialist.md: Missing YAML frontmatter testing-qa-specialist.md: Missing 'Architecture Understanding' section docker-devops-specialist.md: Missing YAML frontmatter mcp-integration-specialist.md: Missing YAML frontmatter
+- script_structure: Script structure errors: auto-commit.sh: Missing 'set -e' auto-commit.sh: Missing logging function auto-commit.sh: Missing configuration section setup-provider.sh: Missing 'set -e' setup-provider.sh: Missing logging function setup-provider.sh: Missing configuration section debug-helper.sh: Missing 'set -e' debug-helper.sh: Missing logging function debug-helper.sh: Missing configuration section integration-test.sh: Missing 'set -e' integration-test.sh: Missing logging function integration-test.sh: Missing configuration section run-e2e-tests.sh: Missing 'set -e' run-e2e-tests.sh: Missing logging function run-e2e-tests.sh: Missing configuration section
+- naming_conventions: Naming convention errors: Agent file '/Users/jraymond/Projects/prompt-alchemy/.claude/agents/README.md' doesn't follow naming convention Script file '/Users/jraymond/Projects/prompt-alchemy/scripts/run-e2e-tests.sh' doesn't follow naming convention
+- documentation_compliance: Documentation compliance errors: docker-devops-specialist.md: Missing Workflow Process section mcp-integration-specialist.md: Missing Workflow Process section provider-integration-specialist.md: Missing Workflow Process section testing-qa-specialist.md: Missing Workflow Process section
+- security_compliance: Security compliance errors: Configuration file has insecure permissions: 
+- automation_hooks: Automation hook errors: Missing auto-commit hook for file operations
+
+Validation Details:
+- Agent Directory Structure: Validates .claude/agents/ directory and required files
+- Agent Metadata Structure: Validates YAML frontmatter and required sections
+- Configuration Structure: Validates .claude/settings.local.json format
+- Script Structure: Validates script patterns and conventions
+- Naming Conventions: Validates file naming patterns
+- Documentation Compliance: Validates required documentation
+- Security Compliance: Validates security and permission settings
+- Automation Hooks: Validates hook configuration and scripts
+
+Recommendations:
+- Fix failed tests to ensure full compliance
+- Review and update agent definitions as needed
+- Update configuration files to match requirements
+
+Report Generated: Sat Jul 26 14:22:44 MDT 2025

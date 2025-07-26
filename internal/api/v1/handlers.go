@@ -433,11 +433,18 @@ func (h *V1Handler) ListPrompts(w http.ResponseWriter, r *http.Request) {
 		"provider": provider,
 	}).Debug("Listing prompts")
 
+	// Get total count from storage
+	total, err := h.storage.GetPromptsCount(r.Context())
+	if err != nil {
+		h.logger.WithError(err).Error("Failed to get prompts count")
+		httputil.InternalServerError(w, "Failed to get prompts count")
+		return
+	}
+
 	// For now, return empty list since storage interface needs to be updated
 	prompts := []models.Prompt{}
 
 	// Calculate pagination
-	total := 0 // TODO: Get actual count from storage
 	pagination := httputil.CalculatePagination(page, limit, total)
 
 	// Return paginated response
