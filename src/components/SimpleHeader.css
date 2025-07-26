@@ -192,21 +192,96 @@
   }
 }
 
-/* Subtitle styling - original design */
+/* Subtitle styling - fragmented fallen effect */
 .main-subtitle {
   font-family: 'Space Grotesk', sans-serif !important;
-  font-size: 1.25rem !important;
-  opacity: 0.9 !important;
-  letter-spacing: 0.05em !important;
+  font-size: 1.1rem !important;
   margin-top: 1rem !important;
-  transition: all 0.3s ease !important;
-  color: var(--text-secondary, #a1a1aa);
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.05em;
+}
+
+/* Individual subtitle letters with fragmented effect */
+.subtitle-letter.fragment {
+  display: inline-block;
+  position: relative;
+  transition:
+    transform 0.5s cubic-bezier(.68,2,-0.66,.53),
+    filter 0.4s linear;
+  cursor: pointer;
+  color: #fffbed;
+  /* Add soft letter shadow for separation */
+  text-shadow:
+    0 2px 2px rgba(32, 32, 16, 0.11),
+    0 6px 16px rgba(0,0,0,0.13);
+  outline: none;
+  filter: drop-shadow(0 3px 6px rgba(90,76,20,0.12));
+}
+
+/* Gentle gold glow with pulsating "about to flicker/fail" style */
+.subtitle-letter.fragment::after {
+  content: attr(data-letter);
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.8;
+  font-family: inherit;
+  color: transparent;
+  background: radial-gradient(circle at 50% 60%, #ffe064 0px, #ffd700 12px, transparent 42px);
+  background-clip: text;
+  -webkit-background-clip: text;
+  background-size: 120% 120%;
+  background-repeat: no-repeat;
+  filter: blur(3.5px) drop-shadow(0 0 8px #ffcc02aa) drop-shadow(0 0 18px #ffc);
+  animation: goldGlowPulse 2.4s cubic-bezier(.77,0,.18,1) infinite;
+}
+
+/* Gold glow on hover, stronger and a little erratic/twitchy ("abuse/panic") */
+.subtitle-letter.fragment:hover::after,
+.subtitle-letter.fragment:focus::after {
+  animation: goldGlowPulseFlicker 0.65s cubic-bezier(.77,0,.18,1) infinite;
+  opacity: 1;
+}
+
+@keyframes goldGlowPulse {
+  0% { filter: blur(3.5px) brightness(1) drop-shadow(0 0 8px #ffd60088); }
+  42% { filter: blur(5px) brightness(1.19) drop-shadow(0 0 10px #ffe07c); }
+  59% { filter: blur(3.3px) brightness(1.03) drop-shadow(0 0 18px #ffd700a0); }
+  100% { filter: blur(3.8px) brightness(0.97) drop-shadow(0 0 8px #ffdf26bb); }
+}
+
+@keyframes goldGlowPulseFlicker {
+  0%   { filter: blur(3.5px) brightness(1.1) drop-shadow(0 0 16px #ffe09c99); }
+  12%  { filter: blur(5.4px) brightness(1.25); }
+  19%  { filter: blur(2.5px) brightness(0.83) drop-shadow(0 0 8px #ffeb3baa); }
+  30%  { filter: blur(4.2px) brightness(1.32) drop-shadow(0 0 20px #ffe062); }
+  62%  { filter: blur(2.2px) brightness(1.02) drop-shadow(0 0 26px #ffd14a55); }
+  78%  { filter: blur(5px) brightness(1.11) drop-shadow(0 0 16px #fd0); }
+  100% { filter: blur(3.9px) brightness(1.08) drop-shadow(0 0 7px #ffeb37); }
+}
+
+/* Fragmented Jitter/Fall on Hover, with stagger delay for the "about to collapse" look */
+.subtitle-letter.fragment:hover,
+.subtitle-letter.fragment:focus {
+  animation: fragmentJitter 1.03s cubic-bezier(.68,2,-0.66,.53) infinite;
+}
+
+@keyframes fragmentJitter {
+  12% { transform: translate(-1px, 2px) rotate(-1deg); }
+  23% { transform: translate(2px, 4.5px) rotate(2deg); }
+  37% { transform: translate(-1.7px, 8.5px) rotate(-2deg);}
+  52% { transform: translate(1.5px, 10.5px) rotate(1deg);}
+  80% { transform: translate(0.5px, 7px) rotate(0.5deg);}
+  100% { transform: translate(0, 0) }
 }
 
 /* Subtle glow on subtitle when hovering title */
-.main-title:hover ~ .main-subtitle {
-  text-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
+.main-title:hover ~ .main-subtitle .subtitle-letter.fragment::after {
   opacity: 1;
+  filter: blur(4px) brightness(1.15) drop-shadow(0 0 12px #ffd700cc);
 }
 
 /* Responsive sizing */

@@ -1,4 +1,5 @@
 import React from 'react';
+import './HexagonGrid.css';
 
 export const HexagonGrid: React.FC = () => {
   return (
