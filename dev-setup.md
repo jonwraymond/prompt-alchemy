@@ -76,8 +76,9 @@ To use with 21st.dev IDE extension:
 3. **API endpoint**: http://localhost:8080
 4. **Components available**: 
    - `AIInputComponent` - Main input component
-   - `MagicalHeader` - Header with alchemy theme
-   - `AlchemicalBackground` - 3D hex grid background
+   - `SimpleHeader` - Clean header with sparkle effects
+   - `HexagonGrid` - Animated hexagon background
+   - `AlchemyInterface` - Main interface component
 
 ## Recommended Development Workflow
 

@@ -252,40 +252,38 @@ parallel_execution:
     # Execute all simultaneously
 ```
 
-### Memory CRUD Operations
+### Memory CRUD Operations (via Serena)
 
 ```yaml
 memory_operations:
   create:
     trigger: New pattern or learning discovered
     action: |
-      update_memory(
-        action="create",
-        title="Pattern: [descriptive title]",
-        knowledge_to_store="[detailed knowledge]"
+      write_memory(
+        name="Pattern: [descriptive title]",
+        content="[detailed knowledge]"
       )
   
   read:
     trigger: Need to recall previous learning
-    action: Use [[memory:ID]] citations in responses
+    action: |
+      read_memory(name="[memory_name]")
+      # OR list_memories() to see all available memories
   
   update:
     trigger: Existing knowledge needs refinement
     action: |
-      update_memory(
-        action="update",
-        existing_knowledge_id="[memory_id]",
-        title="[updated title]",
-        knowledge_to_store="[refined knowledge]"
+      # Delete old memory first, then create new one
+      delete_memory(name="[old_memory_name]")
+      write_memory(
+        name="[updated_title]",
+        content="[refined knowledge]"
       )
   
   delete:
     trigger: Knowledge contradicted or obsolete
     action: |
-      update_memory(
-        action="delete",
-        existing_knowledge_id="[memory_id]"
-      )
+      delete_memory(name="[memory_name]")
 ```
 
 ### Continuous Improvement Protocol
