@@ -59,8 +59,9 @@ export const SimpleHeader: React.FC<SimpleHeaderProps> = ({
           const sparkle = document.createElement('div');
           sparkle.className = 'sparkler-spark';
           
-          // Create the spark as a small glowing dot
-          sparkle.style.background = ['#ffd700', '#ffeb3b', '#fff', '#ffa500', '#ffcc02'][Math.floor(Math.random() * 5)];
+          // Create electric sparks with more dynamic colors
+          const electricColors = ['#00ffff', '#0080ff', '#4040ff', '#8000ff', '#ff00ff', '#ffd700', '#ffeb3b', '#fff'];
+          sparkle.style.background = electricColors[Math.floor(Math.random() * electricColors.length)];
           
           // Position relative to the letter
           const startX = rect.left - headerRect.left + rect.width / 2;
