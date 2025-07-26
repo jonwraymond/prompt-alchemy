@@ -48,9 +48,11 @@ export const SimpleHeader: React.FC<SimpleHeaderProps> = ({
     const rect = e.currentTarget.getBoundingClientRect();
     const headerRect = headerRef.current.getBoundingClientRect();
     
-    // Create 2-3 sparkles for the current letter
+    // Create 2-3 sparkles + electric crackles for the current letter
     const sparkleCount = Math.floor(Math.random() * 2) + 2;
+    const crackleCount = Math.floor(Math.random() * 2) + 1; // 1-2 electric crackles
     
+    // Create regular sparkles
     for (let i = 0; i < sparkleCount; i++) {
       requestAnimationFrame(() => {
         setTimeout(() => {
