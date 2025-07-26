@@ -96,6 +96,46 @@ export const SimpleHeader: React.FC<SimpleHeaderProps> = ({
         }, i * 30);
       });
     }
+    
+    // Create electric crackle effects
+    for (let i = 0; i < crackleCount; i++) {
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          if (!headerRef.current || currentLetterIndex.current !== letterIndex) return;
+          
+          const crackle = document.createElement('div');
+          crackle.className = 'electric-crackle';
+          
+          // Position relative to the letter
+          const startX = rect.left - headerRect.left + rect.width / 2;
+          const startY = rect.top - headerRect.top + rect.height / 2;
+          
+          // Random electric bolt trajectory
+          const crackleX = (Math.random() - 0.5) * 40;
+          const crackleY = -(Math.random() * 30 + 10);
+          
+          crackle.style.left = `${startX}px`;
+          crackle.style.top = `${startY}px`;
+          crackle.style.setProperty('--crackle-x', `${crackleX}px`);
+          crackle.style.setProperty('--crackle-y', `${crackleY}px`);
+          crackle.style.animationDelay = `${Math.random() * 0.2}s`;
+          
+          headerRef.current.appendChild(crackle);
+          activeSparkles.current.push(crackle);
+          
+          // Remove crackle after animation
+          setTimeout(() => {
+            if (crackle.parentNode) {
+              crackle.parentNode.removeChild(crackle);
+            }
+            const index = activeSparkles.current.indexOf(crackle);
+            if (index > -1) {
+              activeSparkles.current.splice(index, 1);
+            }
+          }, 800);
+        }, (i + sparkleCount) * 30);
+      });
+    }
   }, [fadeOutActiveSparkles]);
 
   return (
