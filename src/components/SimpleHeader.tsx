@@ -16,7 +16,11 @@ export const SimpleHeader: React.FC<SimpleHeaderProps> = ({
     <div className={`simple-header ${className}`}>
       <h1 className="main-title">
         {title.split('').map((letter, index) => (
-          <span key={index} className="letter">
+          <span 
+            key={index} 
+            className="letter"
+            data-letter={letter === ' ' ? '\u00A0' : letter}
+          >
             {letter === ' ' ? '\u00A0' : letter}
           </span>
         ))}
