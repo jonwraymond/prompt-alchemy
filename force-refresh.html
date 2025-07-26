@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Force Refresh</title>
+    <script>
+        // Force clear cache and redirect to main app
+        window.location.href = 'http://localhost:5173/?v=' + Date.now();
+    </script>
+</head>
+<body>
+    <p>Redirecting to main app with cache bust...</p>
+</body>
+</html> 
