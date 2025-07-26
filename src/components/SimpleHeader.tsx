@@ -13,48 +13,63 @@ export const SimpleHeader: React.FC<SimpleHeaderProps> = ({
   className = ""
 }) => {
   const headerRef = useRef<HTMLDivElement>(null);
+  const lastSparkleTime = useRef<{ [key: number]: number }>({});
 
-  // Create sparkle effect on letter hover
+  // Optimized sparkle effect with throttling
   const createSparkle = useCallback((e: React.MouseEvent<HTMLSpanElement>) => {
     if (!headerRef.current) return;
+    
+    const letterIndex = parseInt(e.currentTarget.getAttribute('data-index') || '0');
+    const now = Date.now();
+    
+    // Throttle sparkles to max one per letter per 200ms
+    if (lastSparkleTime.current[letterIndex] && now - lastSparkleTime.current[letterIndex] < 200) {
+      return;
+    }
+    lastSparkleTime.current[letterIndex] = now;
     
     const rect = e.currentTarget.getBoundingClientRect();
     const headerRect = headerRef.current.getBoundingClientRect();
     
-    // Create 3-5 sparkles around the letter
-    const sparkleCount = Math.floor(Math.random() * 3) + 3;
+    // Reduce sparkle count for smoother performance
+    const sparkleCount = Math.floor(Math.random() * 2) + 2; // 2-3 sparkles instead of 3-5
     
+    // Create sparkles with requestAnimationFrame for smooth performance
     for (let i = 0; i < sparkleCount; i++) {
-      setTimeout(() => {
-        const sparkle = document.createElement('div');
-        sparkle.className = 'sparkler-spark';
-        
-        // Create the spark as a small glowing dot
-        sparkle.style.background = ['#ffd700', '#ffeb3b', '#fff', '#ffa500', '#ffcc02'][Math.floor(Math.random() * 5)];
-        
-        // Position relative to the letter
-        const startX = rect.left - headerRect.left + rect.width / 2;
-        const startY = rect.top - headerRect.top + rect.height / 2;
-        
-        // Random trajectory for sparkler effect
-        const sparkX = (Math.random() - 0.5) * 30;
-        const sparkY = -(Math.random() * 25 + 10); // Always upward
-        
-        sparkle.style.left = `${startX}px`;
-        sparkle.style.top = `${startY}px`;
-        sparkle.style.setProperty('--spark-x', `${sparkX}px`);
-        sparkle.style.setProperty('--spark-y', `${sparkY}px`);
-        sparkle.style.animationDelay = `${Math.random() * 0.2}s`;
-        
-        headerRef.current.appendChild(sparkle);
-        
-        // Remove sparkle after animation
+      requestAnimationFrame(() => {
         setTimeout(() => {
-          if (sparkle.parentNode) {
-            sparkle.parentNode.removeChild(sparkle);
-          }
-        }, 1500);
-      }, i * 100);
+          if (!headerRef.current) return;
+          
+          const sparkle = document.createElement('div');
+          sparkle.className = 'sparkler-spark';
+          
+          // Create the spark as a small glowing dot
+          sparkle.style.background = ['#ffd700', '#ffeb3b', '#fff', '#ffa500', '#ffcc02'][Math.floor(Math.random() * 5)];
+          
+          // Position relative to the letter
+          const startX = rect.left - headerRect.left + rect.width / 2;
+          const startY = rect.top - headerRect.top + rect.height / 2;
+          
+          // Random trajectory for sparkler effect
+          const sparkX = (Math.random() - 0.5) * 25; // Reduced spread
+          const sparkY = -(Math.random() * 20 + 8); // Reduced range
+          
+          sparkle.style.left = `${startX}px`;
+          sparkle.style.top = `${startY}px`;
+          sparkle.style.setProperty('--spark-x', `${sparkX}px`);
+          sparkle.style.setProperty('--spark-y', `${sparkY}px`);
+          sparkle.style.animationDelay = `${Math.random() * 0.1}s`; // Reduced delay
+          
+          headerRef.current.appendChild(sparkle);
+          
+          // Remove sparkle after animation with cleanup check
+          setTimeout(() => {
+            if (sparkle.parentNode) {
+              sparkle.parentNode.removeChild(sparkle);
+            }
+          }, 1200); // Shorter duration
+        }, i * 50); // Reduced stagger
+      });
     }
   }, []);
 

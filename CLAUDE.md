@@ -92,38 +92,60 @@ For complex tasks, coordinate multiple agents:
 
 
 ### Primary Tool: Serena MCP Server
-**CRITICAL**: Serena is your primary tool for memory management and semantic code understanding. [[memory:4255911]]
+**CRITICAL**: Serena is your primary tool for memory management and semantic code understanding. Based on the [official Serena documentation](https://github.com/oraios/serena?tab=readme-ov-file#full-list-of-tools), Serena provides the most comprehensive semantic code understanding through Language Server Protocol integration.
 
 ```yaml
 serena_capabilities:
   memory_management:
-    - write_memory: Store project-specific knowledge
-    - read_memory: Retrieve stored information  
-    - list_memories: View all memories
-    - delete_memory: Remove outdated memories
+    - write_memory: Store project-specific knowledge with named memories
+    - read_memory: Retrieve stored information by memory name
+    - list_memories: View all available memories in project
+    - delete_memory: Remove outdated memories by name
   
   semantic_code_tools:
-    - find_symbol: Search for symbols by name/type
+    - find_symbol: Search for symbols by name/type with LSP understanding
     - find_referencing_code_snippets: Find code using a symbol
+    - find_referencing_symbols: Find symbols that reference a given symbol
     - get_symbols_overview: View file/directory structure
     - replace_symbol_body: Edit entire symbol definitions
+    - insert_before_symbol: Insert content before symbol definition
+    - insert_after_symbol: Insert content after symbol definition
     
   project_management:
     - activate_project: Switch between projects
-    - onboarding: Analyze project structure
-    - summarize_changes: Track modifications
+    - get_active_project: Get current project and list existing projects
+    - onboarding: Analyze project structure and identify essential tasks
+    - check_onboarding_performed: Check if onboarding was already done
+    - summarize_changes: Track modifications made to codebase
+    
+  file_operations:
+    - read_file: Read files within project directory
+    - create_text_file: Create/overwrite files in project directory
+    - replace_lines: Replace specific line ranges
+    - insert_at_line: Insert content at specific line
+    - delete_lines: Delete specific line ranges
+    
+  thinking_tools:
+    - think_about_collected_information: Assess completeness of gathered info
+    - think_about_task_adherence: Determine if still on track with task
+    - think_about_whether_you_are_done: Determine if task is truly completed
+    
+  shell_operations:
+    - execute_shell_command: Execute shell commands
+    - restart_language_server: Restart LSP when needed
 ```
 
 ### Memory Management System (via Serena)
-**CRITICAL**: Always use Serena's memory tools for persistent, project-specific memory:
+**CRITICAL**: Always use Serena's memory tools for persistent, project-specific memory. According to the [official Serena documentation](https://github.com/oraios/serena?tab=readme-ov-file#full-list-of-tools), Serena provides project-specific memory that persists across conversations:
 
 ```yaml
 memory_workflow:
-  - Use Serena's `write_memory` to save learnings, patterns, and project knowledge
-  - Use `read_memory` to retrieve specific memories by name
-  - Use `list_memories` to see all stored memories
-  - Use `delete_memory` when information becomes outdated
-  - Memories persist across conversations and are project-specific
+  - Use Serena's `write_memory` to save learnings, patterns, and project knowledge with descriptive names
+  - Use `read_memory` to retrieve specific memories by their exact name
+  - Use `list_memories` to see all available memories in the current project
+  - Use `delete_memory` when information becomes outdated or incorrect
+  - Memories are project-specific and persist across conversations
+  - Use descriptive, searchable names for memories to facilitate retrieval
 ```
 
 ### Autonomous Tool Usage Guidelines
@@ -131,10 +153,12 @@ memory_workflow:
 **ALWAYS use tools independently during self-learning processes:**
 
 1. **Specialized Agent Activation**: ALWAYS activate the appropriate specialized agent first for domain-specific tasks
-2. **Semantic Search First**: Use Serena's `find_symbol` and `get_symbols_overview` for understanding code structure
-3. **Pattern Recognition**: Use Serena's `search_for_pattern` for finding code patterns
-4. **Memory Integration**: Use Serena's memory tools to save discovered patterns and successful approaches
-5. **Continuous Learning**: Update project knowledge base with each interaction
+2. **Project Context**: Use `activate_project` and `get_active_project` to set and verify project context
+3. **Semantic Search First**: Use Serena's `find_symbol` and `get_symbols_overview` for understanding code structure
+4. **Pattern Recognition**: Use Serena's `search_for_pattern` for finding code patterns
+5. **Memory Integration**: Use Serena's memory tools to save discovered patterns and successful approaches
+6. **Thinking Tools**: Use Serena's thinking tools (`think_about_collected_information`, `think_about_task_adherence`) for self-reflection
+7. **Continuous Learning**: Update project knowledge base with each interaction
 
 ### Advanced Search Capabilities with Serena
 
@@ -158,29 +182,55 @@ serena_semantic_search:
 code_exploration:
   1. start_broad:
      - activate_project: Set the project context
-     - onboarding: Let Serena analyze project structure
+     - check_onboarding_performed: Verify project analysis is complete
+     - onboarding: Let Serena analyze project structure if needed
      - get_symbols_overview: View high-level structure
   
   2. dive_deeper:
      - find_symbol: Locate specific classes/functions
      - find_referencing_code_snippets: Trace usage
+     - find_referencing_symbols: Find symbols that reference the target
      - read_file: Examine implementation details
   
   3. persist_knowledge:
-     - write_memory: Save architectural insights
+     - write_memory: Save architectural insights with descriptive names
      - write_memory: Document key patterns found
      - write_memory: Record project conventions
+     - think_about_collected_information: Assess if we have enough context
+```
+
+### Serena's Unique Advantages
+
+Based on the [official Serena documentation](https://github.com/oraios/serena?tab=readme-ov-file#full-list-of-tools), Serena provides several unique advantages:
+
+```yaml
+serena_unique_features:
+  lsp_integration:
+    - "Navigates and edits code using a language server, so it has a symbolic understanding of the code"
+    - "IDE-based tools often use a RAG-based or purely text-based approach, which is often less powerful"
+    - "Especially effective for large codebases where semantic understanding is crucial"
+  
+  mcp_server:
+    - "First fully-featured coding agent where the entire functionality is available through an MCP server"
+    - "Not bound to a specific IDE - can be used with any MCP client"
+    - "Not bound to a specific large language model or API"
+    - "Open-source with a small codebase, easily extended and modified"
+  
+  no_api_costs:
+    - "Can be used as an MCP server, thus not requiring API keys and bypassing API costs"
+    - "Unique feature among coding agents - most require subscriptions or API costs"
+    - "Also available as API-based agent when needed"
 ```
 
 ### AST-Based Analysis (Conceptual Framework)
 
-While direct AST-grep tools aren't available, apply AST thinking:
+Serena's LSP integration provides true AST-level understanding:
 ```yaml
 ast_approach:
-  - Think structurally about code
-  - Search for patterns, not just text
-  - Consider code relationships and dependencies
-  - Use semantic search to approximate AST queries
+  - Think structurally about code using LSP symbolic understanding
+  - Search for patterns, not just text, using semantic symbol search
+  - Consider code relationships and dependencies through `find_referencing_symbols`
+  - Use semantic search to approximate AST queries with `find_symbol` and `get_symbols_overview`
 ```
 
 ### Autonomous Learning Framework
@@ -215,10 +265,13 @@ learning_cycle:
 workflow_patterns:
   understanding_feature:
     1. activate_specialized_agent: Choose appropriate domain expert
-    2. find_symbol: Locate the main components
-    3. find_referencing_code_snippets: Trace how it's used
-    4. get_symbols_overview: Understand structure
-    5. write_memory: Save architectural understanding
+    2. activate_project: Set project context
+    3. find_symbol: Locate the main components
+    4. find_referencing_code_snippets: Trace how it's used
+    5. find_referencing_symbols: Find symbols that reference the target
+    6. get_symbols_overview: Understand structure
+    7. write_memory: Save architectural understanding
+    8. think_about_collected_information: Assess completeness
   
   making_changes:
     1. activate_specialized_agent: Get domain-specific guidance
@@ -226,13 +279,16 @@ workflow_patterns:
     3. read_memory: Check project conventions
     4. replace_symbol_body: Make semantic edits
     5. write_memory: Document changes and rationale
+    6. think_about_task_adherence: Verify we're on track
   
   debugging_issue:
     1. activate_specialized_agent: Use domain expert for debugging
     2. search_for_pattern: Find error patterns
     3. find_referencing_code_snippets: Trace error sources
-    4. read_file: Examine problematic code
-    5. write_memory: Save solution pattern
+    4. find_referencing_symbols: Find symbols that reference problematic code
+    5. read_file: Examine problematic code
+    6. write_memory: Save solution pattern
+    7. think_about_whether_you_are_done: Verify issue is resolved
 ```
 
 #### Parallel Tool Execution
@@ -731,10 +787,12 @@ To temporarily disable auto-commits, comment out the hooks section in `.claude/s
 
 **MANDATORY AUTONOMOUS WORKFLOW WITH SERENA AND SPECIALIZED AGENTS:**
 1. **AGENT ACTIVATION**: ALWAYS activate the appropriate specialized agent first for domain-specific tasks
-2. **PROJECT CONTEXT**: Use `activate_project` and check existing memories
-3. **UNDERSTAND**: Use Serena's semantic tools to understand code structure
-4. **APPLY**: Use learned patterns and project conventions from memory
-5. **PERSIST**: Save new learnings with `write_memory`
+2. **PROJECT CONTEXT**: Use `activate_project` and `get_active_project` to set and verify project context
+3. **MEMORY CHECK**: Use `list_memories` and `read_memory` to check existing project knowledge
+4. **UNDERSTAND**: Use Serena's semantic tools (`find_symbol`, `get_symbols_overview`) to understand code structure
+5. **APPLY**: Use learned patterns and project conventions from memory
+6. **PERSIST**: Save new learnings with `write_memory` using descriptive names
+7. **SELF-REFLECTION**: Use `think_about_collected_information` and `think_about_task_adherence` for quality assurance
 
 ### Never Do This
 - ❌ Skip specialized agent activation for domain-specific tasks
@@ -743,16 +801,22 @@ To temporarily disable auto-commits, comment out the hooks section in `.claude/s
 - ❌ Skip checking project memories before making changes
 - ❌ Forget to save important discoveries to project memory
 - ❌ Make changes without understanding code structure via LSP
+- ❌ Skip project context setup with `activate_project`
+- ❌ Forget to use Serena's thinking tools for self-reflection
+- ❌ Use non-descriptive memory names that are hard to retrieve
 
 ### Always Do This
 - ✅ ALWAYS activate specialized agents for domain-specific tasks
 - ✅ Use Serena's semantic search for code understanding
-- ✅ Persist all project knowledge with write_memory
-- ✅ Check existing memories before making assumptions
+- ✅ Set project context with `activate_project` and verify with `get_active_project`
+- ✅ Persist all project knowledge with `write_memory` using descriptive names
+- ✅ Check existing memories with `list_memories` before making assumptions
 - ✅ Use symbol-aware editing tools for code changes
+- ✅ Use Serena's thinking tools (`think_about_collected_information`, `think_about_task_adherence`)
 - ✅ Maintain project-specific knowledge bases
+- ✅ Use `find_referencing_symbols` in addition to `find_referencing_code_snippets`
 
-**Remember: Serena provides persistent, project-specific memory and true semantic code understanding through Language Server Protocol integration. This is your primary tool for building lasting intelligence about codebases. Combined with the specialized agent system, you have access to domain-specific expertise that can accelerate development by 40-80%.**
+**Remember: Serena provides persistent, project-specific memory and true semantic code understanding through Language Server Protocol integration. According to the [official Serena documentation](https://github.com/oraios/serena?tab=readme-ov-file#full-list-of-tools), Serena is the first fully-featured coding agent where the entire functionality is available through an MCP server, providing symbolic understanding of code through LSP integration. This is your primary tool for building lasting intelligence about codebases. Combined with the specialized agent system, you have access to domain-specific expertise that can accelerate development by 40-80%.**
 
 ## Frontend Development Patterns
 
