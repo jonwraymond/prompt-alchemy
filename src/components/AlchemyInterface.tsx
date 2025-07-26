@@ -94,8 +94,8 @@ export const AlchemyInterface: React.FC<AlchemyInterfaceProps> = ({ className = 
       <HexagonGrid />
       
       <div className="alchemy-container">
-        {/* Magical Header */}
-        <MagicalHeader 
+        {/* Simple Header */}
+        <SimpleHeader 
           title="PROMPT ALCHEMY"
           subtitle="Transform raw ideas into refined AI prompts"
         />
