@@ -8,6 +8,7 @@ set -e
 # Configuration
 LOG_FILE="$HOME/.claude/auto-commit.log"
 PROJECT_DIR="$(pwd)"
+AUTO_PUSH="${AUTO_PUSH:-false}"  # Default to local-only, set AUTO_PUSH=true to enable remote push
 
 # Logging function
 log() {
