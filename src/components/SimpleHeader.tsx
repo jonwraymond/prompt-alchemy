@@ -13,32 +13,48 @@ export const SimpleHeader: React.FC<SimpleHeaderProps> = ({
   className = ""
 }) => {
   const headerRef = useRef<HTMLDivElement>(null);
-  const lastSparkleTime = useRef<{ [key: number]: number }>({});
+  const activeSparkles = useRef<HTMLElement[]>([]);
+  const currentLetterIndex = useRef<number>(-1);
 
-  // Optimized sparkle effect with throttling
+  // Gradually fade out existing sparkles
+  const fadeOutActiveSparkles = useCallback(() => {
+    activeSparkles.current.forEach(sparkle => {
+      if (sparkle.parentNode) {
+        // Add fade-out class for smooth transition
+        sparkle.classList.add('sparkler-fade-out');
+        // Remove after fade completes
+        setTimeout(() => {
+          if (sparkle.parentNode) {
+            sparkle.parentNode.removeChild(sparkle);
+          }
+        }, 200);
+      }
+    });
+    activeSparkles.current = [];
+  }, []);
+
+  // Single-letter sparkle effect with animation cancellation
   const createSparkle = useCallback((e: React.MouseEvent<HTMLSpanElement>) => {
     if (!headerRef.current) return;
     
     const letterIndex = parseInt(e.currentTarget.getAttribute('data-index') || '0');
-    const now = Date.now();
     
-    // Throttle sparkles to max one per letter per 200ms
-    if (lastSparkleTime.current[letterIndex] && now - lastSparkleTime.current[letterIndex] < 200) {
-      return;
+    // If moving to a different letter, fade out previous sparkles
+    if (currentLetterIndex.current !== letterIndex) {
+      fadeOutActiveSparkles();
+      currentLetterIndex.current = letterIndex;
     }
-    lastSparkleTime.current[letterIndex] = now;
     
     const rect = e.currentTarget.getBoundingClientRect();
     const headerRect = headerRef.current.getBoundingClientRect();
     
-    // Reduce sparkle count for smoother performance
-    const sparkleCount = Math.floor(Math.random() * 2) + 2; // 2-3 sparkles instead of 3-5
+    // Create 2-3 sparkles for the current letter
+    const sparkleCount = Math.floor(Math.random() * 2) + 2;
     
-    // Create sparkles with requestAnimationFrame for smooth performance
     for (let i = 0; i < sparkleCount; i++) {
       requestAnimationFrame(() => {
         setTimeout(() => {
-          if (!headerRef.current) return;
+          if (!headerRef.current || currentLetterIndex.current !== letterIndex) return;
           
           const sparkle = document.createElement('div');
           sparkle.className = 'sparkler-spark';
@@ -51,27 +67,33 @@ export const SimpleHeader: React.FC<SimpleHeaderProps> = ({
           const startY = rect.top - headerRect.top + rect.height / 2;
           
           // Random trajectory for sparkler effect
-          const sparkX = (Math.random() - 0.5) * 25; // Reduced spread
-          const sparkY = -(Math.random() * 20 + 8); // Reduced range
+          const sparkX = (Math.random() - 0.5) * 25;
+          const sparkY = -(Math.random() * 20 + 8);
           
           sparkle.style.left = `${startX}px`;
           sparkle.style.top = `${startY}px`;
           sparkle.style.setProperty('--spark-x', `${sparkX}px`);
           sparkle.style.setProperty('--spark-y', `${sparkY}px`);
-          sparkle.style.animationDelay = `${Math.random() * 0.1}s`; // Reduced delay
+          sparkle.style.animationDelay = `${Math.random() * 0.1}s`;
           
           headerRef.current.appendChild(sparkle);
+          activeSparkles.current.push(sparkle);
           
-          // Remove sparkle after animation with cleanup check
+          // Remove sparkle after animation completes
           setTimeout(() => {
             if (sparkle.parentNode) {
               sparkle.parentNode.removeChild(sparkle);
             }
-          }, 1200); // Shorter duration
-        }, i * 50); // Reduced stagger
+            // Remove from active sparkles array
+            const index = activeSparkles.current.indexOf(sparkle);
+            if (index > -1) {
+              activeSparkles.current.splice(index, 1);
+            }
+          }, 1000);
+        }, i * 30);
       });
     }
-  }, []);
+  }, [fadeOutActiveSparkles]);
 
   return (
     <div ref={headerRef} className={`simple-header ${className}`}>
