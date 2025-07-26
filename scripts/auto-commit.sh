@@ -95,16 +95,20 @@ git add -A
 if git commit -m "$commit_msg"; then
     log "Successfully committed changes: $changed_files"
     
-    # Push to remote if configured
-    if git remote get-url origin >/dev/null 2>&1; then
-        log "Pushing to remote repository"
-        if git push origin HEAD; then
-            log "Successfully pushed to remote"
+    # Push to remote only if AUTO_PUSH is enabled
+    if [ "$AUTO_PUSH" = "true" ]; then
+        if git remote get-url origin >/dev/null 2>&1; then
+            log "Pushing to remote repository (AUTO_PUSH=true)"
+            if git push origin HEAD; then
+                log "Successfully pushed to remote"
+            else
+                log "WARNING: Failed to push to remote (commit still created locally)"
+            fi
         else
-            log "WARNING: Failed to push to remote (commit still created locally)"
+            log "No remote configured, commit created locally only"
         fi
     else
-        log "No remote configured, commit created locally only"
+        log "Commit created locally only (AUTO_PUSH=false). To enable remote push, set AUTO_PUSH=true in environment"
     fi
 else
     log "ERROR: Failed to create commit"
