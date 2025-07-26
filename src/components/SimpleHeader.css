@@ -197,7 +197,7 @@
   font-family: 'Inter', 'Space Grotesk', sans-serif !important;
   font-size: 1.1rem !important;
   font-weight: 600 !important;
-  letter-spacing: 0.08em !important;
+  letter-spacing: 0.15em !important; /* Increased letter spacing */
   margin-top: 1.5rem !important;
   text-align: center;
   line-height: 1.4;
@@ -207,11 +207,9 @@
 .subtitle-letter {
   display: inline-block;
   position: relative;
-  color: #ffd700;
-  text-shadow:
-    0 0 20px rgba(255, 215, 0, 0.8),
-    0 0 40px rgba(255, 215, 0, 0.5),
-    0 2px 4px rgba(0, 0, 0, 0.3);
+  color: #ffffff; /* White text */
+  margin: 0 0.05em; /* Additional space between letters */
+  transition: all 0.3s ease;
   
   /* Fragment drop animation on page load */
   animation: fragmentDrop 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
