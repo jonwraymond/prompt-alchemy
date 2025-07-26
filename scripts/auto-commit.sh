@@ -20,6 +20,18 @@ if [ ! -d ".git" ]; then
     exit 0
 fi
 
+# Check if git is configured properly
+if [ -z "$(git config user.name)" ] || [ -z "$(git config user.email)" ]; then
+    log "ERROR: Git user.name or user.email not configured, skipping auto-commit"
+    exit 0
+fi
+
+# Check if we're on a protected branch (optional safety check)
+current_branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+if [ "$current_branch" = "main" ] || [ "$current_branch" = "master" ]; then
+    log "WARNING: On protected branch '$current_branch', proceeding with caution"
+fi
+
 # Check if there are any changes to commit
 if [ -z "$(git status --porcelain)" ]; then
     log "No changes to commit"
@@ -32,6 +44,12 @@ log "Detected changes, starting auto-commit process"
 changed_files=$(git status --porcelain | head -5 | awk '{print $2}' | tr '\n' ' ')
 file_count=$(git status --porcelain | wc -l | tr -d ' ')
 
+# Skip if this is a really large change (likely initial commit or major cleanup)
+if [ "$file_count" -gt 1000 ]; then
+    log "Large change detected ($file_count files), skipping auto-commit to prevent huge commits"
+    exit 0
+fi
+
 # Generate commit message based on changes
 if [ "$file_count" -eq 1 ]; then
     # Single file change
@@ -39,11 +57,16 @@ if [ "$file_count" -eq 1 ]; then
     commit_msg="feat: update $filename
 
 Auto-committed by Claude Code hook"
-else
-    # Multiple file changes
+elif [ "$file_count" -le 10 ]; then
+    # Small number of files - list them
     commit_msg="feat: update multiple files ($file_count files)
 
 Files: $changed_files
+Auto-committed by Claude Code hook"
+else
+    # Many files - don't list them all
+    commit_msg="feat: update multiple files ($file_count files)
+
 Auto-committed by Claude Code hook"
 fi
 

@@ -577,6 +577,42 @@ logger.WithFields(logrus.Fields{
 - Reference it in the pull request
 - Use format: "Closes #123" in PR description
 
+## Auto-Commit Hook Configuration
+
+**Claude Code Auto-Commit Hook** is now configured to automatically commit successful code changes to GitHub.
+
+### How It Works
+- **Triggers**: Automatically runs after successful Write, Edit, MultiEdit, and Serena file operations
+- **Validation**: Checks Go build success, runs `go fmt`, validates git configuration
+- **Safety**: Skips commits for very large changes (>1000 files) and validates git setup
+- **Logging**: All activity logged to `~/.claude/auto-commit.log`
+
+### Configuration Files
+- **Hook Configuration**: `.claude/settings.local.json` - Contains PostToolUse hooks
+- **Auto-Commit Script**: `scripts/auto-commit.sh` - The script that handles commits
+- **Log File**: `~/.claude/auto-commit.log` - Activity and error log
+
+### How to Disable
+To temporarily disable auto-commits, comment out the hooks section in `.claude/settings.local.json`:
+```json
+{
+  "permissions": { ... },
+  // "hooks": { ... }
+}
+```
+
+### Troubleshooting
+- Check log file: `cat ~/.claude/auto-commit.log`
+- Test script manually: `./scripts/auto-commit.sh`
+- Verify git config: `git config user.name && git config user.email`
+
+### Safety Features
+- Validates Go project builds before committing
+- Skips very large changes (>1000 files)
+- Checks git configuration is properly set up
+- Logs all activity for troubleshooting
+- Generates descriptive commit messages based on changed files
+
 ## Critical Reminders for Claude
 
 ### Autonomous Operation Principles
