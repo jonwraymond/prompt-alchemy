@@ -36,11 +36,12 @@
   animation: electricField 2s ease-in-out infinite;
 }
 
-/* Main title styling - original design */
+/* Main title styling - skinnier modern design */
 .main-title {
   font-family: 'Orbitron', 'Bebas Neue', sans-serif !important;
-  font-weight: 900 !important;
+  font-weight: 400 !important; /* Skinnier weight */
   font-size: 4rem !important;
+  font-stretch: 85% !important; /* Narrower stretch */
   letter-spacing: 0.15em !important;
   text-transform: uppercase !important;
   margin: 0 0 0.5rem 0 !important;
