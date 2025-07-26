@@ -6,7 +6,8 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "8080:8080"
+      - "5747:8080"
+      - "5748:8080"
     environment:
       - DATA_DIR=/data
       - LOG_LEVEL=debug
