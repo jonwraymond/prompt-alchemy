@@ -108,13 +108,38 @@
   opacity: 0.6;
 }
 
-/* Rainbow shift animation */
+/* Electric pulse animation */
+@keyframes electricPulse {
+  0% {
+    text-shadow: 
+      0 0 5px rgba(0, 255, 255, 0.8),
+      0 0 10px rgba(0, 255, 255, 0.6),
+      0 0 15px rgba(0, 255, 255, 0.4),
+      0 0 20px rgba(0, 128, 255, 0.3);
+  }
+  100% {
+    text-shadow: 
+      0 0 10px rgba(0, 255, 255, 1.0),
+      0 0 20px rgba(0, 255, 255, 0.8),
+      0 0 30px rgba(0, 255, 255, 0.6),
+      0 0 40px rgba(0, 128, 255, 0.4),
+      0 0 50px rgba(128, 0, 255, 0.2);
+  }
+}
+
+/* Enhanced rainbow shift animation */
 @keyframes rainbow-shift {
   0%, 100% {
     filter: blur(8px) hue-rotate(0deg);
   }
+  25% {
+    filter: blur(9px) hue-rotate(90deg);
+  }
   50% {
     filter: blur(10px) hue-rotate(180deg);
+  }
+  75% {
+    filter: blur(9px) hue-rotate(270deg);
   }
 }
 
