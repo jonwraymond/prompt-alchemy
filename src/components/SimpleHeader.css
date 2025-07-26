@@ -167,11 +167,37 @@
   pointer-events: none;
   z-index: 100;
   box-shadow: 
-    0 0 6px currentColor,
-    0 0 12px currentColor,
-    0 0 18px currentColor;
+    0 0 8px currentColor,
+    0 0 16px currentColor,
+    0 0 24px currentColor,
+    0 0 32px rgba(0, 255, 255, 0.5);
   animation: sparklerFloat 1.0s ease-out forwards;
   /* Hardware acceleration for smoother animations */
+  will-change: transform, opacity;
+  transform: translateZ(0);
+}
+
+/* Electric Crackle Effects */
+.electric-crackle {
+  position: absolute;
+  width: 2px;
+  height: 8px;
+  pointer-events: none;
+  z-index: 101;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    #00ffff 20%,
+    #ffffff 50%,
+    #0080ff 80%,
+    transparent 100%
+  );
+  border-radius: 1px;
+  box-shadow: 
+    0 0 4px #00ffff,
+    0 0 8px #0080ff,
+    0 0 12px rgba(0, 255, 255, 0.7);
+  animation: electricCrackle 0.8s ease-out forwards;
   will-change: transform, opacity;
   transform: translateZ(0);
 }

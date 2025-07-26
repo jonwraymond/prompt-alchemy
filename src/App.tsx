@@ -3,6 +3,7 @@ import { TwentyFirstToolbar } from '@21st-extension/toolbar-react';
 import { ReactPlugin } from '@21st-extension/react';
 import AlchemyInterface from './components/AlchemyInterface';
 import TestComponent from './components/TestComponent';
+import ToolbarStatus from './components/ToolbarStatus';
 import './components/AIInputComponent.css';
 
 function App() {
@@ -23,17 +24,18 @@ function App() {
             onError: (error) => {
               console.error('❌ 21st Toolbar Error:', error);
             },
-            onActivate: () => {
-              console.log('🎯 21st Toolbar Activated - Prompt area should be visible');
+            onConnect: () => {
+              console.log('🔗 21st Toolbar Connected to VSCode!');
             },
-            // Enable more verbose logging
-            debug: true,
-            // Force activation
-            autoActivate: true,
+            onDisconnect: () => {
+              console.log('🔌 21st Toolbar Disconnected from VSCode');
+            }
           }}
-          enabled={true}
         />
       )}
+
+      {/* Toolbar Status Indicator */}
+      {import.meta.env.DEV && <ToolbarStatus />}
 
       {/* Mode Toggle for Development */}
       {import.meta.env.DEV && (
