@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { AlchemyInputComponent } from './AlchemyInputComponent';
-import { MagicalHeader } from './MagicalHeader';
+import { SimpleHeader } from './SimpleHeader';
 import { HexagonGrid } from './HexagonGrid';
 import './AlchemyInterface.css';
 
