@@ -81,6 +81,7 @@ export const SimpleHeader: React.FC<SimpleHeaderProps> = ({
             key={index} 
             className="letter"
             data-letter={letter === ' ' ? '\u00A0' : letter}
+            data-index={index}
             onMouseEnter={createSparkle}
           >
             {letter === ' ' ? '\u00A0' : letter}
