@@ -56,14 +56,16 @@
   opacity: 0;
   transition: opacity 0.3s ease;
   
-  /* Rainbow gradient text */
+  /* Electric rainbow gradient text */
   background: linear-gradient(
     45deg,
     #ff0080 0%,
-    #ff8c00 20%,
-    #ffd700 40%,
-    #00ff00 60%,
-    #00ffff 80%,
+    #ff8c00 15%,
+    #ffd700 30%,
+    #00ff00 45%,
+    #00ffff 60%,
+    #0080ff 75%,
+    #8000ff 90%,
     #ff00ff 100%
   );
   -webkit-background-clip: text;
