@@ -152,3 +152,95 @@
     font-size: 0.9rem !important;
   }
 }
+
+/* Magical Sparkles */
+.simple-header {
+  position: relative;
+  overflow: visible;
+}
+
+.magical-sparkle {
+  position: absolute;
+  font-size: 1.2rem;
+  pointer-events: none;
+  z-index: 100;
+  animation: sparkleFloat 1.5s ease-out forwards;
+}
+
+@keyframes sparkleFloat {
+  0% {
+    transform: translateY(0) rotate(0deg) scale(0.3);
+    opacity: 1;
+  }
+  25% {
+    transform: translateY(-20px) rotate(90deg) scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(-40px) rotate(180deg) scale(1.2);
+    opacity: 0.8;
+  }
+  75% {
+    transform: translateY(-60px) rotate(270deg) scale(0.8);
+    opacity: 0.4;
+  }
+  100% {
+    transform: translateY(-80px) rotate(360deg) scale(0.2);
+    opacity: 0;
+  }
+}
+
+/* Alternative sparkle animations for variety */
+.magical-sparkle:nth-child(even) {
+  animation: sparkleFloat2 1.5s ease-out forwards;
+}
+
+@keyframes sparkleFloat2 {
+  0% {
+    transform: translate(0, 0) rotate(0deg) scale(0.5);
+    opacity: 1;
+  }
+  33% {
+    transform: translate(-15px, -25px) rotate(120deg) scale(1.1);
+    opacity: 1;
+  }
+  66% {
+    transform: translate(10px, -50px) rotate(240deg) scale(0.9);
+    opacity: 0.6;
+  }
+  100% {
+    transform: translate(-5px, -75px) rotate(360deg) scale(0.3);
+    opacity: 0;
+  }
+}
+
+.magical-sparkle:nth-child(3n) {
+  animation: sparkleFloat3 1.5s ease-out forwards;
+}
+
+@keyframes sparkleFloat3 {
+  0% {
+    transform: scale(0.2) rotate(0deg);
+    opacity: 0.8;
+  }
+  20% {
+    transform: scale(1.3) rotate(72deg);
+    opacity: 1;
+  }
+  40% {
+    transform: scale(0.8) rotate(144deg);
+    opacity: 1;
+  }
+  60% {
+    transform: scale(1.1) rotate(216deg);
+    opacity: 0.7;
+  }
+  80% {
+    transform: scale(0.6) rotate(288deg);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(0.1) rotate(360deg) translateY(-60px);
+    opacity: 0;
+  }
+}
