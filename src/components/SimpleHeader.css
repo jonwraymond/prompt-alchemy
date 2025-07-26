@@ -192,96 +192,105 @@
   }
 }
 
-/* Subtitle styling - fragmented fallen effect */
+/* Subtitle styling - modern, aligned with fragment drop animation */
 .main-subtitle {
-  font-family: 'Space Grotesk', sans-serif !important;
+  font-family: 'Inter', 'Space Grotesk', sans-serif !important;
   font-size: 1.1rem !important;
-  margin-top: 1rem !important;
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 0.05em;
+  font-weight: 600 !important;
+  letter-spacing: 0.08em !important;
+  margin-top: 1.5rem !important;
+  text-align: center;
+  line-height: 1.4;
 }
 
-/* Individual subtitle letters with fragmented effect */
-.subtitle-letter.fragment {
+/* Individual subtitle letters - properly aligned */
+.subtitle-letter {
   display: inline-block;
   position: relative;
-  transition:
-    transform 0.5s cubic-bezier(.68,2,-0.66,.53),
-    filter 0.4s linear;
-  cursor: pointer;
-  color: #fffbed;
-  /* Add soft letter shadow for separation */
+  color: #ffd700;
   text-shadow:
-    0 2px 2px rgba(32, 32, 16, 0.11),
-    0 6px 16px rgba(0,0,0,0.13);
-  outline: none;
-  filter: drop-shadow(0 3px 6px rgba(90,76,20,0.12));
+    0 0 20px rgba(255, 215, 0, 0.8),
+    0 0 40px rgba(255, 215, 0, 0.5),
+    0 2px 4px rgba(0, 0, 0, 0.3);
+  
+  /* Fragment drop animation on page load */
+  animation: fragmentDrop 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation-delay: var(--drop-delay, 0s);
+  
+  /* Start position - above and slightly scattered */
+  transform: translateY(calc(var(--drop-y, 30px) * -1));
+  opacity: 0;
 }
 
-/* Gentle gold glow with pulsating "about to flicker/fail" style */
-.subtitle-letter.fragment::after {
+/* Fragment drop animation - letters fall into place */
+@keyframes fragmentDrop {
+  0% {
+    transform: translateY(calc(var(--drop-y, 30px) * -1));
+    opacity: 0;
+    filter: blur(2px);
+  }
+  60% {
+    opacity: 1;
+    filter: blur(0);
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+/* Gold glow effect after letters settle */
+.subtitle-letter::after {
   content: attr(data-letter);
   position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: -1;
-  pointer-events: none;
-  opacity: 0.8;
-  font-family: inherit;
   color: transparent;
-  background: radial-gradient(circle at 50% 60%, #ffe064 0px, #ffd700 12px, transparent 42px);
+  background: radial-gradient(circle at 50% 60%, #ffe064 0px, #ffd700 15px, transparent 45px);
   background-clip: text;
   -webkit-background-clip: text;
-  background-size: 120% 120%;
-  background-repeat: no-repeat;
-  filter: blur(3.5px) drop-shadow(0 0 8px #ffcc02aa) drop-shadow(0 0 18px #ffc);
-  animation: goldGlowPulse 2.4s cubic-bezier(.77,0,.18,1) infinite;
+  filter: blur(3px) drop-shadow(0 0 10px #ffd700aa);
+  opacity: 0;
+  animation: goldGlowAppear 1s ease-out 1.2s forwards;
 }
 
-/* Gold glow on hover, stronger and a little erratic/twitchy ("abuse/panic") */
-.subtitle-letter.fragment:hover::after,
-.subtitle-letter.fragment:focus::after {
-  animation: goldGlowPulseFlicker 0.65s cubic-bezier(.77,0,.18,1) infinite;
+/* Gold glow appears after drop animation */
+@keyframes goldGlowAppear {
+  0% {
+    opacity: 0;
+    filter: blur(8px) brightness(0.5);
+  }
+  100% {
+    opacity: 0.7;
+    filter: blur(3px) brightness(1) drop-shadow(0 0 10px #ffd700aa);
+  }
+}
+
+/* Hover effect - subtle glow intensification */
+.subtitle-letter:hover {
+  text-shadow:
+    0 0 25px rgba(255, 215, 0, 1),
+    0 0 50px rgba(255, 215, 0, 0.7),
+    0 2px 4px rgba(0, 0, 0, 0.3);
+  transition: text-shadow 0.3s ease;
+}
+
+.subtitle-letter:hover::after {
   opacity: 1;
-}
-
-@keyframes goldGlowPulse {
-  0% { filter: blur(3.5px) brightness(1) drop-shadow(0 0 8px #ffd60088); }
-  42% { filter: blur(5px) brightness(1.19) drop-shadow(0 0 10px #ffe07c); }
-  59% { filter: blur(3.3px) brightness(1.03) drop-shadow(0 0 18px #ffd700a0); }
-  100% { filter: blur(3.8px) brightness(0.97) drop-shadow(0 0 8px #ffdf26bb); }
-}
-
-@keyframes goldGlowPulseFlicker {
-  0%   { filter: blur(3.5px) brightness(1.1) drop-shadow(0 0 16px #ffe09c99); }
-  12%  { filter: blur(5.4px) brightness(1.25); }
-  19%  { filter: blur(2.5px) brightness(0.83) drop-shadow(0 0 8px #ffeb3baa); }
-  30%  { filter: blur(4.2px) brightness(1.32) drop-shadow(0 0 20px #ffe062); }
-  62%  { filter: blur(2.2px) brightness(1.02) drop-shadow(0 0 26px #ffd14a55); }
-  78%  { filter: blur(5px) brightness(1.11) drop-shadow(0 0 16px #fd0); }
-  100% { filter: blur(3.9px) brightness(1.08) drop-shadow(0 0 7px #ffeb37); }
-}
-
-/* Fragmented Jitter/Fall on Hover, with stagger delay for the "about to collapse" look */
-.subtitle-letter.fragment:hover,
-.subtitle-letter.fragment:focus {
-  animation: fragmentJitter 1.03s cubic-bezier(.68,2,-0.66,.53) infinite;
-}
-
-@keyframes fragmentJitter {
-  12% { transform: translate(-1px, 2px) rotate(-1deg); }
-  23% { transform: translate(2px, 4.5px) rotate(2deg); }
-  37% { transform: translate(-1.7px, 8.5px) rotate(-2deg);}
-  52% { transform: translate(1.5px, 10.5px) rotate(1deg);}
-  80% { transform: translate(0.5px, 7px) rotate(0.5deg);}
-  100% { transform: translate(0, 0) }
+  filter: blur(4px) brightness(1.2) drop-shadow(0 0 15px #ffd700);
+  transition: all 0.3s ease;
 }
 
 /* Subtle glow on subtitle when hovering title */
-.main-title:hover ~ .main-subtitle .subtitle-letter.fragment::after {
-  opacity: 1;
-  filter: blur(4px) brightness(1.15) drop-shadow(0 0 12px #ffd700cc);
+.main-title:hover ~ .main-subtitle .subtitle-letter {
+  text-shadow:
+    0 0 30px rgba(255, 215, 0, 0.9),
+    0 0 60px rgba(255, 215, 0, 0.6),
+    0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 /* Responsive sizing */
@@ -293,6 +302,10 @@
   
   .main-subtitle {
     font-size: 1rem !important;
+  }
+  
+  .subtitle-letter {
+    font-size: inherit;
   }
 }
 
