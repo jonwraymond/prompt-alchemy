@@ -181,6 +181,17 @@
   animation: sparklerFadeOut 0.2s ease-out forwards !important;
 }
 
+@keyframes sparklerFadeOut {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+}
+
 @keyframes sparklerFloat {
   0% {
     transform: translate3d(0, 0, 0) scale(1);
