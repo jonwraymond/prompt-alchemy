@@ -593,6 +593,20 @@ logger.WithFields(logrus.Fields{
 - **Auto-Commit Script**: `scripts/auto-commit.sh` - The script that handles commits
 - **Log File**: `~/.claude/auto-commit.log` - Activity and error log
 
+### How to Enable Remote Push
+By default, commits are made locally only. To enable automatic push to remote:
+
+**Option 1: Environment Variable (Temporary)**
+```bash
+export AUTO_PUSH=true
+```
+
+**Option 2: Modify Script (Permanent)**
+Edit `scripts/auto-commit.sh` and change:
+```bash
+AUTO_PUSH="${AUTO_PUSH:-false}"  # Change false to true
+```
+
 ### How to Disable
 To temporarily disable auto-commits, comment out the hooks section in `.claude/settings.local.json`:
 ```json
