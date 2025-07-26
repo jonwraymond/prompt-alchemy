@@ -18,7 +18,7 @@ interface MagicalHeaderProps {
   className?: string;
 }
 
-const MagicalHeader: React.FC<MagicalHeaderProps> = ({
+export const MagicalHeader: React.FC<MagicalHeaderProps> = ({
   title = "PROMPT ALCHEMY",
   subtitle = "Transform raw ideas into refined AI prompts",
   className = ""
