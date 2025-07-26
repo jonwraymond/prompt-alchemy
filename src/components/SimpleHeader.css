@@ -240,17 +240,22 @@
   }
 }
 
-/* Soft gold glow on hover only */
+/* Enhanced gold glow on hover only */
 .subtitle-letter:hover {
-  color: #fffaf0; /* Slight warm tint on hover */
+  color: #ffffff; /* Keep white on hover */
   text-shadow:
-    0 0 8px rgba(255, 215, 0, 0.3),
-    0 0 16px rgba(255, 215, 0, 0.2),
-    0 2px 4px rgba(0, 0, 0, 0.2);
-  transform: translateY(-1px); /* Subtle lift */
+    /* Gold core */
+    0 0 10px rgba(255, 215, 0, 0.9),
+    0 0 20px rgba(255, 215, 0, 0.7),
+    /* White outer feathered edge */
+    0 0 30px rgba(255, 255, 255, 0.5),
+    0 0 40px rgba(255, 255, 255, 0.3),
+    /* Subtle drop shadow */
+    0 2px 4px rgba(0, 0, 0, 0.3);
+  transform: translateY(-2px) scale(1.05); /* More pronounced lift and scale */
 }
 
-/* Soft glow effect that appears on hover */
+/* Enhanced glow effect that appears on hover */
 .subtitle-letter::after {
   content: attr(data-letter);
   position: absolute;
@@ -260,24 +265,33 @@
   bottom: 0;
   z-index: -1;
   color: transparent;
-  background: radial-gradient(circle at 50% 50%, #ffd700 0px, #ffed8a 10px, transparent 30px);
+  /* Richer gradient with gold core and white edges */
+  background: radial-gradient(
+    circle at 50% 50%, 
+    #ffd700 0%, 
+    #ffed8a 25%, 
+    #fffaf0 50%, 
+    rgba(255, 255, 255, 0.8) 75%, 
+    transparent 100%
+  );
   background-clip: text;
   -webkit-background-clip: text;
-  filter: blur(6px);
+  filter: blur(8px);
   opacity: 0;
-  transition: opacity 0.3s ease, filter 0.3s ease;
+  transition: all 0.3s ease;
 }
 
-/* Activate soft glow on hover */
+/* Activate enhanced glow on hover */
 .subtitle-letter:hover::after {
-  opacity: 0.4; /* Soft, subtle glow */
-  filter: blur(4px) drop-shadow(0 0 6px rgba(255, 215, 0, 0.3));
+  opacity: 0.8; /* Brighter, less opaque */
+  filter: blur(6px) brightness(1.3) drop-shadow(0 0 12px rgba(255, 215, 0, 0.6));
 }
 
-/* Very subtle glow when hovering the main title */
+/* Enhanced glow when hovering the main title */
 .main-title:hover ~ .main-subtitle .subtitle-letter {
   text-shadow:
-    0 0 4px rgba(255, 215, 0, 0.15),
+    0 0 6px rgba(255, 215, 0, 0.3),
+    0 0 12px rgba(255, 255, 255, 0.2),
     0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
