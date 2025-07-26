@@ -176,6 +176,11 @@
   transform: translateZ(0);
 }
 
+/* Smooth fade-out when transitioning between letters */
+.sparkler-spark.sparkler-fade-out {
+  animation: sparklerFadeOut 0.2s ease-out forwards !important;
+}
+
 @keyframes sparklerFloat {
   0% {
     transform: translate3d(0, 0, 0) scale(1);
