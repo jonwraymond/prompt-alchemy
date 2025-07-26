@@ -193,12 +193,13 @@
   }
 }
 
-/* Subtitle styling - modern, aligned with fragment drop animation */
+/* Subtitle styling - skinnier modern design */
 .main-subtitle {
-  font-family: 'Inter', 'Space Grotesk', sans-serif !important;
-  font-size: 1.1rem !important;
-  font-weight: 600 !important;
-  letter-spacing: 0.15em !important; /* Increased letter spacing */
+  font-family: 'Space Grotesk', 'Inter', Arial, sans-serif !important;
+  font-size: 1rem !important; /* Slightly smaller */
+  font-weight: 400 !important; /* Skinnier weight */
+  font-stretch: 87% !important; /* Narrower stretch */
+  letter-spacing: 0.18em !important; /* Increased letter spacing */
   margin-top: 1.5rem !important;
   text-align: center;
   line-height: 1.4;
