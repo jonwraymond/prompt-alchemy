@@ -33,14 +33,18 @@ export const SimpleHeader: React.FC<SimpleHeaderProps> = ({
         sparkle.style.background = ['#ffd700', '#ffeb3b', '#fff', '#ffa500', '#ffcc02'][Math.floor(Math.random() * 5)];
         
         // Position relative to the letter
-        const offsetX = (Math.random() - 0.5) * 40;
-        const offsetY = (Math.random() - 0.5) * 40;
-        const x = rect.left - headerRect.left + rect.width / 2 + offsetX;
-        const y = rect.top - headerRect.top + rect.height / 2 + offsetY;
+        const startX = rect.left - headerRect.left + rect.width / 2;
+        const startY = rect.top - headerRect.top + rect.height / 2;
         
-        sparkle.style.left = `${x}px`;
-        sparkle.style.top = `${y}px`;
-        sparkle.style.animationDelay = `${Math.random() * 0.3}s`;
+        // Random trajectory for sparkler effect
+        const sparkX = (Math.random() - 0.5) * 30;
+        const sparkY = -(Math.random() * 25 + 10); // Always upward
+        
+        sparkle.style.left = `${startX}px`;
+        sparkle.style.top = `${startY}px`;
+        sparkle.style.setProperty('--spark-x', `${sparkX}px`);
+        sparkle.style.setProperty('--spark-y', `${sparkY}px`);
+        sparkle.style.animationDelay = `${Math.random() * 0.2}s`;
         
         headerRef.current.appendChild(sparkle);
         
