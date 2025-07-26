@@ -238,7 +238,17 @@
   }
 }
 
-/* Gold glow effect after letters settle */
+/* Soft gold glow on hover only */
+.subtitle-letter:hover {
+  color: #fffaf0; /* Slight warm tint on hover */
+  text-shadow:
+    0 0 8px rgba(255, 215, 0, 0.3),
+    0 0 16px rgba(255, 215, 0, 0.2),
+    0 2px 4px rgba(0, 0, 0, 0.2);
+  transform: translateY(-1px); /* Subtle lift */
+}
+
+/* Soft glow effect that appears on hover */
 .subtitle-letter::after {
   content: attr(data-letter);
   position: absolute;
@@ -248,47 +258,25 @@
   bottom: 0;
   z-index: -1;
   color: transparent;
-  background: radial-gradient(circle at 50% 60%, #ffe064 0px, #ffd700 15px, transparent 45px);
+  background: radial-gradient(circle at 50% 50%, #ffd700 0px, #ffed8a 10px, transparent 30px);
   background-clip: text;
   -webkit-background-clip: text;
-  filter: blur(3px) drop-shadow(0 0 10px #ffd700aa);
+  filter: blur(6px);
   opacity: 0;
-  animation: goldGlowAppear 1s ease-out 1.2s forwards;
+  transition: opacity 0.3s ease, filter 0.3s ease;
 }
 
-/* Gold glow appears after drop animation */
-@keyframes goldGlowAppear {
-  0% {
-    opacity: 0;
-    filter: blur(8px) brightness(0.5);
-  }
-  100% {
-    opacity: 0.7;
-    filter: blur(3px) brightness(1) drop-shadow(0 0 10px #ffd700aa);
-  }
-}
-
-/* Hover effect - subtle glow intensification */
-.subtitle-letter:hover {
-  text-shadow:
-    0 0 25px rgba(255, 215, 0, 1),
-    0 0 50px rgba(255, 215, 0, 0.7),
-    0 2px 4px rgba(0, 0, 0, 0.3);
-  transition: text-shadow 0.3s ease;
-}
-
+/* Activate soft glow on hover */
 .subtitle-letter:hover::after {
-  opacity: 1;
-  filter: blur(4px) brightness(1.2) drop-shadow(0 0 15px #ffd700);
-  transition: all 0.3s ease;
+  opacity: 0.4; /* Soft, subtle glow */
+  filter: blur(4px) drop-shadow(0 0 6px rgba(255, 215, 0, 0.3));
 }
 
-/* Subtle glow on subtitle when hovering title */
+/* Very subtle glow when hovering the main title */
 .main-title:hover ~ .main-subtitle .subtitle-letter {
   text-shadow:
-    0 0 30px rgba(255, 215, 0, 0.9),
-    0 0 60px rgba(255, 215, 0, 0.6),
-    0 2px 4px rgba(0, 0, 0, 0.3);
+    0 0 4px rgba(255, 215, 0, 0.15),
+    0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* Responsive sizing */
