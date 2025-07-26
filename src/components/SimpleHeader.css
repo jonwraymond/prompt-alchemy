@@ -218,6 +218,29 @@
   }
 }
 
+@keyframes electricCrackle {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(0deg) scaleY(1);
+    opacity: 1;
+  }
+  20% {
+    transform: translate3d(var(--crackle-x, 15px), var(--crackle-y, -10px), 0) rotate(15deg) scaleY(1.5);
+    opacity: 1;
+  }
+  40% {
+    transform: translate3d(calc(var(--crackle-x, 15px) * 1.8), calc(var(--crackle-y, -10px) * 2), 0) rotate(-10deg) scaleY(1.2);
+    opacity: 0.8;
+  }
+  70% {
+    transform: translate3d(calc(var(--crackle-x, 15px) * 3), calc(var(--crackle-y, -10px) * 3.5), 0) rotate(25deg) scaleY(0.8);
+    opacity: 0.4;
+  }
+  100% {
+    transform: translate3d(calc(var(--crackle-x, 15px) * 4), calc(var(--crackle-y, -10px) * 5), 0) rotate(45deg) scaleY(0.2);
+    opacity: 0;
+  }
+}
+
 @keyframes sparklerFloat {
   0% {
     transform: translate3d(0, 0, 0) scale(1);
