@@ -5,12 +5,33 @@
 
 set -e
 
-# Configuration
+# Configuration section
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 BINARY_NAME="prompt-alchemy"
 BINARY_PATH="$PROJECT_ROOT/$BINARY_NAME"
 TEST_DIR="/tmp/prompt-alchemy-integration-$(date +%s)"
+LOG_FILE="$HOME/.claude/integration-test.log"
+FEATURE_TOGGLE="${FEATURE_TOGGLE:-false}"
+
+# Logging function
+log() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') [INTEGRATION-TEST] $1" | tee -a "$LOG_FILE"
+}
+
+# Error handling function
+handle_error() {
+    log "ERROR: $1"
+    exit 1
+}
+
+# Validation function
+validate_environment() {
+    log "Validating environment..."
+    if [ ! -d "$PROJECT_ROOT" ]; then
+        handle_error "Invalid project directory: $PROJECT_ROOT"
+    fi
+}
 
 # Colors
 GREEN='\033[0;32m'
@@ -20,14 +41,17 @@ NC='\033[0m'
 
 log_info() {
     echo -e "${YELLOW}[INFO]${NC} $1"
+    log "INFO: $1"
 }
 
 log_success() {
     echo -e "${GREEN}[SUCCESS]${NC} $1"
+    log "SUCCESS: $1"
 }
 
 log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
+    log "ERROR: $1"
 }
 
 cleanup() {

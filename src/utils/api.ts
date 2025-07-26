@@ -34,7 +34,16 @@ export interface ProviderInfo {
   name: string;
   available: boolean;
   supports_embeddings: boolean;
-  models: string[];
+  models?: string[];
+  capabilities?: string[];
+}
+
+export interface ProvidersResponse {
+  providers: ProviderInfo[];
+  total_providers?: number;
+  available_providers?: number;
+  embedding_providers?: number;
+  retrieved_at?: string;
 }
 
 // API configuration
@@ -118,8 +127,8 @@ export const api = {
   },
 
   // Get available providers
-  async getProviders(): Promise<ApiResponse<{ providers: ProviderInfo[] }>> {
-    return apiRequest('/providers', { method: 'POST' });
+  async getProviders(): Promise<ApiResponse<ProvidersResponse>> {
+    return apiRequest('/providers');
   },
 
   // Test specific provider

@@ -68,7 +68,7 @@ func (m *Monitor) CheckHealth() error {
 // CheckProviders verifies provider availability
 func (m *Monitor) CheckProviders() ([]string, error) {
 	client := &http.Client{Timeout: 10 * time.Second}
-	
+
 	req, err := http.NewRequest("POST", m.config.APIEndpoint+"/api/v1/providers", nil)
 	if err != nil {
 		return nil, err

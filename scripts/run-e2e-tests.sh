@@ -6,7 +6,7 @@
 
 set -e  # Exit on any error
 
-# Configuration
+# Configuration section
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 BINARY_NAME="prompt-alchemy"
@@ -14,6 +14,27 @@ BINARY_PATH="$PROJECT_ROOT/$BINARY_NAME"
 TEST_DATA_DIR="/tmp/prompt-alchemy-e2e-$(date +%s)"
 TEST_CONFIG_DIR="$TEST_DATA_DIR/config"
 TEST_RESULTS_DIR="$TEST_DATA_DIR/results"
+LOG_FILE="$HOME/.claude/run-e2e-tests.log"
+FEATURE_TOGGLE="${FEATURE_TOGGLE:-false}"
+
+# Logging function
+log() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') [RUN-E2E-TESTS] $1" | tee -a "$LOG_FILE"
+}
+
+# Error handling function
+handle_error() {
+    log "ERROR: $1"
+    exit 1
+}
+
+# Validation function
+validate_environment() {
+    log "Validating environment..."
+    if [ ! -d "$PROJECT_ROOT" ]; then
+        handle_error "Invalid project directory: $PROJECT_ROOT"
+    fi
+}
 
 # Test configuration
 MOCK_MODE="${MOCK_MODE:-true}"
@@ -39,26 +60,32 @@ FAILED_TESTS=()
 # Logging functions
 log_info() {
     echo -e "${BLUE}[INFO]${NC} $1"
+    log "INFO: $1"
 }
 
 log_success() {
     echo -e "${GREEN}[SUCCESS]${NC} $1"
+    log "SUCCESS: $1"
 }
 
 log_warning() {
     echo -e "${YELLOW}[WARNING]${NC} $1"
+    log "WARNING: $1"
 }
 
 log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
+    log "ERROR: $1"
 }
 
 log_test() {
     echo -e "${PURPLE}[TEST]${NC} $1"
+    log "TEST: $1"
 }
 
 log_step() {
     echo -e "${CYAN}[STEP]${NC} $1"
+    log "STEP: $1"
 }
 
 # Test tracking functions

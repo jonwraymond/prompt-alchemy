@@ -123,16 +123,82 @@
   position: absolute;
   left: 25px;
   top: -10px;
-  background: rgba(10, 10, 10, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(5, 5, 5, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 8px;
   padding: 12px;
   min-width: 200px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-  z-index: 1001;
+  max-width: 280px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  z-index: 9999;
   color: #fff;
   font-size: 0.85rem;
   line-height: 1.4;
+  backdrop-filter: blur(16px);
+  animation: tooltip-fade-in 0.2s ease-out;
+}
+
+/* Tooltip fade-in animation */
+@keyframes tooltip-fade-in {
+  0% {
+    opacity: 0;
+    transform: translateY(-5px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Tooltip positioning variants based on screen position */
+.status-indicator.bottom-left .status-tooltip,
+.status-indicator.top-left .status-tooltip {
+  left: 25px;
+  right: auto;
+}
+
+.status-indicator.bottom-right .status-tooltip,
+.status-indicator.top-right .status-tooltip {
+  left: auto;
+  right: 25px;
+}
+
+.status-indicator.top-left .status-tooltip,
+.status-indicator.top-right .status-tooltip {
+  top: auto;
+  bottom: -10px;
+}
+
+/* Tooltip arrow */
+.status-tooltip::before {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 0;
+  border: 6px solid transparent;
+}
+
+/* Arrow positioning for left-side tooltips */
+.status-indicator.bottom-left .status-tooltip::before,
+.status-indicator.top-left .status-tooltip::before {
+  left: -12px;
+  top: 15px;
+  border-right-color: rgba(5, 5, 5, 0.98);
+}
+
+/* Arrow positioning for right-side tooltips */
+.status-indicator.bottom-right .status-tooltip::before,
+.status-indicator.top-right .status-tooltip::before {
+  right: -12px;
+  top: 15px;
+  border-left-color: rgba(5, 5, 5, 0.98);
+}
+
+/* Arrow positioning for top tooltips */
+.status-indicator.top-left .status-tooltip::before,
+.status-indicator.top-right .status-tooltip::before {
+  top: auto;
+  bottom: 15px;
 }
 
 .tooltip-header {
@@ -163,6 +229,37 @@
 .tooltip-details p {
   margin: 4px 0;
   color: #ccc;
+}
+
+.tooltip-primary {
+  color: #fff !important;
+  font-weight: 500;
+}
+
+.tooltip-performance {
+  font-family: 'Courier New', monospace;
+}
+
+.tooltip-performance .fast {
+  color: #10b981;
+}
+
+.tooltip-performance .medium {
+  color: #f59e0b;
+}
+
+.tooltip-performance .slow {
+  color: #ef4444;
+}
+
+.tooltip-help {
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 4px;
+  padding: 6px 8px;
+  color: #93c5fd !important;
+  font-size: 0.8rem;
+  margin-top: 8px;
 }
 
 .tooltip-timestamp {
@@ -212,6 +309,25 @@
   transform: scale(1.1);
 }
 
+/* Enhanced portal-based tooltip */
+.status-tooltip-portal {
+  pointer-events: none;
+}
+
+.status-tooltip.enhanced {
+  position: relative;
+  left: 0;
+  top: 0;
+  right: auto;
+  bottom: auto;
+  animation: tooltip-fade-in 0.2s ease-out;
+  filter: drop-shadow(0 8px 32px rgba(0, 0, 0, 0.4));
+}
+
+.status-tooltip.enhanced::before {
+  display: none; /* Remove arrows for portal tooltips as positioning is dynamic */
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .status-indicator {
@@ -219,7 +335,8 @@
     max-width: 240px;
   }
   
-  .status-tooltip {
+  .status-tooltip,
+  .status-tooltip.enhanced {
     min-width: 180px;
     font-size: 0.8rem;
   }

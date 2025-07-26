@@ -3,37 +3,40 @@ package main
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"sync"
 	"syscall"
 	"time"
 
-	"github.com/jonwraymond/prompt-alchemy/internal/api"
-	"github.com/jonwraymond/prompt-alchemy/internal/config"
 	"github.com/jonwraymond/prompt-alchemy/internal/engine"
+	"github.com/jonwraymond/prompt-alchemy/internal/features"
+	"github.com/jonwraymond/prompt-alchemy/internal/http"
+	"github.com/jonwraymond/prompt-alchemy/internal/learning"
 	log "github.com/jonwraymond/prompt-alchemy/internal/log"
-	"github.com/jonwraymond/prompt-alchemy/internal/mcp"
-	"github.com/jonwraymond/prompt-alchemy/internal/monitoring"
+	"github.com/jonwraymond/prompt-alchemy/internal/ranking"
+	"github.com/jonwraymond/prompt-alchemy/internal/registry"
 	"github.com/jonwraymond/prompt-alchemy/internal/storage"
+	"github.com/jonwraymond/prompt-alchemy/pkg/interfaces"
 	"github.com/jonwraymond/prompt-alchemy/pkg/providers"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/subosito/gotenv"
 )
 
 var (
-	cfgFile    string
-	dataDir    string
-	logLevel   string
-	httpPort   int
-	mcpPort    int
-	enableAPI  bool
-	enableMCP  bool
-	enableUI   bool
-	logger     *logrus.Logger
+	cfgFile   string
+	dataDir   string
+	logLevel  string
+	httpPort  int
+	mcpPort   int
+	enableAPI bool
+	enableMCP bool
+	enableUI  bool
+	logger    *logrus.Logger
 )
 
 // monolithicCmd represents the monolithic command that runs all services
@@ -90,7 +93,7 @@ or as individual microservices via subcommands.`,
 
 	// Add the monolithic command as default
 	rootCmd.AddCommand(monolithicCmd)
-	
+
 	// Set monolithic as the default command if no subcommand is provided
 	rootCmd.RunE = monolithicCmd.RunE
 
@@ -106,110 +109,65 @@ or as individual microservices via subcommands.`,
 func runMonolithic(cmd *cobra.Command, args []string) error {
 	logger.Info("Starting Prompt Alchemy Monolithic Application")
 
-	// Initialize configuration
-	cfg, err := config.Load()
-	if err != nil {
-		return fmt.Errorf("failed to load configuration: %w", err)
+	// Load feature flags from environment
+	flags := features.LoadFeatureFlags()
+
+	// Override with command line flags
+	if cmd.Flags().Changed("enable-api") {
+		flags.SetFeature("api", enableAPI)
+	}
+	if cmd.Flags().Changed("enable-mcp") {
+		flags.SetFeature("mcp", enableMCP)
 	}
 
-	// Initialize storage (shared across all services)
-	store, err := storage.NewSQLiteStorage(cfg.Database.Path)
-	if err != nil {
-		return fmt.Errorf("failed to initialize storage: %w", err)
-	}
-	defer store.Close()
+	// Set deployment mode
+	flags.DeploymentMode = "monolithic"
 
-	// Initialize providers registry (shared across all services)
-	providerRegistry := providers.NewRegistry()
-	if err := providerRegistry.LoadFromConfig(cfg); err != nil {
-		logger.WithError(err).Warn("Failed to load some providers from config")
-	}
+	logger.WithFields(logrus.Fields{
+		"deployment_mode":   flags.DeploymentMode,
+		"debug_mode":        flags.DebugMode,
+		"enabled_providers": flags.GetEnabledProviders(),
+		"api_enabled":       flags.IsEnabled("api"),
+		"mcp_enabled":       flags.IsEnabled("mcp"),
+		"learning_enabled":  flags.IsEnabled("learning"),
+	}).Info("Feature flags loaded")
 
-	// Initialize the generation engine (shared across all services)
-	generationEngine, err := engine.NewEngine(cfg, store, providerRegistry)
-	if err != nil {
-		return fmt.Errorf("failed to initialize generation engine: %w", err)
-	}
-
-	// Create a context that can be cancelled
+	// Create context for graceful shutdown
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// WaitGroup to track all running services
-	var wg sync.WaitGroup
-	var servers []*http.Server
+	// Create service registry with local discovery
+	serviceRegistry := registry.NewServiceRegistry()
+	localDiscovery := registry.NewLocalDiscovery()
+	serviceRegistry.SetDiscovery(localDiscovery)
 
-	// Start HTTP API server
-	if enableAPI {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			
-			apiServer, err := api.NewServer(cfg, store, generationEngine, providerRegistry)
-			if err != nil {
-				logger.WithError(err).Error("Failed to create API server")
-				return
-			}
-
-			// Configure HTTP server
-			httpServer := &http.Server{
-				Addr:         fmt.Sprintf(":%d", httpPort),
-				Handler:      apiServer.Handler(),
-				ReadTimeout:  30 * time.Second,
-				WriteTimeout: 30 * time.Second,
-				IdleTimeout:  60 * time.Second,
-			}
-			servers = append(servers, httpServer)
-
-			logger.WithField("port", httpPort).Info("Starting HTTP API server")
-			
-			if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-				logger.WithError(err).Error("HTTP API server failed")
-			}
-		}()
+	// Initialize all services
+	if err := initializeServices(serviceRegistry, flags); err != nil {
+		return fmt.Errorf("failed to initialize services: %w", err)
 	}
 
-	// Start MCP server  
-	if enableMCP {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			
-			mcpServer, err := mcp.NewServer(cfg, store, generationEngine, providerRegistry)
-			if err != nil {
-				logger.WithError(err).Error("Failed to create MCP server")
-				return
-			}
-
-			logger.WithField("port", mcpPort).Info("Starting MCP server")
-			
-			if err := mcpServer.Start(ctx, fmt.Sprintf(":%d", mcpPort)); err != nil {
-				logger.WithError(err).Error("MCP server failed")
-			}
-		}()
+	// Start all enabled services
+	if err := startServices(ctx, serviceRegistry, flags); err != nil {
+		return fmt.Errorf("failed to start services: %w", err)
 	}
-
-	// Start monitoring service
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		
-		monitor := monitoring.NewMonitor(cfg, store, providerRegistry)
-		logger.Info("Starting monitoring service")
-		
-		if err := monitor.Start(ctx); err != nil {
-			logger.WithError(err).Error("Monitoring service failed")
-		}
-	}()
 
 	// Log startup completion
+	health := serviceRegistry.Health()
+	for name, status := range health {
+		logger.WithFields(logrus.Fields{
+			"service":       name,
+			"status":        status.Status,
+			"response_time": status.ResponseTime,
+		}).Info("Service health check")
+	}
+
 	logger.WithFields(logrus.Fields{
-		"http_port":   httpPort,
-		"mcp_port":    mcpPort,
-		"enable_api":  enableAPI,
-		"enable_mcp":  enableMCP,
-		"enable_ui":   enableUI,
-		"data_dir":    cfg.Database.Path,
+		"http_port":  httpPort,
+		"enable_api": flags.IsEnabled("api"),
+		"enable_mcp": flags.IsEnabled("mcp"),
+		"enable_ui":  enableUI,
+		"data_dir":   viper.GetString("data_dir"),
+		"services":   len(health),
 	}).Info("All services started successfully")
 
 	// Wait for interrupt signal
@@ -223,17 +181,201 @@ func runMonolithic(cmd *cobra.Command, args []string) error {
 	// Cancel context to stop all services
 	cancel()
 
-	// Gracefully shutdown HTTP servers with timeout
-	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	// Graceful shutdown with timeout
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer shutdownCancel()
 
-	for _, server := range servers {
-		if err := server.Shutdown(shutdownCtx); err != nil {
-			logger.WithError(err).Error("Failed to gracefully shutdown HTTP server")
+	return shutdownServices(shutdownCtx, serviceRegistry)
+}
+
+func initializeServices(serviceRegistry interfaces.ServiceRegistry, flags *features.FeatureFlags) error {
+	logger.Info("Initializing services...")
+
+	// Initialize storage layer first (required by other services)
+	if flags.ShouldStartService("storage") {
+		logger.Info("Initializing storage service...")
+		store, err := storage.NewStorage(viper.GetString("data_dir"), logger)
+		if err != nil {
+			return fmt.Errorf("failed to initialize storage: %w", err)
 		}
+		serviceRegistry.RegisterService("storage", store)
 	}
 
-	// Wait for all goroutines to finish
+	// Initialize providers registry
+	if flags.ShouldStartService("providers") {
+		logger.Info("Initializing provider registry...")
+		providerRegistry := providers.NewRegistry()
+		if err := registerProviders(providerRegistry, logger); err != nil {
+			return fmt.Errorf("failed to register providers: %w", err)
+		}
+		serviceRegistry.RegisterService("providers", providerRegistry)
+	}
+
+	// Initialize generation engine
+	if flags.ShouldStartService("engine") {
+		logger.Info("Initializing generation engine...")
+
+		// Get dependencies
+		providerRegistry, err := serviceRegistry.GetService("providers")
+		if err != nil {
+			return fmt.Errorf("engine requires provider registry: %w", err)
+		}
+
+		eng := engine.NewEngine(providerRegistry.(*providers.Registry), logger)
+		serviceRegistry.RegisterService("engine", eng)
+	}
+
+	// Initialize ranking service
+	if flags.ShouldStartService("ranking") {
+		logger.Info("Initializing ranking service...")
+
+		// Get dependencies
+		store, err := serviceRegistry.GetService("storage")
+		if err != nil {
+			return fmt.Errorf("ranking requires storage: %w", err)
+		}
+		providerRegistry, err := serviceRegistry.GetService("providers")
+		if err != nil {
+			return fmt.Errorf("ranking requires providers: %w", err)
+		}
+
+		ranker := ranking.NewRanker(store.(*storage.Storage), providerRegistry.(*providers.Registry), logger)
+		serviceRegistry.RegisterService("ranking", ranker)
+	}
+
+	// Initialize learning engine if enabled
+	if flags.ShouldStartService("learning") {
+		logger.Info("Initializing learning engine...")
+
+		// Get dependencies
+		store, err := serviceRegistry.GetService("storage")
+		if err != nil {
+			return fmt.Errorf("learning requires storage: %w", err)
+		}
+		providerRegistry, err := serviceRegistry.GetService("providers")
+		if err != nil {
+			return fmt.Errorf("learning requires providers: %w", err)
+		}
+
+		learner := learning.NewLearningEngine(store.(*storage.Storage), providerRegistry.(*providers.Registry), logger)
+		serviceRegistry.RegisterService("learning", learner)
+	}
+
+	logger.Info("All services initialized successfully")
+	return nil
+}
+
+func startServices(ctx context.Context, serviceRegistry interfaces.ServiceRegistry, flags *features.FeatureFlags) error {
+	logger.Info("Starting services...")
+
+	var wg sync.WaitGroup
+	errChan := make(chan error, 10)
+
+	// Start HTTP API server if enabled
+	if flags.ShouldStartService("api") {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			// Get dependencies
+			store, _ := serviceRegistry.GetService("storage")
+			providerRegistry, _ := serviceRegistry.GetService("providers")
+			eng, _ := serviceRegistry.GetService("engine")
+			ranker, _ := serviceRegistry.GetService("ranking")
+			learner, _ := serviceRegistry.GetService("learning")
+
+			// Set HTTP configuration
+			viper.Set("http.port", httpPort)
+			viper.Set("http.host", "0.0.0.0")
+
+			httpServer := http.NewSimpleServer(
+				store.(*storage.Storage),
+				providerRegistry.(*providers.Registry),
+				eng.(*engine.Engine),
+				ranker.(*ranking.Ranker),
+				learner.(*learning.LearningEngine),
+				logger,
+			)
+
+			logger.WithField("port", httpPort).Info("Starting HTTP API server")
+
+			if err := httpServer.Start(ctx); err != nil {
+				errChan <- fmt.Errorf("HTTP API server failed: %w", err)
+			}
+		}()
+	}
+
+	// Start learning background processes if enabled
+	if flags.ShouldStartService("learning") {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			learner, err := serviceRegistry.GetService("learning")
+			if err != nil {
+				errChan <- fmt.Errorf("failed to get learning service: %w", err)
+				return
+			}
+
+			logger.Info("Starting learning background processes")
+			learner.(*learning.LearningEngine).StartBackgroundLearning(ctx)
+		}()
+	}
+
+	// Start MCP server if enabled (commented out for now as it needs adaptation)
+	// if flags.ShouldStartService("mcp") {
+	// 	wg.Add(1)
+	// 	go func() {
+	// 		defer wg.Done()
+	//
+	// 		logger.Info("Starting MCP server on stdin/stdout")
+	// 		// TODO: Adapt MCP server to use service registry
+	// 	}()
+	// }
+
+	// Wait a moment for services to start
+	time.Sleep(1 * time.Second)
+
+	// Check for startup errors
+	select {
+	case err := <-errChan:
+		return err
+	default:
+		// No errors, continue
+	}
+
+	logger.Info("All services started successfully")
+	return nil
+}
+
+func shutdownServices(ctx context.Context, serviceRegistry interfaces.ServiceRegistry) error {
+	logger.Info("Shutting down services...")
+
+	services := serviceRegistry.ListServices()
+	var wg sync.WaitGroup
+	errChan := make(chan error, len(services))
+
+	// Shutdown services
+	for name, service := range services {
+		wg.Add(1)
+		go func(serviceName string, svc interface{}) {
+			defer wg.Done()
+
+			logger.WithField("service", serviceName).Info("Shutting down service")
+
+			// Stop service if it supports stopping
+			if stopper, ok := svc.(interface{ Close() error }); ok {
+				if err := stopper.Close(); err != nil {
+					errChan <- fmt.Errorf("failed to close %s: %w", serviceName, err)
+					return
+				}
+			}
+
+			logger.WithField("service", serviceName).Info("Service stopped successfully")
+		}(name, service)
+	}
+
+	// Wait for all services to stop or timeout
 	done := make(chan struct{})
 	go func() {
 		wg.Wait()
@@ -242,9 +384,20 @@ func runMonolithic(cmd *cobra.Command, args []string) error {
 
 	select {
 	case <-done:
-		logger.Info("All services shutdown successfully")
-	case <-time.After(15 * time.Second):
+		logger.Info("All services shut down successfully")
+	case <-ctx.Done():
 		logger.Warn("Timeout waiting for services to shutdown")
+	}
+
+	// Check for shutdown errors
+	close(errChan)
+	var errors []error
+	for err := range errChan {
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return fmt.Errorf("shutdown errors: %v", errors)
 	}
 
 	return nil
@@ -277,17 +430,17 @@ func initConfig() {
 			if err != nil {
 				logger.Fatalf("Failed to get user home directory: %v", err)
 			}
-			
+
 			configDir := fmt.Sprintf("%s/.prompt-alchemy", home)
 			viper.AddConfigPath(configDir)
 			viper.SetConfigType("yaml")
 			viper.SetConfigName("config")
-			
+
 			if dataDir == "" {
 				dataDir = configDir
 				viper.SetDefault("data_dir", dataDir)
 			}
-			
+
 			// Create config directory if it doesn't exist
 			if err := os.MkdirAll(configDir, 0755); err != nil {
 				logger.WithError(err).Error("Failed to create config directory")

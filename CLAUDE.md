@@ -160,6 +160,39 @@ memory_workflow:
 6. **Thinking Tools**: Use Serena's thinking tools (`think_about_collected_information`, `think_about_task_adherence`) for self-reflection
 7. **Continuous Learning**: Update project knowledge base with each interaction
 
+### **CRITICAL: Tool Selection Hierarchy - ALWAYS Follow This Priority Order**
+
+**🚨 MANDATORY TOOL PRIORITY ORDER 🚨**
+
+1. **PRIMARY: Serena MCP Tools (ALWAYS FIRST)**
+   - `find_symbol` - Semantic symbol search with LSP understanding
+   - `find_referencing_symbols` - Find symbols that reference target symbols
+   - `find_referencing_code_snippets` - Find code usage patterns
+   - `search_for_pattern` - Pattern-based semantic search
+   - `get_symbols_overview` - Understand code architecture
+
+2. **SECONDARY: ast-grep (When Serena Unavailable)**
+   - Use only if Serena tools fail or are unavailable
+   - Provides AST-based pattern matching for structural queries
+   - Better than text search but inferior to Serena's LSP integration
+
+3. **LAST RESORT: Basic Text Search (STRONGLY DISCOURAGED)**
+   - `Grep` tool - Use ONLY for non-code text or when semantic tools fail
+   - `Read` tool - File reading, not for code analysis
+   - **WARNING**: These tools miss semantic context and relationships
+
+**❌ NEVER START WITH TEXT SEARCH FOR CODE ANALYSIS ❌**
+- Text search is blind to code semantics, types, and relationships
+- Misses cross-file dependencies and symbol usage patterns
+- Cannot understand inheritance, interfaces, or polymorphism
+- Leads to incomplete and error-prone analysis
+
+**✅ ALWAYS START WITH SERENA FOR ANY CODE-RELATED TASK ✅**
+- Understands Go interfaces, structs, functions, and package relationships
+- Finds all references across the entire codebase intelligently
+- Recognizes semantic patterns, not just text patterns
+- Provides true IDE-level code understanding
+
 ### Advanced Search Capabilities with Serena
 
 #### Semantic Code Understanding
@@ -168,13 +201,24 @@ serena_semantic_search:
   primary_tools:
     - find_symbol: Locate symbols by name/type with true LSP understanding
     - find_referencing_code_snippets: Find all usages of a symbol
+    - find_referencing_symbols: Find symbols that reference target symbols
     - get_symbols_overview: Understand file/directory structure
+    - search_for_pattern: Pattern-based semantic search with regex support
     
-  advantages_over_text_search:
-    - Understands code structure, not just text
-    - Finds references across files intelligently
-    - Recognizes symbol types and relationships
-    - Language-aware parsing via LSP
+  massive_advantages_over_text_search:
+    - Understands Go syntax, types, interfaces, and package structure
+    - Finds references across files intelligently via LSP
+    - Recognizes symbol types, relationships, and inheritance
+    - Language-aware parsing eliminates false positives
+    - Provides context for functions, structs, and methods
+    - Understanding of Go-specific patterns (goroutines, channels, etc.)
+    
+  when_text_search_fails:
+    - Misses semantic relationships between code elements
+    - Cannot distinguish between different symbols with same name
+    - Blind to package imports and dependency relationships
+    - No understanding of Go interface implementations
+    - Cannot track variable scope or function signatures
 ```
 
 #### Code Navigation Workflow
@@ -341,6 +385,38 @@ memory_operations:
     action: |
       delete_memory(name="[memory_name]")
 ```
+
+### ast-grep Integration (Secondary Tool)
+
+When Serena MCP tools are unavailable, use ast-grep for structural code analysis:
+
+```yaml
+ast_grep_usage:
+  when_to_use:
+    - Serena MCP server is down or unavailable
+    - Need structural pattern matching for refactoring
+    - Complex AST transformations beyond Serena's scope
+    
+  go_specific_patterns:
+    - Find functions: "ast-grep --lang go 'func $name($args) $ret { $$body }'"
+    - Find interfaces: "ast-grep --lang go 'type $name interface { $$methods }'"
+    - Find structs: "ast-grep --lang go 'type $name struct { $$fields }'"
+    - Find method calls: "ast-grep --lang go '$obj.$method($args)'"
+    
+  advantages_over_grep:
+    - Understands Go syntax and structure
+    - Handles multi-line patterns correctly
+    - Respects code boundaries and scope
+    - Can capture and transform code elements
+    
+  still_inferior_to_serena:
+    - No cross-file relationship understanding
+    - No LSP-level semantic awareness
+    - Cannot track symbol usage across packages
+    - Limited understanding of Go type system
+```
+
+**IMPORTANT**: Even ast-grep should be used sparingly. Always attempt Serena tools first, as they provide superior semantic understanding through LSP integration.
 
 ### Continuous Improvement Protocol
 
@@ -797,17 +873,22 @@ To temporarily disable auto-commits, comment out the hooks section in `.claude/s
 ### Never Do This
 - ❌ Skip specialized agent activation for domain-specific tasks
 - ❌ Use generic update_memory when Serena's memory tools are available
-- ❌ Rely on text search when semantic symbol search is needed
+- ❌ **START WITH GREP/READ FOR CODE ANALYSIS** - Always use Serena first
+- ❌ Use basic text search when semantic symbol search is needed
 - ❌ Skip checking project memories before making changes
 - ❌ Forget to save important discoveries to project memory
 - ❌ Make changes without understanding code structure via LSP
 - ❌ Skip project context setup with `activate_project`
 - ❌ Forget to use Serena's thinking tools for self-reflection
 - ❌ Use non-descriptive memory names that are hard to retrieve
+- ❌ **USE GREP FOR FINDING GO FUNCTIONS/INTERFACES** - Use `find_symbol` instead
+- ❌ **SEARCH FOR "func " OR "type " WITH TEXT TOOLS** - Use semantic search
+- ❌ Skip ast-grep when Serena is unavailable and use basic grep instead
 
 ### Always Do This
 - ✅ ALWAYS activate specialized agents for domain-specific tasks
-- ✅ Use Serena's semantic search for code understanding
+- ✅ **START WITH SERENA FOR ALL CODE ANALYSIS** - Primary tool for understanding
+- ✅ Use Serena's semantic search (`find_symbol`, `find_referencing_symbols`) for code understanding
 - ✅ Set project context with `activate_project` and verify with `get_active_project`
 - ✅ Persist all project knowledge with `write_memory` using descriptive names
 - ✅ Check existing memories with `list_memories` before making assumptions
@@ -815,6 +896,9 @@ To temporarily disable auto-commits, comment out the hooks section in `.claude/s
 - ✅ Use Serena's thinking tools (`think_about_collected_information`, `think_about_task_adherence`)
 - ✅ Maintain project-specific knowledge bases
 - ✅ Use `find_referencing_symbols` in addition to `find_referencing_code_snippets`
+- ✅ **USE AST-GREP AS FALLBACK** when Serena tools are unavailable
+- ✅ **THINK SEMANTICALLY** - Consider code relationships, not just text patterns
+- ✅ Use `search_for_pattern` for regex-based semantic search instead of grep
 
 **Remember: Serena provides persistent, project-specific memory and true semantic code understanding through Language Server Protocol integration. According to the [official Serena documentation](https://github.com/oraios/serena?tab=readme-ov-file#full-list-of-tools), Serena is the first fully-featured coding agent where the entire functionality is available through an MCP server, providing symbolic understanding of code through LSP integration. This is your primary tool for building lasting intelligence about codebases. Combined with the specialized agent system, you have access to domain-specific expertise that can accelerate development by 40-80%.**
 

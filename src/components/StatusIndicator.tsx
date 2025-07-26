@@ -36,11 +36,14 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
   const [overallStatus, setOverallStatus] = useState<StatusType>('down');
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
+  const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null);
   const intervalRef = useRef<NodeJS.Timeout>();
   const tooltipRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const checkSystemHealth = async () => {
     const updatedSystems: SystemStatus[] = [...systems];
+    let healthCheckError: string | null = null;
     
     try {
       // Check API Health
@@ -82,28 +85,70 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
         // Check Providers
         try {
           const providersResponse = await api.getProviders();
-          const providerCount = providersResponse.data?.providers?.length || 0;
-          const availableProviders = providersResponse.data?.providers?.filter(p => p.available).length || 0;
+          const responseData = providersResponse.data;
           
-          let providerStatus: StatusType = 'operational';
-          if (availableProviders === 0) {
-            providerStatus = 'down';
-          } else if (availableProviders < providerCount) {
-            providerStatus = 'degraded';
-          }
+          if (responseData && 'total_providers' in responseData) {
+            // New backend response format with summary data
+            const totalProviders = responseData.total_providers || 0;
+            const availableProviders = responseData.available_providers || 0;
+            const embeddingProviders = responseData.embedding_providers || 0;
+            
+            let providerStatus: StatusType = 'operational';
+            let statusDetails = '';
+            
+            if (totalProviders === 0) {
+              providerStatus = 'down';
+              statusDetails = 'No providers configured';
+            } else if (availableProviders === 0) {
+              providerStatus = 'degraded';
+              statusDetails = `${totalProviders} providers configured, but none available (check API keys)`;
+            } else if (availableProviders < totalProviders) {
+              providerStatus = 'degraded';
+              statusDetails = `${availableProviders}/${totalProviders} providers available`;
+              if (embeddingProviders > 0) {
+                statusDetails += `, ${embeddingProviders} support embeddings`;
+              }
+            } else {
+              providerStatus = 'operational';
+              statusDetails = `All ${totalProviders} providers available`;
+              if (embeddingProviders > 0) {
+                statusDetails += `, ${embeddingProviders} support embeddings`;
+              }
+            }
 
-          updatedSystems[2] = {
-            ...updatedSystems[2],
-            status: providerStatus,
-            lastCheck: new Date(),
-            details: `${availableProviders}/${providerCount} providers available`
-          };
-        } catch {
+            updatedSystems[2] = {
+              ...updatedSystems[2],
+              status: providerStatus,
+              lastCheck: new Date(),
+              details: statusDetails
+            };
+          } else {
+            // Legacy response format fallback
+            const providerCount = responseData?.providers?.length || 0;
+            const availableProviders = responseData?.providers?.filter(p => p.available).length || 0;
+            
+            let providerStatus: StatusType = 'operational';
+            if (availableProviders === 0 && providerCount > 0) {
+              providerStatus = 'degraded';
+            } else if (availableProviders < providerCount) {
+              providerStatus = 'degraded';
+            }
+
+            updatedSystems[2] = {
+              ...updatedSystems[2],
+              status: providerStatus,
+              lastCheck: new Date(),
+              details: providerCount === 0 
+                ? 'No providers configured' 
+                : `${availableProviders}/${providerCount} providers available (check configuration)`
+            };
+          }
+        } catch (error) {
           updatedSystems[2] = {
             ...updatedSystems[2],
             status: 'down',
             lastCheck: new Date(),
-            details: 'Provider check failed'
+            details: 'Unable to check provider status - API connection failed'
           };
         }
 
@@ -123,22 +168,34 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
 
     } catch (error) {
       // Complete system failure
+      healthCheckError = error instanceof Error ? error.message : 'Unknown error occurred';
       updatedSystems.forEach((system, index) => {
         updatedSystems[index] = {
           ...system,
           status: 'down',
           lastCheck: new Date(),
-          details: 'System check failed'
+          details: `System check failed: ${healthCheckError}`
         };
       });
     }
 
     setSystems(updatedSystems);
     
-    // Calculate overall status
+    // Calculate overall status with more nuanced logic
     const statuses = updatedSystems.map(s => s.status);
-    if (statuses.every(s => s === 'operational')) {
-      setOverallStatus('operational');
+    const apiStatus = updatedSystems[0].status;
+    const engineStatus = updatedSystems[1].status;
+    const providersStatus = updatedSystems[2].status;
+    const databaseStatus = updatedSystems[3].status;
+    
+    // If core services (API, Engine, Database) are operational, overall status is at least degraded
+    if (apiStatus === 'operational' && engineStatus === 'operational' && databaseStatus === 'operational') {
+      if (providersStatus === 'operational') {
+        setOverallStatus('operational');
+      } else {
+        // Core system works, but providers need configuration
+        setOverallStatus('degraded');
+      }
     } else if (statuses.some(s => s === 'operational')) {
       setOverallStatus('degraded');
     } else {
@@ -176,9 +233,9 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
 
   const getStatusColor = (status: StatusType): string => {
     switch (status) {
-      case 'operational': return '#22c55e'; // Subdued green
-      case 'degraded': return '#f59e0b';    // Subdued yellow  
-      case 'down': return '#ef4444';        // Subdued red
+      case 'operational': return '#10b981'; // Enhanced green for better visibility
+      case 'degraded': return '#f59e0b';    // Amber yellow  
+      case 'down': return '#ef4444';        // Clear red
       default: return '#6b7280';            // Gray
     }
   };
@@ -202,15 +259,61 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
     return `${Math.floor(diffSecs / 3600)}h ago`;
   };
 
-  const handleDotClick = (systemId: string) => {
+  const calculateTooltipPosition = (element: HTMLElement): { x: number; y: number } => {
+    const rect = element.getBoundingClientRect();
+    const tooltipWidth = 200; // Approximate tooltip width
+    const tooltipHeight = 120; // Approximate tooltip height
+    const margin = 10;
+
+    // Get viewport dimensions
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    let x = rect.right + margin;
+    let y = rect.top;
+
+    // Check if tooltip would go off the right edge
+    if (x + tooltipWidth > viewportWidth) {
+      x = rect.left - tooltipWidth - margin;
+    }
+
+    // Check if tooltip would go off the bottom edge
+    if (y + tooltipHeight > viewportHeight) {
+      y = viewportHeight - tooltipHeight - margin;
+    }
+
+    // Check if tooltip would go off the top edge
+    if (y < margin) {
+      y = margin;
+    }
+
+    // Check if tooltip would go off the left edge
+    if (x < margin) {
+      x = margin;
+    }
+
+    return { x, y };
+  };
+
+  const handleDotClick = (systemId: string, event?: React.MouseEvent) => {
     if (showTooltips) {
-      setActiveTooltip(activeTooltip === systemId ? null : systemId);
+      if (activeTooltip === systemId) {
+        setActiveTooltip(null);
+        setTooltipPosition(null);
+      } else {
+        setActiveTooltip(systemId);
+        if (event?.currentTarget) {
+          const position = calculateTooltipPosition(event.currentTarget as HTMLElement);
+          setTooltipPosition(position);
+        }
+      }
     }
   };
 
   const handleOverallClick = () => {
     setIsExpanded(!isExpanded);
     setActiveTooltip(null);
+    setTooltipPosition(null);
   };
 
   return (
@@ -232,46 +335,13 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
             <div key={system.id} className="system-dot-container">
               <div
                 className={`status-dot system ${activeTooltip === system.id ? 'active' : ''}`}
-                onClick={() => handleDotClick(system.id)}
+                onClick={(e) => handleDotClick(system.id, e)}
                 style={{ backgroundColor: getStatusColor(system.status) }}
                 title={showTooltips ? `${system.name}: ${getStatusText(system.status)}` : ''}
               >
                 <div className="status-pulse" style={{ backgroundColor: getStatusColor(system.status) }} />
               </div>
 
-              {/* Tooltip */}
-              {activeTooltip === system.id && showTooltips && (
-                <div className="status-tooltip" ref={tooltipRef}>
-                  <div className="tooltip-header">
-                    <span className="tooltip-title">{system.name}</span>
-                    <span 
-                      className="tooltip-status"
-                      style={{ color: getStatusColor(system.status) }}
-                    >
-                      {getStatusText(system.status)}
-                    </span>
-                  </div>
-                  <div className="tooltip-details">
-                    {system.details && <p>{system.details}</p>}
-                    {system.responseTime && (
-                      <p>Response time: {system.responseTime}ms</p>
-                    )}
-                    <p className="tooltip-timestamp">
-                      Last checked: {formatLastCheck(system.lastCheck)}
-                    </p>
-                  </div>
-                  <button 
-                    className="tooltip-refresh"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      checkSystemHealth();
-                      setActiveTooltip(null);
-                    }}
-                  >
-                    Refresh Status
-                  </button>
-                </div>
-              )}
             </div>
           ))}
         </div>
@@ -286,6 +356,74 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
         >
           ×
         </button>
+      )}
+
+      {/* Portal-based tooltip for better positioning */}
+      {activeTooltip && showTooltips && (
+        <div 
+          className="status-tooltip-portal"
+          ref={tooltipRef}
+          style={{
+            position: 'fixed',
+            left: tooltipPosition?.x || 0,
+            top: tooltipPosition?.y || 0,
+            zIndex: 9999,
+            pointerEvents: 'auto'
+          }}
+        >
+          {(() => {
+            const system = systems.find(s => s.id === activeTooltip);
+            if (!system) return null;
+            
+            return (
+              <div className="status-tooltip enhanced">
+                <div className="tooltip-header">
+                  <span className="tooltip-title">{system.name}</span>
+                  <span 
+                    className="tooltip-status"
+                    style={{ color: getStatusColor(system.status) }}
+                  >
+                    {getStatusText(system.status)}
+                  </span>
+                </div>
+                <div className="tooltip-details">
+                  {system.details && <p className="tooltip-primary">{system.details}</p>}
+                  {system.responseTime && (
+                    <p className="tooltip-performance">
+                      Response time: <span className={system.responseTime > 1000 ? 'slow' : system.responseTime > 500 ? 'medium' : 'fast'}>
+                        {system.responseTime}ms
+                      </span>
+                    </p>
+                  )}
+                  {system.status === 'degraded' && system.id === 'providers' && (
+                    <p className="tooltip-help">
+                      💡 Configure API keys in settings to enable providers
+                    </p>
+                  )}
+                  {system.status === 'down' && system.id === 'api' && (
+                    <p className="tooltip-help">
+                      ⚠️ Check if the backend server is running on port 8080
+                    </p>
+                  )}
+                  <p className="tooltip-timestamp">
+                    Last checked: {formatLastCheck(system.lastCheck)}
+                  </p>
+                </div>
+                <button 
+                  className="tooltip-refresh"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    checkSystemHealth();
+                    setActiveTooltip(null);
+                    setTooltipPosition(null);
+                  }}
+                >
+                  Refresh Status
+                </button>
+              </div>
+            );
+          })()}
+        </div>
       )}
     </div>
   );
