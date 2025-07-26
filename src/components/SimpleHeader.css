@@ -170,7 +170,10 @@
     0 0 6px currentColor,
     0 0 12px currentColor,
     0 0 18px currentColor;
-  animation: sparklerFloat 1.2s ease-out forwards;
+  animation: sparklerFloat 1.0s ease-out forwards;
+  /* Hardware acceleration for smoother animations */
+  will-change: transform, opacity;
+  transform: translateZ(0);
 }
 
 @keyframes sparklerFloat {
