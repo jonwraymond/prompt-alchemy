@@ -27,8 +27,10 @@ export const SimpleHeader: React.FC<SimpleHeaderProps> = ({
     for (let i = 0; i < sparkleCount; i++) {
       setTimeout(() => {
         const sparkle = document.createElement('div');
-        sparkle.className = 'magical-sparkle';
-        sparkle.innerHTML = ['✨', '⭐', '💫', '🌟'][Math.floor(Math.random() * 4)];
+        sparkle.className = 'sparkler-spark';
+        
+        // Create the spark as a small glowing dot
+        sparkle.style.background = ['#ffd700', '#ffeb3b', '#fff', '#ffa500', '#ffcc02'][Math.floor(Math.random() * 5)];
         
         // Position relative to the letter
         const offsetX = (Math.random() - 0.5) * 40;
