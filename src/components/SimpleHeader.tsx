@@ -154,21 +154,20 @@ export const SimpleHeader: React.FC<SimpleHeaderProps> = ({
         ))}
       </h1>
       <p className="main-subtitle">
-        {subtitle.split('').map((letter, index) => {
-          // Deterministic random offset for fragmented effect
+        {subtitle.toUpperCase().split('').map((letter, index) => {
+          // Calculate initial drop offset for animation
           const rand = Math.sin(index * 12.567) * 10000;
           const offset = (rand - Math.floor(rand)) * 2 - 1;
-          const x = Math.round(offset * 8);
-          const y = Math.round(Math.abs(offset) * 12);
+          const dropY = Math.round(Math.abs(offset) * 30 + 20); // 20-50px drop
           
           return (
             <span
               key={index}
-              className="subtitle-letter fragment"
+              className="subtitle-letter"
               style={{
-                transform: `translate(${x}px, ${y}px)`,
-                transitionDelay: `${index * 0.02}s`
-              }}
+                '--drop-y': `${dropY}px`,
+                '--drop-delay': `${index * 0.03}s`
+              } as React.CSSProperties}
               data-letter={letter === ' ' ? '\u00A0' : letter}
             >
               {letter === ' ' ? '\u00A0' : letter}
