@@ -44,7 +44,7 @@ export const AlchemyInterface: React.FC<AlchemyInterfaceProps> = ({ className = 
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       // API call to backend
-      const response = await fetch('/api/generate', {
+      const response = await fetch('/api/v1/prompts/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
