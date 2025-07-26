@@ -35,12 +35,82 @@
   background: none !important;
   -webkit-background-clip: unset !important;
   background-clip: unset !important;
-  transition: transform 0.2s ease;
+  cursor: pointer;
+  transition: all 0.3s ease;
 }
 
-/* Subtle hover effect */
+/* Rainbow glow effect on hover */
 .main-title .letter:hover {
-  transform: translateY(-2px);
+  transform: scale(1.05);
+  filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.3));
+}
+
+/* Rainbow glow animation using pseudo-elements */
+.main-title .letter::before {
+  content: attr(data-letter);
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  
+  /* Rainbow gradient text */
+  background: linear-gradient(
+    45deg,
+    #ff0080 0%,
+    #ff8c00 20%,
+    #ffd700 40%,
+    #00ff00 60%,
+    #00ffff 80%,
+    #ff00ff 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  
+  /* Soft diffused glow */
+  filter: blur(6px);
+}
+
+/* Active rainbow glow on hover */
+.main-title .letter:hover::before {
+  opacity: 0.8;
+  animation: rainbow-shift 2s ease-in-out infinite;
+}
+
+/* Rainbow shadow layers for depth */
+.main-title .letter::after {
+  content: attr(data-letter);
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: -2;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  
+  /* Multi-layer shadow effect */
+  text-shadow: 
+    0 0 8px rgba(255, 0, 128, 0.4),
+    0 0 16px rgba(255, 140, 0, 0.3),
+    0 0 24px rgba(255, 215, 0, 0.2),
+    0 0 32px rgba(0, 255, 0, 0.2),
+    0 0 40px rgba(0, 255, 255, 0.2),
+    0 0 48px rgba(255, 0, 255, 0.2);
+}
+
+.main-title .letter:hover::after {
+  opacity: 0.6;
+}
+
+/* Rainbow shift animation */
+@keyframes rainbow-shift {
+  0%, 100% {
+    filter: blur(8px) hue-rotate(0deg);
+  }
+  50% {
+    filter: blur(10px) hue-rotate(180deg);
+  }
 }
 
 /* Subtitle styling - original design */
