@@ -583,6 +583,7 @@ logger.WithFields(logrus.Fields{
 
 ### How It Works
 - **Triggers**: Automatically runs after successful Write, Edit, MultiEdit, and Serena file operations
+- **Default Behavior**: Commits locally only (safer default)
 - **Validation**: Checks Go build success, runs `go fmt`, validates git configuration
 - **Safety**: Skips commits for very large changes (>1000 files) and validates git setup
 - **Logging**: All activity logged to `~/.claude/auto-commit.log`
