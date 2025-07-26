@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { testApiConnectivity, api } from '../utils/api';
+import React, { useState, useEffect, useCallback } from 'react';
+import { testApiConnectivity, testSpecificFeature, api, logApiResponse } from '../utils/api';
 import './ApiTestRunner.css';
 
 interface TestResult {
@@ -8,6 +8,19 @@ interface TestResult {
   error?: string;
   duration: number;
   details?: any;
+  critical: boolean;
+}
+
+interface ConnectivityResult {
+  healthy: boolean;
+  tests: TestResult[];
+  summary: {
+    total: number;
+    passed: number;
+    failed: number;
+    critical_failures: number;
+    total_duration: number;
+  };
 }
 
 interface ApiTestRunnerProps {
@@ -18,20 +31,30 @@ export const ApiTestRunner: React.FC<ApiTestRunnerProps> = ({ onConnectionStatus
   const [isRunning, setIsRunning] = useState(false);
   const [results, setResults] = useState<TestResult[]>([]);
   const [overallHealth, setOverallHealth] = useState<boolean | null>(null);
+  const [testSummary, setTestSummary] = useState<ConnectivityResult['summary'] | null>(null);
   const [autoTestEnabled, setAutoTestEnabled] = useState(false);
 
   const runTests = async () => {
     setIsRunning(true);
     setResults([]);
+    setTestSummary(null);
     
     try {
       const testResults = await testApiConnectivity();
       setResults(testResults.tests);
       setOverallHealth(testResults.healthy);
+      setTestSummary(testResults.summary);
       onConnectionStatus?.(testResults.healthy);
+      
+      // Log results to console for debugging
+      logApiResponse('connectivity-test', {
+        success: testResults.healthy,
+        data: testResults,
+      }, testResults.summary.total_duration);
     } catch (error) {
       console.error('Failed to run API tests:', error);
       setOverallHealth(false);
+      setTestSummary(null);
       onConnectionStatus?.(false);
     } finally {
       setIsRunning(false);
@@ -60,17 +83,58 @@ export const ApiTestRunner: React.FC<ApiTestRunnerProps> = ({ onConnectionStatus
         success: response.success,
         error: response.error,
         duration,
-        details: response.data
+        details: response.data,
+        critical: true
       };
       
       setResults(prev => [...prev, newResult]);
+      
+      // Log the test result
+      logApiResponse('generate-test', response, duration);
       
     } catch (error) {
       const newResult: TestResult = {
         name: 'Prompt Generation Test',
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
-        duration: 0
+        duration: 0,
+        critical: true
+      };
+      setResults(prev => [...prev, newResult]);
+    } finally {
+      setIsRunning(false);
+    }
+  };
+
+  const testSpecificFeatureHandler = async (feature: 'generation' | 'providers' | 'search') => {
+    setIsRunning(true);
+    
+    try {
+      const startTime = Date.now();
+      const response = await testSpecificFeature(feature);
+      const duration = Date.now() - startTime;
+      
+      const newResult: TestResult = {
+        name: `${feature.charAt(0).toUpperCase() + feature.slice(1)} Feature Test`,
+        success: response.success,
+        error: response.error,
+        duration,
+        details: response.data,
+        critical: feature === 'generation' // Only generation is critical
+      };
+      
+      setResults(prev => [...prev, newResult]);
+      
+      // Log the test result
+      logApiResponse(`${feature}-feature-test`, response, duration);
+      
+    } catch (error) {
+      const newResult: TestResult = {
+        name: `${feature.charAt(0).toUpperCase() + feature.slice(1)} Feature Test`,
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        duration: 0,
+        critical: feature === 'generation'
       };
       setResults(prev => [...prev, newResult]);
     } finally {
@@ -85,8 +149,9 @@ export const ApiTestRunner: React.FC<ApiTestRunnerProps> = ({ onConnectionStatus
     }
   }, [autoTestEnabled]);
 
-  const getStatusIcon = (success: boolean) => {
-    return success ? '✅' : '❌';
+  const getStatusIcon = (success: boolean, critical?: boolean) => {
+    if (success) return '✅';
+    return critical ? '🔴' : '⚠️';
   };
 
   const getHealthIcon = () => {
@@ -95,7 +160,16 @@ export const ApiTestRunner: React.FC<ApiTestRunnerProps> = ({ onConnectionStatus
   };
 
   const formatDuration = (ms: number) => {
-    return `${ms}ms`;
+    if (ms < 1000) return `${ms}ms`;
+    return `${(ms / 1000).toFixed(1)}s`;
+  };
+
+  const getCriticalityLabel = (critical: boolean) => {
+    return critical ? 'Critical' : 'Non-critical';
+  };
+
+  const getCriticalityClass = (critical: boolean) => {
+    return critical ? 'critical' : 'non-critical';
   };
 
   return (
@@ -131,6 +205,22 @@ export const ApiTestRunner: React.FC<ApiTestRunnerProps> = ({ onConnectionStatus
           >
             Test Prompt Generation
           </button>
+
+          <button
+            onClick={() => testSpecificFeatureHandler('providers')}
+            disabled={isRunning}
+            className="test-btn secondary"
+          >
+            Test Providers
+          </button>
+
+          <button
+            onClick={() => testSpecificFeatureHandler('search')}
+            disabled={isRunning}
+            className="test-btn secondary"
+          >
+            Test Search
+          </button>
         </div>
       </div>
 
@@ -139,6 +229,27 @@ export const ApiTestRunner: React.FC<ApiTestRunnerProps> = ({ onConnectionStatus
           <strong>
             {overallHealth ? '✅ All systems operational' : '❌ Integration issues detected'}
           </strong>
+          {testSummary && (
+            <div className="test-summary-stats">
+              <span className="stat">
+                Total: {testSummary.total}
+              </span>
+              <span className="stat passed">
+                Passed: {testSummary.passed}
+              </span>
+              <span className="stat failed">
+                Failed: {testSummary.failed}
+              </span>
+              {testSummary.critical_failures > 0 && (
+                <span className="stat critical-failures">
+                  Critical Failures: {testSummary.critical_failures}
+                </span>
+              )}
+              <span className="stat duration">
+                Duration: {formatDuration(testSummary.total_duration)}
+              </span>
+            </div>
+          )}
           {!overallHealth && (
             <p>Check the details below and ensure the backend server is running on port 8080.</p>
           )}
@@ -152,11 +263,12 @@ export const ApiTestRunner: React.FC<ApiTestRunnerProps> = ({ onConnectionStatus
             {results.map((result, index) => (
               <div
                 key={index}
-                className={`test-result-item ${result.success ? 'success' : 'failure'}`}
+                className={`test-result-item ${result.success ? 'success' : 'failure'} ${getCriticalityClass(result.critical)}`}
               >
                 <div className="result-header">
-                  <span className="result-icon">{getStatusIcon(result.success)}</span>
+                  <span className="result-icon">{getStatusIcon(result.success, result.critical)}</span>
                   <span className="result-name">{result.name}</span>
+                  <span className="result-criticality">{getCriticalityLabel(result.critical)}</span>
                   <span className="result-duration">{formatDuration(result.duration)}</span>
                 </div>
                 

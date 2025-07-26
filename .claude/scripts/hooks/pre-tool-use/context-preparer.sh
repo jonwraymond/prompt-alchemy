@@ -13,80 +13,24 @@ source "$SCRIPT_DIR/../../lib/logging-simple.sh"
 source "$SCRIPT_DIR/../../lib/semantic-tools.sh"
 source "$SCRIPT_DIR/../../lib/failsafe.sh"
 
-# Read input from stdin
-input=$(cat)
-
-# Parse tool information
-tool_name=$(echo "$input" | jq -r '.tool // empty')
-tool_args=$(echo "$input" | jq -r '.arguments // {}')
-
-if [[ -z "$tool_name" ]]; then
-    log_debug "No tool name found, skipping context preparation"
-    exit 0
-fi
-
-show_hook_status "PreToolUse" "started" "Context preparation for $tool_name"
-log_info "Preparing context for tool: $tool_name"
-output_visible "Preparing context for $tool_name tool" "info"
-
-# Check if we have a cached routing decision
-user_prompt_hash=$(get_current_prompt_hash)
-routing_file="$CACHE_DIR/routing-$user_prompt_hash.json"
-
-if [[ -f "$routing_file" ]]; then
-    routing_decision=$(cat "$routing_file")
-    log_debug "Found cached routing decision"
-else
-    log_debug "No cached routing decision, using defaults"
-    routing_decision=$(generate_default_routing "$tool_name")
-fi
-
-# Extract routing parameters
-primary_tool=$(echo "$routing_decision" | jq -r '.primary_tool // "serena"')
-token_budget=$(echo "$routing_decision" | jq -r '.token_budget // 5000')
-context_tool=$(echo "$routing_decision" | jq -r '.context_tool // "code2prompt"')
-
-# Prepare semantic context based on tool being used
-case "$tool_name" in
-    "Read"|"Edit"|"Write"|"MultiEdit")
-        prepare_file_context "$tool_args" "$primary_tool" "$token_budget"
-        ;;
-    "Grep"|"Glob")
-        prepare_search_context "$tool_args" "$primary_tool" "$token_budget"
-        ;;
-    "Bash")
-        prepare_command_context "$tool_args" "$primary_tool" "$token_budget"
-        ;;
-    *)
-        log_debug "No specific context preparation for tool: $tool_name"
-        ;;
-esac
-
-exit 0
-
-# Functions
+# Function to get current prompt hash (placeholder - would need real implementation)
 get_current_prompt_hash() {
-    # Try to get the current user prompt from Claude's context
-    # This is a simplified implementation - in practice, you'd need to 
-    # coordinate with the query router or maintain session state
-    if [[ -f "$CACHE_DIR/current-prompt-hash" ]]; then
-        cat "$CACHE_DIR/current-prompt-hash"
-    else
-        echo "default"
-    fi
+    # In a real implementation, this would get the hash from the current session
+    # For now, return a default hash
+    echo "default-hash"
 }
 
+# Function to generate default routing
 generate_default_routing() {
     local tool="$1"
     jq -n \
-        --arg primary "serena" \
-        --arg context "code2prompt" \
-        --argjson budget 5000 \
+        --arg tool "$tool" \
         '{
-            primary_tool: $primary,
-            context_tool: $context,
-            token_budget: $budget,
-            fallback_chain: ["ast-grep", "grep"]
+            primary_tool: "serena",
+            context_tool: "code2prompt",
+            fallback_chain: ["ast-grep", "grep"],
+            token_budget: 5000,
+            timestamp: now
         }'
 }
 
@@ -95,7 +39,7 @@ prepare_file_context() {
     local primary_tool="$2"
     local budget="$3"
     
-    # Extract file path from arguments
+    # Extract file path
     local file_path=$(echo "$args" | jq -r '.file_path // .path // empty')
     
     if [[ -z "$file_path" || ! -f "$file_path" ]]; then
@@ -177,3 +121,65 @@ prepare_command_context() {
         fi
     fi
 }
+
+# Main execution
+# Read input from stdin
+input=$(cat)
+
+# Parse tool information
+tool_name=$(echo "$input" | jq -r '.tool // empty')
+tool_args=$(echo "$input" | jq -r '.arguments // .params // {}')
+
+if [[ -z "$tool_name" ]]; then
+    log_debug "No tool name found, skipping context preparation"
+    exit 0
+fi
+
+show_hook_status "PreToolUse" "started" "Context preparation for $tool_name"
+log_info "Preparing context for tool: $tool_name"
+output_visible "Preparing context for $tool_name tool" "info"
+
+# Check if we have a cached routing decision
+user_prompt_hash=$(get_current_prompt_hash)
+routing_file="$CACHE_DIR/routing-$user_prompt_hash.json"
+
+if [[ -f "$routing_file" ]]; then
+    routing_decision=$(cat "$routing_file")
+    log_debug "Found cached routing decision"
+else
+    log_debug "No cached routing decision, using defaults"
+    routing_decision=$(generate_default_routing "$tool_name")
+fi
+
+# Extract routing parameters
+primary_tool=$(echo "$routing_decision" | jq -r '.primary_tool // "serena"')
+token_budget=$(echo "$routing_decision" | jq -r '.token_budget // 5000')
+context_tool=$(echo "$routing_decision" | jq -r '.context_tool // "code2prompt"')
+
+# Prepare semantic context based on tool being used
+case "$tool_name" in
+    "Read"|"Edit"|"MultiEdit"|"Write")
+        prepare_file_context "$tool_args" "$primary_tool" "$token_budget"
+        ;;
+    "Grep"|"Search*")
+        prepare_search_context "$tool_args" "$primary_tool" "$token_budget"
+        ;;
+    "Bash"|"Execute*")
+        prepare_command_context "$tool_args" "$primary_tool" "$token_budget"
+        ;;
+    *)
+        log_debug "No special context preparation for tool: $tool_name"
+        ;;
+esac
+
+# Show performance metrics if enabled
+if [[ "$SHOW_PERFORMANCE" == "true" ]]; then
+    local end_time=$(date +%s%N)
+    local duration=$((($end_time - ${START_TIME:-$end_time}) / 1000000))
+    output_visible "Context preparation took ${duration}ms" "debug"
+fi
+
+log_info "Context preparation completed for $tool_name"
+show_hook_status "PreToolUse" "completed" "Ready for $tool_name"
+
+exit 0

@@ -18,53 +18,6 @@ source "$SCRIPT_DIR/../../lib/config-simple.sh"
 source "$SCRIPT_DIR/../../lib/logging-simple.sh"
 source "$SCRIPT_DIR/../../lib/tool-detection.sh"
 
-# Read input from stdin (Claude hook input)
-input=$(cat)
-
-# Parse user prompt from JSON input
-user_prompt=$(echo "$input" | jq -r '.prompt // empty')
-
-if [[ -z "$user_prompt" ]]; then
-    log_debug "No user prompt found in input, skipping routing"
-    exit 0
-fi
-
-show_hook_status "UserPromptSubmit" "started" "Query analysis"
-log_info "Processing user query: ${user_prompt:0:100}..."
-output_visible "Query: ${user_prompt:0:50}..." "info"
-
-# Analyze query intent and complexity
-intent_analysis=$(analyze_query_intent "$user_prompt")
-complexity_score=$(echo "$intent_analysis" | jq -r '.complexity_score')
-query_type=$(echo "$intent_analysis" | jq -r '.query_type')
-suggested_tools=$(echo "$intent_analysis" | jq -r '.suggested_tools[]')
-
-log_debug "Query analysis: type=$query_type, complexity=$complexity_score"
-
-# Check tool availability
-available_tools=$(check_tool_availability)
-log_debug "Available tools: $available_tools"
-
-# Generate routing decision
-routing_decision=$(generate_routing_decision "$query_type" "$complexity_score" "$available_tools")
-
-# Cache routing decision for PreToolUse hook
-cache_key=$(echo "$user_prompt" | sha256sum | cut -d' ' -f1)
-echo "$routing_decision" > "$CACHE_DIR/routing-$cache_key.json"
-
-# Show tool selection if enabled
-primary_tool=$(echo "$routing_decision" | jq -r '.primary_tool')
-fallback_tools=$(echo "$routing_decision" | jq -r '.fallback_chain | join(" → ")')
-show_tool_selection "$query_type" "$primary_tool" "$fallback_tools"
-
-# Output routing information for Claude
-echo "$routing_decision" | jq -r '.claude_context // empty'
-
-log_info "Query routed: $primary_tool -> $fallback_tools"
-show_hook_status "UserPromptSubmit" "completed" "Routed to $primary_tool"
-
-exit 0
-
 # Functions
 analyze_query_intent() {
     local prompt="$1"
@@ -104,14 +57,23 @@ analyze_query_intent() {
     # Increase complexity for broad scope indicators
     if echo "$prompt" | grep -qiE "entire|all|whole|project|codebase"; then
         complexity=$((complexity + 2))
-        tools=("code2prompt" "${tools[@]}")
+        if [[ ${#tools[@]} -gt 0 ]]; then
+            tools=("code2prompt" "${tools[@]}")
+        else
+            tools=("code2prompt")
+        fi
     fi
     
     # Output JSON
+    local tools_json="[]"
+    if [[ ${#tools[@]} -gt 0 ]]; then
+        tools_json=$(printf '%s\n' "${tools[@]}" | jq -R . | jq -s .)
+    fi
+    
     jq -n \
         --arg type "$type" \
         --argjson complexity "$complexity" \
-        --argjson tools "$(printf '%s\n' "${tools[@]}" | jq -R . | jq -s .)" \
+        --argjson tools "$tools_json" \
         '{
             query_type: $type,
             complexity_score: $complexity,
@@ -174,10 +136,15 @@ generate_routing_decision() {
     fi
     
     # Output JSON
+    local chain_json="[]"
+    if [[ ${#filtered_chain[@]} -gt 0 ]]; then
+        chain_json=$(printf '%s\n' "${filtered_chain[@]}" | jq -R . | jq -s .)
+    fi
+    
     jq -n \
         --arg primary "$primary_tool" \
         --arg context "$context_tool" \
-        --argjson chain "$(printf '%s\n' "${filtered_chain[@]}" | jq -R . | jq -s .)" \
+        --argjson chain "$chain_json" \
         --argjson budget "$token_budget" \
         --arg claude_ctx "$claude_context" \
         '{
@@ -189,3 +156,62 @@ generate_routing_decision() {
             timestamp: now
         }'
 }
+
+# Main execution
+# Record start time for performance metrics
+START_TIME=$(date +%s%N)
+
+# Read input from stdin (Claude hook input)
+input=$(cat)
+
+# Parse user prompt from JSON input
+user_prompt=$(echo "$input" | jq -r '.prompt // empty')
+
+if [[ -z "$user_prompt" ]]; then
+    log_debug "No user prompt found in input, skipping routing"
+    exit 0
+fi
+
+show_hook_status "UserPromptSubmit" "started" "Query analysis"
+log_info "Processing user query: ${user_prompt:0:100}..."
+output_visible "Query: ${user_prompt:0:50}..." "info"
+
+# Analyze query intent and complexity
+intent_analysis=$(analyze_query_intent "$user_prompt")
+complexity_score=$(echo "$intent_analysis" | jq -r '.complexity_score')
+query_type=$(echo "$intent_analysis" | jq -r '.query_type')
+suggested_tools=$(echo "$intent_analysis" | jq -r '.suggested_tools[]')
+
+log_debug "Query analysis: type=$query_type, complexity=$complexity_score"
+
+# Check tool availability
+available_tools=$(check_tool_availability)
+log_debug "Available tools: $available_tools"
+
+# Generate routing decision
+routing_decision=$(generate_routing_decision "$query_type" "$complexity_score" "$available_tools")
+
+# Cache routing decision for PreToolUse hook
+cache_key=$(echo "$user_prompt" | sha256sum | cut -d' ' -f1)
+echo "$routing_decision" > "$CACHE_DIR/routing-$cache_key.json"
+
+# Show tool selection if enabled
+primary_tool=$(echo "$routing_decision" | jq -r '.primary_tool')
+fallback_tools=$(echo "$routing_decision" | jq -r '.fallback_chain | join(" → ")')
+show_tool_selection "$query_type" "$primary_tool" "$fallback_tools"
+
+# Output routing information for Claude
+echo "$routing_decision" | jq -r '.claude_context // empty'
+
+log_info "Query routed: $primary_tool -> $fallback_tools"
+
+# Show performance metrics if enabled
+if [[ "$SHOW_PERFORMANCE" == "true" ]]; then
+    end_time=$(date +%s%N)
+    duration=$((($end_time - $START_TIME) / 1000000))
+    show_performance "Query routing" "query-router" "$duration" "0"
+fi
+
+show_hook_status "UserPromptSubmit" "completed" "Routed to $primary_tool"
+
+exit 0

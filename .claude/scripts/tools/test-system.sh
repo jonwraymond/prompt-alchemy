@@ -28,7 +28,7 @@ TESTS_SKIPPED=0
 
 # Load libraries
 source "$SCRIPT_DIR/../lib/config-simple.sh"
-source "$SCRIPT_DIR/../lib/logging.sh"
+source "$SCRIPT_DIR/../lib/logging-simple.sh"
 source "$SCRIPT_DIR/../lib/tool-detection.sh"
 source "$SCRIPT_DIR/../lib/semantic-tools.sh"
 source "$SCRIPT_DIR/../lib/failsafe.sh"

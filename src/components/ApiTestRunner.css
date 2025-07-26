@@ -112,6 +112,43 @@
   opacity: 0.8;
 }
 
+.test-summary-stats {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin: 0.75rem 0 0.5rem 0;
+  flex-wrap: wrap;
+}
+
+.test-summary-stats .stat {
+  font-size: 0.85rem;
+  font-weight: 500;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.test-summary-stats .stat.passed {
+  background: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+}
+
+.test-summary-stats .stat.failed {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+.test-summary-stats .stat.critical-failures {
+  background: rgba(220, 38, 127, 0.2);
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.test-summary-stats .stat.duration {
+  background: rgba(59, 130, 246, 0.2);
+  color: #3b82f6;
+}
+
 .test-results {
   border-top: 1px solid var(--metal-border, #2a2a2c);
   padding-top: 1rem;
@@ -145,6 +182,16 @@
   border-left: 4px solid #ef4444;
 }
 
+.test-result-item.critical.failure {
+  border-left: 4px solid #dc2626;
+  background: rgba(220, 38, 127, 0.05);
+}
+
+.test-result-item.non-critical.failure {
+  border-left: 4px solid #f59e0b;
+  background: rgba(245, 158, 11, 0.05);
+}
+
 .result-header {
   display: flex;
   align-items: center;
@@ -160,6 +207,26 @@
   font-weight: 500;
   color: #fff;
   flex: 1;
+}
+
+.result-criticality {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 0.2rem 0.4rem;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ccc;
+}
+
+.critical .result-criticality {
+  background: rgba(220, 38, 127, 0.3);
+  color: #dc2626;
+}
+
+.non-critical .result-criticality {
+  background: rgba(245, 158, 11, 0.3);
+  color: #f59e0b;
 }
 
 .result-duration {

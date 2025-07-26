@@ -1,2 +1,0 @@
-This is a test file to verify the Claude Code auto-commit hook is working.
-Created at: $(date)
