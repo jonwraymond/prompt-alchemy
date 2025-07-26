@@ -177,3 +177,4 @@ dist/
 # Local development overrides
 docker-compose.local.yml
 docker-compose.override.yml 
+node_modules

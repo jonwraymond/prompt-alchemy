@@ -5,9 +5,9 @@ title: Home
 
 # Prompt Alchemy
 
-Prompt Alchemy transforms your raw ideas into high-quality prompts for AI systems. 
+Prompt Alchemy transforms your raw ideas into high-quality prompts for AI systems through a three-phase alchemical process, featuring both a powerful Go backend and a beautiful React frontend.
 
-The tool uses a three-phase refinement process to create precise, effective prompts. You can use it as a command-line tool or integrate it with AI agents.
+The tool uses a three-phase refinement process to create precise, effective prompts. You can use it as a command-line tool, integrate it with AI agents, or interact through the web UI.
 
 > **What you'll accomplish**: Generate better prompts, integrate with multiple AI providers, and improve results over time with machine learning.
 
@@ -16,9 +16,11 @@ The tool uses a three-phase refinement process to create precise, effective prom
 - **Three-phase prompt refinement**: Improves your prompts through idea extraction, natural language flow, and precision tuning
 - **Multiple AI providers**: Works with OpenAI, Anthropic, Google, OpenRouter, and local Ollama models
 - **Intelligent selection**: Uses AI to automatically choose the best prompt variants
-- **Flexible deployment**: Run as a CLI tool for quick tasks or as a server for AI agent integration
+- **Flexible deployment**: Run as a CLI tool, API server, or web application
+- **Beautiful UI**: React frontend with 3D visualizations and alchemy-themed design
 - **Adaptive learning**: Improves recommendations over time based on your feedback
 - **Local storage**: Keeps all your data in a local SQLite database for privacy and speed
+- **Docker support**: Full containerization with docker-compose profiles
 
 ## Quick start
 
@@ -28,6 +30,19 @@ The tool uses a three-phase refinement process to create precise, effective prom
 # Generate a prompt with all three refinement phases
 prompt-alchemy generate "A blog post about the future of AI" --persona=writing
 ```
+
+### Start the web UI
+
+```bash
+# Using Docker (recommended)
+docker-compose --profile hybrid up -d
+
+# Or for development with hot reload
+npm install
+npm run dev
+```
+
+Access the web UI at `http://localhost:8080`
 
 ### Start a server (for AI agents)
 

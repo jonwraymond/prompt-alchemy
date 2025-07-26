@@ -9,6 +9,7 @@ import (
 
 type Solutio struct{}
 
+// Contributes to Transmutation Core: Dissolution phase for refining structured input into natural language
 func (s *Solutio) GetTemplate() string {
 	return "solutio" // Return template name for new system
 }

@@ -10,6 +10,7 @@ import (
 
 type PrimaMateria struct{}
 
+// Contributes to Transmutation Core: Initial phase for extracting and structuring raw input
 func (p *PrimaMateria) GetTemplate() string {
 	return "prima_materia" // Return template name for new system
 }

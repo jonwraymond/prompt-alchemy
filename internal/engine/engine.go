@@ -18,16 +18,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-// Engine handles prompt generation with phased approach
-// TODO: Server Mode Enhancement - Real-time Processing Engine
-// When implementing server mode, extend the engine to support:
-// - StreamGenerate() - Stream prompt generation results as they're created
-// - DiscoverRelationshipsOnDemand() - Real-time semantic relationship discovery
-// - GetSimilarPrompts() - Find similar prompts using embedding similarity
-// - WebhookNotification() - Notify external systems when generation completes
-//
-// This keeps the engine stateless and lightweight while enabling
-// powerful server-side features for API consumers.
+// This Engine struct represents the Transmutation Core, central hub for prompt generation and phase orchestration
 type Engine struct {
 	registry      *providers.Registry
 	phaseHandlers map[models.Phase]phases.PhaseHandler
@@ -36,7 +27,7 @@ type Engine struct {
 	optimizer     *OptimizationIntegrator
 }
 
-// NewEngine creates a new prompt generation engine
+// NewEngine initializes the Transmutation Core with providers and logging
 func NewEngine(registry *providers.Registry, logger *logrus.Logger) *Engine {
 	return &Engine{
 		registry: registry,
@@ -57,7 +48,7 @@ func (e *Engine) SetStorage(storage storage.StorageInterface) {
 	}
 }
 
-// Generate creates prompts using the phased approach
+// Generate is the core method of the Transmutation Core, processing inputs through alchemical phases
 func (e *Engine) Generate(ctx context.Context, opts models.GenerateOptions) (*models.GenerationResult, error) {
 	e.logger.Info("Starting prompt generation engine")
 	result := &models.GenerationResult{

@@ -4,8 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{.Title}}</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAxNiAxNiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iOCIgY3k9IjgiIHI9IjciIGZpbGw9IiNmZmI4MDAiLz4KPGJ5IGN4PSI4IiBjeT0iOCIgcj0iNCIgZmlsbD0iI2ZmZjAwMCIvPgo8L3N2Zz4K">
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <script src="https://unpkg.com/hyperscript.org@0.9.12"></script>
+    
+    <!-- React CDN -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script>
         // EMERGENCY FIX: Disable HTMX retries to stop timeout loop
         document.addEventListener('DOMContentLoaded', function() {
@@ -26,15 +31,25 @@
     </script>
     <link rel="stylesheet" href="/static/css/alchemy.css">
     <link rel="stylesheet" href="/static/css/modern-alchemy.css">
-    <link rel="stylesheet" href="/static/css/hex-flow-board.css">
-    <link rel="stylesheet" href="/static/css/hex-flow-board-unified.css">
+    <!-- Legacy hex grid CSS removed - React handles all hex styling internally -->
     <link rel="stylesheet" href="/static/css/hex-glass-effects.css">
     <link rel="stylesheet" href="/static/css/hex-pulse-glow.css">
     <!-- Emergency Fix CSS - Remove after diagnosis -->
-    <link rel="stylesheet" href="/static/css/hex-grid-fix.css">
-    <!-- Modern Header with Rainbow Glow -->
-    <link rel="stylesheet" href="/static/css/header-rainbow-glow.css">
-    <script src="/static/js/header-check.js" defer></script>
+    <!-- Old grid system CSS removed - using enhanced hex nodes instead -->
+    <!-- Magical Header -->
+    <link rel="stylesheet" href="/static/css/magical-header.css">
+    <script src="/static/js/magical-header.js" defer></script>
+    
+    <!-- Liquid Alchemy Input Component -->
+    <link rel="stylesheet" href="/static/css/liquid-alchemy-input.css">
+    <link rel="stylesheet" href="/static/css/liquid-input-override.css">
+    <script src="/static/js/liquid-alchemy-input.js" defer></script>
+
+    <!-- 21st Dev Toolbar -->
+    <link rel="stylesheet" href="/static/css/toolbar.css">
+    
+    <!-- Modern Icons System - Load before other scripts -->
+    <script src="/static/js/modern-icons.js"></script>
     
     <!-- Emergency inline styles to force display -->
     <style>
@@ -112,6 +127,29 @@
             border: 2px solid #1a1a1a !important;
             border-radius: 10px !important;
         }
+        
+        /* React hex grid specific styles */
+        #react-hex-root {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            width: 100% !important;
+            height: 100% !important;
+        }
+        
+        .alchemy-hex-grid-container {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            width: 100% !important;
+            height: 100% !important;
+        }
+        
+        .alchemy-hex-grid {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
     </style>
 </head>
 <body>
@@ -172,8 +210,11 @@
         
 
 
-        <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-            <div class="xl:col-span-2" style="background: none !important; border: none !important; box-shadow: none !important; padding: 0 !important;">
+        <div class="flex gap-6">
+            <div class="flex-grow" style="background: none !important; border: none !important; box-shadow: none !important; padding: 0 !important; flex: 1 1 70%; max-width: 100%;">
+                
+                <!-- Alchemical Input Component Container -->
+                <div id="alchemical-input-container" style="margin-bottom: 1rem; width: 100%;"></div>
                 
                 <form id="generate-form" 
                       hx-post="/generate" 
@@ -181,7 +222,7 @@
                       hx-indicator="#alchemy-loading"
                       hx-swap="innerHTML transition:true"
                       class="htmx-fade"
-                      style="background: none !important; border: none !important; box-shadow: none !important; padding: 0 !important; margin: 0 !important;">
+                      style="display: none;">
                     
                     <textarea 
                         id="input" 
@@ -427,7 +468,7 @@
 
                                 <div class="option-hints">
                                     <span class="hint-tag">⌘ + ↵ Send</span>
-                                    <span class="hint-tag">⚗️ Three-phase</span>
+                                    <span class="hint-tag"><span class="inline-icon">${window.getIcon('transmutationCore', 'modern-status-icon', 14)}</span> Three-phase</span>
                                     <span class="hint-tag" id="char-display">0 chars</span>
                                 </div>
                             </div>
@@ -441,448 +482,19 @@
                 
             </div>
             
-            <div class="xl:col-span-1" id="transmutation-flow-panel">
-                <div class="text-center mb-6">
-                    <div class="fragmented-text justify-center">
-                        <span class="fragmented-word" style="--index: 0;">
-                            <span class="letter" data-letter="A" style="--letter-index: 0;">A</span>
-                            <span class="letter" data-letter="l" style="--letter-index: 1;">l</span>
-                            <span class="letter" data-letter="c" style="--letter-index: 2;">c</span>
-                            <span class="letter" data-letter="h" style="--letter-index: 3;">h</span>
-                            <span class="letter" data-letter="e" style="--letter-index: 4;">e</span>
-                            <span class="letter" data-letter="m" style="--letter-index: 5;">m</span>
-                            <span class="letter" data-letter="i" style="--letter-index: 6;">i</span>
-                            <span class="letter" data-letter="c" style="--letter-index: 7;">c</span>
-                            <span class="letter" data-letter="a" style="--letter-index: 8;">a</span>
-                            <span class="letter" data-letter="l" style="--letter-index: 9;">l</span>
-                        </span>
-                        <span class="fragmented-word" style="--index: 1;">
-                            <span class="letter" data-letter="R" style="--letter-index: 0;">R</span>
-                            <span class="letter" data-letter="u" style="--letter-index: 1;">u</span>
-                            <span class="letter" data-letter="n" style="--letter-index: 2;">n</span>
-                            <span class="letter" data-letter="e" style="--letter-index: 3;">e</span>
-                            <span class="letter" data-letter="s" style="--letter-index: 4;">s</span>
-                        </span>
-                    </div>
-                </div>
-                
-                <!-- Unified Dual-View Container -->
-                <div class="dual-view-container">
-                    
-                    <!-- Left Side: Hex Grid Visualization -->
-                    <div class="hex-grid-column">
-                        <div class="hex-flow-container" 
-                             id="hex-flow-container"
-                             hx-ext="sse"
-                             sse-connect="/api/flow-events"
-                             sse-swap="flow-update">
-                    
-                    <div class="hex-flow-wrapper">
-                        
-                        <div class="hex-flow-main">
-                    
-                    
-                    <svg id="hex-flow-board" 
-                         class="hex-flow-board" 
-                         viewBox="0 0 1000 700"
-                         hx-get="/api/board-state"
-                         hx-trigger="board-refresh from:body"
-                         hx-swap="none">
-                        
-                        <defs>
-                            <radialGradient id="primaGradient">
-                                <stop offset="0%" style="stop-color:#ff6b6b;stop-opacity:0.8" />
-                                <stop offset="100%" style="stop-color:#ff6b6b;stop-opacity:0.1" />
-                            </radialGradient>
-                            <radialGradient id="solutioGradient">
-                                <stop offset="0%" style="stop-color:#4ecdc4;stop-opacity:0.8" />
-                                <stop offset="100%" style="stop-color:#4ecdc4;stop-opacity:0.1" />
-                            </radialGradient>
-                            <radialGradient id="coagulatioGradient">
-                                <stop offset="0%" style="stop-color:#45b7d1;stop-opacity:0.8" />
-                                <stop offset="100%" style="stop-color:#45b7d1;stop-opacity:0.1" />
-                            </radialGradient>
-                            
-                            <filter id="hexGlow">
-                                <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
-                                <feMerge>
-                                    <feMergeNode in="coloredBlur"/>
-                                    <feMergeNode in="SourceGraphic"/>
-                                </feMerge>
-                            </filter>
-                            
-                            <linearGradient id="flowGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                                <stop offset="0%" style="stop-color:#2ecc71;stop-opacity:0">
-                                    <animate attributeName="stop-opacity" values="0;1;0" dur="2s" repeatCount="indefinite" />
-                                </stop>
-                                <stop offset="50%" style="stop-color:#2ecc71;stop-opacity:1">
-                                    <animate attributeName="stop-opacity" values="1;0;1" dur="2s" repeatCount="indefinite" />
-                                </stop>
-                                <stop offset="100%" style="stop-color:#2ecc71;stop-opacity:0">
-                                    <animate attributeName="stop-opacity" values="0;1;0" dur="2s" repeatCount="indefinite" />
-                                </stop>
-                            </linearGradient>
-                        </defs>
-                        
-                        <pattern id="hexGrid" x="0" y="0" width="60" height="52" patternUnits="userSpaceOnUse">
-                            <polygon points="30,0 45,15 45,37 30,52 15,37 15,15" 
-                                     fill="none" 
-                                     stroke="#1a1a1a" 
-                                     stroke-width="0.5" 
-                                     opacity="0.3"/>
-                        </pattern>
-                        
-                        <g id="connection-paths"></g>
-                        
-                        <g id="hex-nodes"></g>
-                        
             
-                    </svg>
-                    
-                    <!-- Manual zoom controls hidden - automated zoom only -->
-                    <div class="hex-zoom-controls" style="display: none;">
-                        <div class="zoom-level"
-                             hx-get="/api/zoom-level"
-                             hx-trigger="load, zoom-changed from:body"
-                             hx-target="this">100%</div>
-                        
-                        <div id="zoom-indicator" class="htmx-indicator">
-                            <div class="spinner"></div>
-                        </div>
-                    </div>
-                    
-                    <div class="hex-tooltip" 
-                         id="hex-tooltip"
-                         hx-get="/api/node-details"
-                         hx-trigger="node-hover"
-                         hx-target=".tooltip-content"
-                         hx-swap="innerHTML">
-                        <div class="tooltip-content">
-                            <div class="tooltip-title"></div>
-                            <div class="tooltip-type"></div>
-                            <div class="tooltip-description"></div>
-                            <div class="tooltip-stats"></div>
-                        </div>
-                    </div>
-                    
-                    
-                    <div class="node-actions-panel"
-                         id="node-actions"
-                         style="display: none;"
-                         hx-get="/api/node-actions"
-                         hx-trigger="node-selected"
-                         hx-target="this"
-                         hx-swap="innerHTML"
-                         hx-on:htmx:after-swap="this.style.display='block'">
-                    </div>
-                        
-                        </div> <!-- End hex-flow-main -->
-                    
-                    </div> <!-- End hex-flow-wrapper -->
-
-                    <!-- Legend Dropdown -->
-                    <div class="legend-dropdown" id="legend-dropdown">
-                        <button class="legend-trigger" onclick="toggleLegendDropdown()">
-                            Legend
-                        </button>
-                        
-                        <div class="legend-content" id="legend-content">
-                            <div class="legend-section">
-                                <div class="legend-section-title">Transmutation Process</div>
-                                <div class="legend-item">
-                                    <div class="legend-symbol" style="color: var(--liquid-gold);">➔</div>
-                                    <div class="legend-description">
-                                        <div class="legend-label">Input/Output</div>
-                                        <div class="legend-detail">Represents the initial prompt and the final, refined output.</div>
-                                    </div>
-                                </div>
-                                <div class="legend-item">
-                                    <div class="legend-symbol" style="color: var(--liquid-red);">●</div>
-                                    <div class="legend-description">
-                                        <div class="legend-label">Prima Materia</div>
-                                        <div class="legend-detail">The first phase of transformation, extracting the raw essence.</div>
-                                    </div>
-                                </div>
-                                <div class="legend-item">
-                                    <div class="legend-symbol" style="color: var(--liquid-blue);">●</div>
-                                    <div class="legend-description">
-                                        <div class="legend-label">Solutio</div>
-                                        <div class="legend-detail">The second phase, dissolving the raw material into a fluid state.</div>
-                                    </div>
-                                </div>
-                                <div class="legend-item">
-                                    <div class="legend-symbol" style="color: var(--liquid-emerald);">●</div>
-                                    <div class="legend-description">
-                                        <div class="legend-label">Coagulatio</div>
-                                        <div class="legend-detail">The final phase, crystallizing the fluid ideas into a solid, structured form.</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="legend-section">
-                                <div class="legend-section-title">Connection Lines</div>
-                                <div class="legend-item">
-                                    <div class="legend-line">
-                                        <svg width="24" height="6" viewBox="0 0 24 6">
-                                            <line x1="2" y1="3" x2="22" y2="3" 
-                                                  stroke="#2ecc71" 
-                                                  stroke-width="2" 
-                                                  stroke-dasharray="6,4"
-                                                  class="line-active-processing">
-                                            </line>
-                                        </svg>
-                                    </div>
-                                    <div class="legend-description">
-                                        <div class="legend-label">Active Processing</div>
-                                        <div class="legend-detail">Animated flow showing data moving toward destination</div>
-                                    </div>
-                                </div>
-                                <div class="legend-item">
-                                    <div class="legend-line">
-                                        <svg width="24" height="6" viewBox="0 0 24 6">
-                                            <line x1="2" y1="3" x2="22" y2="3" 
-                                                  stroke="#6c757d" 
-                                                  stroke-width="2" 
-                                                  stroke-dasharray="3,3"
-                                                  opacity="0.6"
-                                                  class="line-standby">
-                                            </line>
-                                        </svg>
-                                    </div>
-                                    <div class="legend-description">
-                                        <div class="legend-label">Standby Connection</div>
-                                        <div class="legend-detail">Available but inactive pathway (static)</div>
-                                    </div>
-                                </div>
-                                <div class="legend-item">
-                                    <div class="legend-line">
-                                        <svg width="24" height="6" viewBox="0 0 24 6">
-                                            <line x1="2" y1="3" x2="22" y2="3" 
-                                                  stroke="#ffcc33" 
-                                                  stroke-width="2" 
-                                                  stroke-dasharray="4,4"
-                                                  class="line-ready-pulse">
-                                            </line>
-                                        </svg>
-                                    </div>
-                                    <div class="legend-description">
-                                        <div class="legend-label">Ready to Flow</div>
-                                        <div class="legend-detail">Pulsing connection awaiting activation</div>
-                                    </div>
-                                </div>
-                                <div class="legend-item">
-                                    <div class="legend-line">
-                                        <svg width="24" height="6" viewBox="0 0 24 6">
-                                            <line x1="2" y1="3" x2="22" y2="3" 
-                                                  stroke="#e74c3c" 
-                                                  stroke-width="2" 
-                                                  stroke-dasharray="5,5"
-                                                  class="line-broken">
-                                            </line>
-                                        </svg>
-                                    </div>
-                                    <div class="legend-description">
-                                        <div class="legend-label">Broken Connection</div>
-                                        <div class="legend-detail">Failed pathway with error indication</div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="legend-section">
-                                <div class="legend-section-title">Node States</div>
-                                <div class="legend-item">
-                                    <div class="legend-symbol">❖</div>
-                                    <div class="legend-description">
-                                        <div class="legend-label">Ready</div>
-                                        <div class="legend-detail">Node is ready to begin processing.</div>
-                                    </div>
-                                </div>
-                                <div class="legend-item">
-                                    <div class="legend-symbol" style="color: var(--liquid-red);">❖</div>
-                                    <div class="legend-description">
-                                        <div class="legend-label">Failed</div>
-                                        <div class="legend-detail">An error occurred during transmutation.</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="legend-section">
-                                <div class="legend-section-title">UI Interactions</div>
-                                <div class="legend-item">
-                                    <div class="legend-symbol">🖱️</div>
-                                    <div class="legend-description">
-                                        <div class="legend-label">Click & Drag</div>
-                                        <div class="legend-detail">Reposition nodes to customize your view.</div>
-                                    </div>
-                                </div>
-                                <div class="legend-item">
-                                    <div class="legend-symbol">휠</div>
-                                    <div class="legend-description">
-                                        <div class="legend-label">Scroll Wheel</div>
-                                        <div class="legend-detail">Zoom in and out of the transmutation grid.</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                </div>
-                </div>
-                
-                <div class="mt-4">
-                    <label class="flex items-center cursor-pointer">
-                        <input type="checkbox" 
-                               class="mr-2"
-                               hx-post="/api/toggle-features"
-                               hx-trigger="change"
-                               hx-swap="none"
-                               hx-on:htmx:after-request="window.hexFlowBoard?.toggleFeatures(event.target.checked)">
-                        <span class="text-sm text-gray-600">Show Advanced Features (Optimizer, Judge, Vector DB)</span>
-                    </label>
-                </div>
-                
-                        </div> <!-- End hex-grid-column -->
-                        
-                        <!-- Right Side: AI Thought Process Display -->
-                        <div class="ai-thoughts-column">
-                            <div id="hex-ai-thoughts" class="hex-thoughts-container unified-thoughts">
-                                <div class="thoughts-header">
-                                    <div class="thoughts-indicator">🧠</div>
-                                    <h4 class="thoughts-title">AI Transmutation Reasoning</h4>
-                                    <div class="thoughts-status" id="hex-thoughts-status">Observing...</div>
-                                </div>
-                                
-                                <div class="thoughts-content" id="hex-thoughts-content">
-                                    <div class="thought-stream" id="thought-stream">
-                                        <div class="thought-entry initial" data-timestamp="">
-                                            <div class="thought-meta">
-                                                <span class="thought-phase">System</span>
-                                                <span class="thought-time">Just now</span>
-                                            </div>
-                                            <div class="thought-text">
-                                                Ready to analyze transmutation process. Hex grid initialized and awaiting input for alchemical transformation.
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="thoughts-insights" id="hex-insights">
-                                    <div class="insight-grid">
-                                        <div class="insight-card">
-                                            <div class="insight-label">Current Phase</div>
-                                            <div class="insight-value" id="hex-current-phase">Idle</div>
-                                        </div>
-                                        <div class="insight-card">
-                                            <div class="insight-label">Processing Node</div>
-                                            <div class="insight-value" id="hex-active-node">None</div>
-                                        </div>
-                                        <div class="insight-card">
-                                            <div class="insight-label">Transformation State</div>
-                                            <div class="insight-value" id="hex-transform-state">Ready</div>
-                                        </div>
-                                        <div class="insight-card">
-                                            <div class="insight-label">AI Confidence</div>
-                                            <div class="insight-value" id="hex-confidence">100%</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Advanced AI Thinking Process (Shows during generation) -->
-                            <div id="thinking-process" class="thinking-panel unified-thinking" style="display: none;">
-                                <div class="thinking-header">
-                                    <h3 class="thinking-title">Deep AI Analysis</h3>
-                                    <div class="thinking-status">🧠 Processing...</div>
-                                </div>
-                                
-                                <div class="thinking-stages">
-                                    <div class="stage-item" data-stage="prima-materia">
-                                        <div class="stage-icon">🌱</div>
-                                        <div class="stage-content">
-                                            <div class="stage-name">Prima Materia</div>
-                                            <div class="stage-description">Extracting raw essence...</div>
-                                            <div class="stage-thoughts" id="thoughts-prima-materia"></div>
-                                        </div>
-                                        <div class="stage-progress">
-                                            <div class="progress-circle" data-progress="0">
-                                                <svg viewBox="0 0 36 36">
-                                                    <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" 
-                                                          fill="none" stroke="var(--metal-border)" stroke-width="2"/>
-                                                    <path class="progress-bar" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" 
-                                                          fill="none" stroke="var(--liquid-gold)" stroke-width="2" 
-                                                          stroke-dasharray="0, 100"/>
-                                                </svg>
-                                                <div class="progress-text">0%</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="stage-item" data-stage="solutio">
-                                        <div class="stage-icon">💧</div>
-                                        <div class="stage-content">
-                                            <div class="stage-name">Solutio</div>
-                                            <div class="stage-description">Dissolving into flowing form...</div>
-                                            <div class="stage-thoughts" id="thoughts-solutio"></div>
-                                        </div>
-                                        <div class="stage-progress">
-                                            <div class="progress-circle" data-progress="0">
-                                                <svg viewBox="0 0 36 36">
-                                                    <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" 
-                                                          fill="none" stroke="var(--metal-border)" stroke-width="2"/>
-                                                    <path class="progress-bar" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" 
-                                                          fill="none" stroke="var(--liquid-blue)" stroke-width="2" 
-                                                          stroke-dasharray="0, 100"/>
-                                                </svg>
-                                                <div class="progress-text">0%</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="stage-item" data-stage="coagulatio">
-                                        <div class="stage-icon">💎</div>
-                                        <div class="stage-content">
-                                            <div class="stage-name">Coagulatio</div>
-                                            <div class="stage-description">Crystallizing final form...</div>
-                                            <div class="stage-thoughts" id="thoughts-coagulatio"></div>
-                                        </div>
-                                        <div class="stage-progress">
-                                            <div class="progress-circle" data-progress="0">
-                                                <svg viewBox="0 0 36 36">
-                                                    <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" 
-                                                          fill="none" stroke="var(--metal-border)" stroke-width="2"/>
-                                                    <path class="progress-bar" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" 
-                                                          fill="none" stroke="var(--liquid-emerald)" stroke-width="2" 
-                                                          stroke-dasharray="0, 100"/>
-                                                </svg>
-                                                <div class="progress-text">0%</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="thinking-insights">
-                                    <div class="insight-item">
-                                        <span class="insight-label">Current Input:</span>
-                                        <span class="insight-value" id="current-input">Analyzing...</span>
-                                    </div>
-                                    <div class="insight-item">
-                                        <span class="insight-label">AI Decision:</span>
-                                        <span class="insight-value" id="ai-decision">Evaluating options...</span>
-                                    </div>
-                                    <div class="insight-item">
-                                        <span class="insight-label">Quality Score:</span>
-                                        <span class="insight-value" id="quality-score">Calculating...</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div> <!-- End ai-thoughts-column -->
-                        
-                    </div> <!-- End dual-view-container -->
-                </div>
 
                 <div id="alchemy-loading" class="htmx-indicator" style="display: none;">
                 </div>
             </div>
 
-
+            <!-- Hex Grid Container -->
+            <div class="flex-shrink-0" style="flex: 0 0 30%; min-width: 300px;">
+                <div id="hex-flow-container" class="w-full h-96 bg-gradient-to-br from-gray-900/20 to-gray-800/30 backdrop-blur-sm rounded-lg border border-gray-700/30 overflow-hidden" style="min-height: 400px; border: 2px solid red !important;">
+                    <!-- React hex grid will be mounted here -->
+                    <div style="color: white; padding: 10px;">HEX GRID CONTAINER</div>
+                </div>
+            </div>
 
         </div>
 
@@ -963,35 +575,7 @@
             }
         }
 
-        // Make function globally accessible
-        window.toggleLegendDropdown = function() {
-            const dropdown = document.getElementById('legend-dropdown');
-            if (!dropdown) {
-                console.error('Legend dropdown element not found');
-                return;
-            }
-            
-            const chevron = dropdown.querySelector('.legend-chevron');
-            
-            if (dropdown.classList.contains('open')) {
-                // Close dropdown
-                dropdown.classList.remove('open');
-            } else {
-                // Open dropdown
-                dropdown.classList.add('open');
-            }
-        };
-
-
-        // Close dropdown when clicking outside
-        document.addEventListener('DOMContentLoaded', function() {
-            document.addEventListener('click', function(event) {
-                const dropdown = document.getElementById('legend-dropdown');
-                if (dropdown && !dropdown.contains(event.target)) {
-                    dropdown.classList.remove('open');
-                }
-            });
-        });
+        
 
         document.addEventListener('input', function(e) {
             if (e.target.form && e.target.form.id === 'generate-form') {
@@ -1019,16 +603,16 @@
                 this.currentPhaseIndex = 0;
                 this.progress = 0;
                 this.messages = [
-                    '🔬 Initializing alchemical transformation...',
-                    '⚗️ Starting Prima Materia phase - extracting raw essence...',
-                    '🌟 Prima Materia complete - beginning Solutio transformation...',
-                    '💧 Solutio in progress - flowing into natural form...',
-                    '✨ Solutio complete - beginning Coagulatio crystallization...',
-                    '💎 Coagulatio in progress - crystallizing final form...',
-                    '🔍 Applying historical optimization...',
-                    '⚖️ Running AI evaluation and ranking...',
-                    '🏆 Selecting optimal results...',
-                    '✅ Alchemical transformation complete!'
+                    window.getIcon('primaMateriaLab', 'modern-status-icon', 16) + ' Initializing alchemical transformation...',
+                    window.getIcon('transmutationCore', 'modern-status-icon', 16) + ' Starting Prima Materia phase - extracting raw essence...',
+                    window.getIcon('star', 'modern-status-icon', 16) + ' Prima Materia complete - beginning Solutio transformation...',
+                    window.getIcon('solutioDrop', 'modern-status-icon', 16) + ' Solutio in progress - flowing into natural form...',
+                    window.getIcon('outputGateway', 'modern-status-icon', 16) + ' Solutio complete - beginning Coagulatio crystallization...',
+                    window.getIcon('coagulatioCrystal', 'modern-status-icon', 16) + ' Coagulatio in progress - crystallizing final form...',
+                    window.getIcon('parseStructure', 'modern-status-icon', 16) + ' Applying historical optimization...',
+                    window.getIcon('aiJudge', 'modern-status-icon', 16) + ' Running AI evaluation and ranking...',
+                    window.getIcon('trophy', 'modern-status-icon', 16) + ' Selecting optimal results...',
+                    window.getIcon('checkCircle', 'modern-status-icon', 16) + ' Alchemical transformation complete!'
                 ];
                 this.agentMessages = [
                     ['Claude Agent: Analyzing input structure...', 'Gemini Agent: Extracting semantic patterns...', 'GPT Agent: Identifying core concepts...'],
@@ -1039,11 +623,11 @@
                     ['Claude Agent: Crystallizing results...', 'Gemini Agent: Ensuring precision...', 'GPT Agent: Final quality check...']
                 ];
                 this.processMessages = {
-                    'database-search': ['🔍 Searching database...', '📚 Found 42 similar prompts', '✨ Best match: 0.92 similarity'],
-                    'scoring': ['📊 Calculating scores...', '🎯 Relevance: 8.7/10', '💡 Creativity: 9.2/10', '📈 Overall: 8.9/10'],
-                    'relationships': ['🔗 Discovering patterns...', '🌐 Found 3 key relationships', '🧩 Connecting concepts...'],
-                    'optimization': ['⚙️ Optimizing output...', '🎨 Applying best practices', '✅ Enhanced by 34%'],
-                    'judging': ['⚖️ Evaluating quality...', '🏆 Ranking results...', '💫 Top result selected']
+                    'database-search': [window.getIcon('search', 'modern-status-icon', 16) + ' Searching database...', window.getIcon('database', 'modern-status-icon', 16) + ' Found 42 similar prompts', window.getIcon('outputGateway', 'modern-status-icon', 16) + ' Best match: 0.92 similarity'],
+                    'scoring': [window.getIcon('chart', 'modern-status-icon', 16) + ' Calculating scores...', window.getIcon('target', 'modern-status-icon', 16) + ' Relevance: 8.7/10', window.getIcon('extractConcepts', 'modern-status-icon', 16) + ' Creativity: 9.2/10', window.getIcon('trending', 'modern-status-icon', 16) + ' Overall: 8.9/10'],
+                    'relationships': [window.getIcon('linkChain', 'modern-status-icon', 16) + ' Discovering patterns...', window.getIcon('globe', 'modern-status-icon', 16) + ' Found 3 key relationships', window.getIcon('puzzle', 'modern-status-icon', 16) + ' Connecting concepts...'],
+                    'optimization': [window.getIcon('settings', 'modern-status-icon', 16) + ' Optimizing output...', window.getIcon('palette', 'modern-status-icon', 16) + ' Applying best practices', window.getIcon('checkCircle', 'modern-status-icon', 16) + ' Enhanced by 34%'],
+                    'judging': [window.getIcon('aiJudge', 'modern-status-icon', 16) + ' Evaluating quality...', window.getIcon('trophy', 'modern-status-icon', 16) + ' Ranking results...', window.getIcon('star', 'modern-status-icon', 16) + ' Top result selected']
                 };
                 this.currentAgentMessage = 0;
                 this.messageIndex = 0;
@@ -1154,72 +738,7 @@
                 }
             }
             
-            animateRunes() {
-                const svg = document.getElementById('rune-svg');
-                if (!svg) return;
-                
-                this.resetRunes();
-                
-                this.animateRunePhase('prima-materia', 0);
-                setTimeout(() => this.animateRunePhase('solutio', 2000), 2000);
-                setTimeout(() => this.animateRunePhase('coagulatio', 4000), 4000);
-            }
             
-            resetRunes() {
-                const svg = document.getElementById('rune-svg');
-                if (!svg) return;
-                
-                document.querySelectorAll('.phase-rune').forEach(rune => {
-                    rune.classList.remove('active', 'completed');
-                });
-                
-                document.querySelectorAll('.rune-path').forEach(path => {
-                    path.classList.remove('active', 'completed');
-                });
-                
-                document.querySelectorAll('.rune-stage').forEach(stage => {
-                    stage.classList.remove('active', 'completed');
-                });
-            }
-            
-            animateRunePhase(phaseName, delay) {
-                const svg = document.getElementById('rune-svg');
-                if (!svg) return;
-                
-                const phaseRune = svg.querySelector(`[data-phase="${phaseName}"]`);
-                if (phaseRune) {
-                    setTimeout(() => {
-                        phaseRune.classList.add('active');
-                        
-                        const stageMap = {
-                            'prima-materia': 'extraction',
-                            'solutio': 'transformation',
-                            'coagulatio': 'crystallization'
-                        };
-                        
-                        const stageName = stageMap[phaseName];
-                        if (stageName) {
-                            const stage = document.querySelector(`[data-stage="${stageName}"]`);
-                            if (stage) {
-                                stage.classList.add('active');
-                            }
-                        }
-                        
-                        setTimeout(() => {
-                            phaseRune.classList.remove('active');
-                            phaseRune.classList.add('completed');
-                            
-                            if (stageName) {
-                                const stage = document.querySelector(`[data-stage="${stageName}"]`);
-                                if (stage) {
-                                    stage.classList.remove('active');
-                                    stage.classList.add('completed');
-                                }
-                            }
-                        }, 3000);
-                    }, delay);
-                }
-            }
             
             completeSubProcess(processName) {
                 const process = document.querySelector(`[data-process="${processName}"]`);
@@ -1310,10 +829,8 @@
                 // Show thinking process panel
                 showThinkingProcess();
                 
-                // Start provider animations
-                if (window.unifiedHexFlow) {
-                    window.unifiedHexFlow.startProcessFlowWithAnimation();
-                }
+                // React Hex Grid handles animations automatically
+                console.log('🎬 Provider animations handled by React hex grid');
                 
                 // Show hex AI thoughts
                 if (window.hexAIThoughts) {
@@ -1519,11 +1036,11 @@
             const display = document.getElementById('current-phase-display');
             if (display) {
                 const phaseDescriptions = {
-                    'prima-materia': '🔬 Prima Materia: Extracting raw essence from input...',
-                    'solutio': '💧 Solutio: Flowing into natural language form...',
-                    'coagulatio': '💎 Coagulatio: Crystallizing final structure...',
-                    'optimization': '🔍 Optimization: Applying historical patterns...',
-                    'judging': '⚖️ Evaluation: AI-powered quality assessment...'
+                    'prima-materia': window.getIcon('primaMateriaLab', 'modern-status-icon', 16) + ' Prima Materia: Extracting raw essence from input...',
+                    'solutio': window.getIcon('solutioDrop', 'modern-status-icon', 16) + ' Solutio: Flowing into natural language form...',
+                    'coagulatio': window.getIcon('coagulatioCrystal', 'modern-status-icon', 16) + ' Coagulatio: Crystallizing final structure...',
+                    'optimization': window.getIcon('parseStructure', 'modern-status-icon', 16) + ' Optimization: Applying historical patterns...',
+                    'judging': window.getIcon('aiJudge', 'modern-status-icon', 16) + ' Evaluation: AI-powered quality assessment...'
                 };
                 
                 display.innerHTML = `
@@ -1641,25 +1158,25 @@
         
         // Listen for system events that should trigger auto zoom
         document.addEventListener('DOMContentLoaded', function() {
-            // Trigger initial auto zoom
-            setTimeout(() => triggerAutoZoom('auto'), 500);
+            // Trigger initial auto zoom - DISABLED FOR POSITIONING FIX
+            // setTimeout(() => triggerAutoZoom('auto'), 500);
             
-            // Listen for HTMX events that indicate new content
-            document.body.addEventListener('htmx:afterSwap', function(evt) {
-                if (evt.detail.target.closest('#hex-flow-board')) {
-                    setTimeout(() => triggerAutoZoom('auto'), 300);
-                }
-            });
+            // Listen for HTMX events that indicate new content - DISABLED FOR POSITIONING FIX
+            // document.body.addEventListener('htmx:afterSwap', function(evt) {
+            //     if (evt.detail.target.closest('#hex-flow-board')) {
+            //         setTimeout(() => triggerAutoZoom('auto'), 300);
+            //     }
+            // });
             
-            // Listen for board state changes
-            document.body.addEventListener('board-refresh', function() {
-                setTimeout(() => triggerAutoZoom('auto'), 300);
-            });
+            // Listen for board state changes - DISABLED FOR POSITIONING FIX
+            // document.body.addEventListener('board-refresh', function() {
+            //     setTimeout(() => triggerAutoZoom('auto'), 300);
+            // });
             
-            // Auto-adjust zoom when window resizes
-            window.addEventListener('resize', function() {
-                setTimeout(() => triggerAutoZoom('auto'), 100);
-            });
+            // Auto-adjust zoom when window resizes - DISABLED FOR POSITIONING FIX
+            // window.addEventListener('resize', function() {
+            //     setTimeout(() => triggerAutoZoom('auto'), 100);
+            // });
         });
         
         function toggleCentralOptions() {
@@ -2836,30 +2353,17 @@
         // Initialize the hex AI thoughts system
         window.hexAIThoughts = new HexAIThoughts();
         
-        // Debug and force hex grid initialization
+        // React Hex Grid diagnostic
         setTimeout(() => {
-            console.log('=== HEX GRID DIAGNOSTIC ===');
+            console.log('=== REACT HEX GRID DIAGNOSTIC ===');
             
-            const container = document.getElementById('hex-flow-container');
-            const svg = document.getElementById('hex-flow-board');
-            const nodesGroup = document.getElementById('hex-nodes');
-            const pathsGroup = document.getElementById('connection-paths');
+            const reactContainer = document.getElementById('react-hex-root');
+            console.log('React container:', reactContainer);
             
-            console.log('Container:', container);
-            console.log('SVG:', svg);
-            console.log('Nodes Group:', nodesGroup);
-            console.log('UnifiedHexFlow available:', typeof UnifiedHexFlow);
-            console.log('window.unifiedHexFlow:', window.unifiedHexFlow);
-            
-            // Force creation if missing
-            if (nodesGroup && nodesGroup.children.length === 0) {
-                console.log('No hex nodes found, but UnifiedHexFlow should create them');
-                // Don't create basic nodes - let UnifiedHexFlow handle it
-                // createBasicHexNodes(nodesGroup);
-            }
-            
-            if (window.unifiedHexFlow) {
-                console.log('Nodes in instance:', window.unifiedHexFlow.nodes.size);
+            if (reactContainer) {
+                console.log('✅ React hex grid container found');
+            } else {
+                console.log('⚠️ React hex grid container not found');
             }
         }, 1000);
         
@@ -2914,15 +2418,17 @@
         // Production code only - no test functions
     </script>
     
-    <!-- Force Grid Positions - Must load FIRST to override radial layout -->
-    <script src="/static/js/force-grid-positions.js?v={{.Timestamp}}"></script>
+    <!-- Grid Position Override CSS -->
+    <!-- Old grid position override CSS removed - using enhanced hex nodes instead -->
     
-    <!-- Hex Position Manager - Clean production positioning -->
-    <script src="/static/js/hex-position-manager.js?v={{.Timestamp}}"></script>
-    <script src="/static/js/hex-flow-unified.js?v={{.Timestamp}}"></script>
-    <script src="/static/js/engine-flow-connections-clean.js?v={{.Timestamp}}"></script>
-    <!-- <script src="/static/js/hex-tooltips.js?v={{.Timestamp}}"></script> Disabled - using unified premium tooltip -->
-    <script src="/static/js/fix-missing-emojis.js?v={{.Timestamp}}"></script>
+    <!-- React Hex Grid System -->
+    <script src="/static/js/react-hex-integration.js?v={{.Timestamp}}"></script>
+    <script src="/static/js/dist/hex-grid-react.js?v={{.Timestamp}}"></script>
+    
+    <!-- Tooltips handled by React component -->
+    
+    <!-- Unified Hex Grid Positioning - DISABLED: Main method is now fixed -->
+    <!-- Legacy engine-flow-connections-clean.js removed - React handles connections -->
     <script src="/static/js/realtime-api-integration.js?v={{.Timestamp}}"></script>
     
     <!-- Magical Gateway Effects -->
@@ -2931,7 +2437,6 @@
     <link rel="stylesheet" href="/static/css/tattoo-alchemy-output.css?v={{.Timestamp}}">
     <link rel="stylesheet" href="/static/css/call-transfer-animation.css?v={{.Timestamp}}">
     <link rel="stylesheet" href="/static/css/premium-tooltip.css?v={{.Timestamp}}">
-    <link rel="stylesheet" href="/static/css/grid-position-override.css?v={{.Timestamp}}">
     <!-- API Error Handler - Load First -->
     <script src="/static/js/api-error-handler.js?v={{.Timestamp}}"></script>
     
@@ -2942,36 +2447,18 @@
     <script src="/static/js/tattoo-alchemy-effect.js?v={{.Timestamp}}"></script>
     <script src="/static/js/live-server-gateway.js?v={{.Timestamp}}"></script>
     
-    <script src="/static/js/fix-connection-timing.js?v={{.Timestamp}}"></script>
     <script src="/static/js/call-transfer-animation.js?v={{.Timestamp}}"></script>
     <script src="/static/js/api-call-transfer-integration.js?v={{.Timestamp}}"></script>
     <script src="/static/js/unified-premium-tooltip.js?v={{.Timestamp}}"></script>
     <script src="/static/js/hex-glow-enhancement.js?v={{.Timestamp}}"></script>
     <script src="/static/js/data-process-visualization.js?v={{.Timestamp}}"></script>
+    <script src="/static/js/alchemy-animated-icons.js?v={{.Timestamp}}"></script>
     
-    <!-- ULTRA FORCE HEX GRID CREATION -->
+    <!-- React Hex Grid Auto-Initialization -->
     <script>
-        // Ultra-aggressive hex grid creation
-        setTimeout(() => {
-            console.log('🔥 ULTRA FORCE: Creating hex grid immediately...');
-            
-            // Ensure elements exist
-            const svg = document.getElementById('hex-flow-board');
-            let nodesGroup = document.getElementById('hex-nodes');
-            
-            if (!svg) {
-                console.error('❌ SVG not found!');
-                return;
-            }
-            
-            if (!nodesGroup) {
-                nodesGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-                nodesGroup.id = 'hex-nodes';
-                svg.appendChild(nodesGroup);
-            }
-            
-            // Clear and create nodes
-            nodesGroup.innerHTML = '';
+        // React hex grid initialization handled by index.jsx
+        console.log('🚀 React Hex Grid: Initialization handled by React component');
+        console.log('🗑️ Legacy hex grid systems have been completely removed');
             
             // Create FULL rich node set from generateRadialLayout definition
             const fullNodes = [
@@ -3009,38 +2496,9 @@
                 { id: 'ollama', x: 500, y: 650, color: '#e74c3c', icon: '💻', title: 'Ollama', type: 'provider' }
             ];
             
-            fullNodes.forEach(nodeData => {
-                const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-                group.setAttribute('class', 'hex-node ultra-force');
-                group.setAttribute('data-id', nodeData.id);
-                group.setAttribute('transform', `translate(${nodeData.x}, ${nodeData.y})`);
-                
-                const hex = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-                const size = 30;
-                const points = [];
-                for (let i = 0; i < 6; i++) {
-                    const angle = (Math.PI / 3) * i;
-                    points.push(`${size * Math.cos(angle)},${size * Math.sin(angle)}`);
-                }
-                hex.setAttribute('points', points.join(' '));
-                hex.setAttribute('fill', 'none');
-                hex.setAttribute('stroke', nodeData.color);
-                hex.setAttribute('stroke-width', '2');
-                
-                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                text.setAttribute('text-anchor', 'middle');
-                text.setAttribute('dy', '0.35em');
-                text.setAttribute('fill', 'white');
-                text.setAttribute('font-size', '9');
-                text.setAttribute('font-weight', 'bold');
-                text.textContent = (nodeData.icon || '') + ' ' + nodeData.title;
-                
-                group.appendChild(hex);
-                group.appendChild(text);
-                nodesGroup.appendChild(group);
-            });
-            
-            console.log('🎉 ULTRA FORCE: Created', fullNodes.length, 'hex nodes');
+            // DO NOT create nodes here - let UnifiedHexFlow handle all node creation
+            // This prevents legacy nodes from being created before the enhanced UI system initializes
+            console.log('🚫 Skipping manual node creation - UnifiedHexFlow will create enhanced nodes');
             
             // Add connection lines between key nodes
             const pathsGroup = document.getElementById('connection-paths');
@@ -3085,196 +2543,94 @@
                 console.log('✅ Added', connections.length, 'connection lines');
             }
             
-            // Try to create UnifiedHexFlow instance after DOM is ready
-            if (typeof UnifiedHexFlow !== 'undefined' && !window.unifiedHexFlow) {
-                try {
-                    window.unifiedHexFlow = new UnifiedHexFlow();
-                    console.log('✅ UnifiedHexFlow instance created');
-                    
-                    // ULTRA FIX: Register our nodes with the animation system
-                    fullNodes.forEach(nodeData => {
-                        const element = document.querySelector(`[data-id="${nodeData.id}"]`);
-                        if (element) {
-                            // Register node in the animation system's nodes Map
-                            window.unifiedHexFlow.nodes.set(nodeData.id, {
-                                id: nodeData.id,
-                                x: nodeData.x,
-                                y: nodeData.y,
-                                nodeConfig: nodeData,
-                                element: element
-                            });
-                        }
-                    });
-                    
-                    // ULTRA FIX: Register connections for animation
-                    const connectionKeys = [
-                        'hub-prima', 'hub-solutio', 'hub-coagulatio',
-                        'prima-solutio', 'solutio-coagulatio',
-                        'input-hub', 'hub-output',
-                        'prima-parse', 'solutio-flow', 'coagulatio-validate'
-                    ];
-                    
-                    connectionKeys.forEach(key => {
-                        const pathElement = document.querySelector(`path[data-connection="${key}"]`);
-                        if (pathElement) {
-                            const [from, to] = key.split('-');
-                            window.unifiedHexFlow.connections.set(key, {
-                                from: from,
-                                to: to,
-                                path: pathElement
-                            });
-                        }
-                    });
-                    
-                    console.log('🎯 ULTRA FIX: Registered', window.unifiedHexFlow.nodes.size, 'nodes and', window.unifiedHexFlow.connections.size, 'connections for animation');
-                    
-                    
-                    // REAL API Integration - bypass HTMX for real API calls
-                    const generateForm = document.getElementById('generate-form');
-                    if (generateForm && window.realtimeGenerator) {
-                        // Override form submission to use REAL API
-                        generateForm.addEventListener('submit', async function(e) {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            
-                            console.log('🚀 REAL API form submission intercepted');
-                            
-                            // Get form data
-                            const input = document.getElementById('input').value;
-                            const persona = document.getElementById('persona').value;
-                            const count = parseInt(document.getElementById('count').value) || 3;
-                            
-                            // Show loading state
-                            const submitBtn = generateForm.querySelector('button[type="submit"]');
-                            if (submitBtn) {
-                                submitBtn.disabled = true;
-                                submitBtn.textContent = 'Generating...';
-                            }
-                            
-                            try {
-                                // Make REAL API call with visualizations
-                                const result = await window.realtimeGenerator.generatePrompt(input, {
-                                    persona: persona,
-                                    count: count,
-                                    save: true
-                                });
-                                
-                                console.log('✅ REAL API generation complete:', result);
-                                
-                                // Display results (optional - you could update the results container)
-                                const resultsContainer = document.getElementById('results-container');
-                                if (resultsContainer && result.prompt) {
-                                    resultsContainer.innerHTML = `
-                                        <div class="result-card">
-                                            <h3>Generated Prompt</h3>
-                                            <p>${result.prompt}</p>
-                                            <div class="result-meta">
-                                                <span>Score: ${result.score || 'N/A'}</span>
-                                                <span>Provider: ${result.provider || 'N/A'}</span>
-                                            </div>
-                                        </div>
-                                    `;
-                                }
-                            } catch (error) {
-                                console.error('❌ REAL API error:', error);
-                            } finally {
-                                // Reset button state
-                                if (submitBtn) {
-                                    submitBtn.disabled = false;
-                                    submitBtn.textContent = 'Generate';
-                                }
-                            }
-                            
-                            return false; // Prevent default HTMX behavior
-                        }, true); // Use capture to intercept before HTMX
-                        
-                        console.log('✅ REAL API form integration active - submit form to see real API calls');
-                    } else if (!window.realtimeGenerator) {
-                        console.error('❌ Real-time generator not available');
-                    }
-                    
-                    // Original code continues...
-                            console.log('🎬 Generate form submitted - triggering animation!');
-                            
-                            // Prevent HTMX request if backend is down
-                            if (e.target.getAttribute('data-bypass-backend') === 'true') {
-                                e.preventDefault();
-                                e.stopPropagation();
-                            }
-                            
-                            // Always trigger animation with visual feedback
-                            setTimeout(() => {
-                                if (window.unifiedHexFlow && window.unifiedHexFlow.nodes.size > 0) {
-                                    // If animation method exists, use it
-                                    if (typeof window.unifiedHexFlow.startProcessFlowWithAnimation === 'function') {
-                                        window.unifiedHexFlow.startProcessFlowWithAnimation();
-                                    } else {
-                                        // Fallback: Manual animation sequence
-                                        console.log('🎭 Running fallback animation...');
-                                        const phases = ['input', 'hub', 'prima', 'solutio', 'coagulatio', 'output'];
-                                        let phaseIndex = 0;
-                                        
-                                        function animatePhase() {
-                                            if (phaseIndex < phases.length) {
-                                                const nodeId = phases[phaseIndex];
-                                                const node = document.querySelector(`[data-id="${nodeId}"]`);
-                                                if (node) {
-                                                    // Add phase-active class
-                                                    node.classList.add('phase-active');
-                                                    // Direct visual feedback
-                                                    node.style.filter = 'drop-shadow(0 0 20px currentColor)';
-                                                    node.style.transform = 'scale(1.2)';
-                                                    node.style.transition = 'all 0.3s ease';
-                                                    
-                                                    setTimeout(() => {
-                                                        node.classList.remove('phase-active');
-                                                        node.style.filter = '';
-                                                        node.style.transform = '';
-                                                        phaseIndex++;
-                                                        animatePhase();
-                                                    }, 800);
-                                                }
-                                            }
-                                        }
-                                        animatePhase();
-                                    }
-                                } else {
-                                    console.error('❌ No nodes registered for animation');
-                                }
-                            }, 100);
-                        });
-                        
-                        console.log('🔧 Form animation trigger added with fallback');
-                    }
-                    
-                } catch (e) {
-                    console.log('⚠️ UnifiedHexFlow creation skipped:', e.message);
-                }
-            }
+            // React Hex Grid handles all nodes and animations automatically
+            console.log('✅ React Hex Grid system active - no legacy initialization needed');
             
-        }, 1000);
+            // Delayed initialization for additional integrations
+            setTimeout(() => {
+                // REAL API Integration - bypass HTMX for real API calls
+                const generateForm = document.getElementById('generate-form');
+                if (generateForm && window.realtimeGenerator) {
+                    // Override form submission to use REAL API
+                    generateForm.addEventListener('submit', async function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        console.log('🚀 REAL API form submission intercepted');
+                        
+                        // Get form data
+                        const input = document.getElementById('input').value;
+                        const persona = document.getElementById('persona').value;
+                        const count = parseInt(document.getElementById('count').value) || 3;
+                        
+                        // Show loading state
+                        const submitBtn = generateForm.querySelector('button[type="submit"]');
+                        if (submitBtn) {
+                            submitBtn.disabled = true;
+                            submitBtn.textContent = 'Generating...';
+                        }
+                        
+                        try {
+                            // Make REAL API call with visualizations
+                            const result = await window.realtimeGenerator.generatePrompt(input, {
+                                persona: persona,
+                                count: count,
+                                save: true
+                            });
+                            
+                            console.log('✅ REAL API generation complete:', result);
+                            
+                            // Display results (optional - you could update the results container)
+                            const resultsContainer = document.getElementById('results-container');
+                            if (resultsContainer && result.prompt) {
+                                resultsContainer.innerHTML = `
+                                    <div class="result-card">
+                                        <h3>Generated Prompt</h3>
+                                        <p>${result.prompt}</p>
+                                        <div class="result-meta">
+                                            <span>Score: ${result.score || 'N/A'}</span>
+                                            <span>Provider: ${result.provider || 'N/A'}</span>
+                                        </div>
+                                    </div>
+                                `;
+                            }
+                        } catch (error) {
+                            console.error('❌ REAL API error:', error);
+                        } finally {
+                            // Reset button state
+                            if (submitBtn) {
+                                submitBtn.disabled = false;
+                                submitBtn.textContent = 'Generate';
+                            }
+                        }
+                        
+                        return false; // Prevent default HTMX behavior
+                    }, true); // Use capture to intercept before HTMX
+                    
+                    console.log('✅ REAL API form integration active - submit form to see real API calls');
+                } else if (!window.realtimeGenerator) {
+                    console.error('❌ Real-time generator not available');
+                }
+                
+                console.log('✅ React Hex Grid system is fully operational');
+            }, 1000);
     </script>
+    
+    <!-- 21st Dev Toolbar -->
+    <script src="/static/js/toolbar.js"></script>
     
     <!-- Force initialization check -->
     <script>
-        // Ensure hex flow is initialized after all scripts load
+        // React Hex Grid initialization handled automatically by React components
         window.addEventListener('load', function() {
-            console.log('🔍 Window load - checking hex flow initialization...');
+            console.log('🔍 Window load - React hex grid should be initialized');
             
             setTimeout(function() {
-                if (!window.unifiedHexFlow) {
-                    console.error('❌ UnifiedHexFlow not initialized after window load!');
-                    console.log('Attempting manual initialization...');
-                    try {
-                        window.initializeUnifiedHexFlow();
-                        console.log('✅ Manual initialization successful');
-                    } catch (e) {
-                        console.error('❌ Manual initialization failed:', e);
-                    }
+                const reactContainer = document.getElementById('react-hex-root');
+                if (reactContainer) {
+                    console.log('✅ React hex grid container found and active');
                 } else {
-                    console.log('✅ UnifiedHexFlow is initialized');
-                    console.log('Nodes:', window.unifiedHexFlow.nodes.size);
-                    console.log('DOM nodes:', document.querySelectorAll('.hex-node').length);
+                    console.log('⚠️ React hex grid container not found');
                 }
             }, 1000);
         });

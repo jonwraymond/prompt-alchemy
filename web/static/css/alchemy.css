@@ -65,65 +65,9 @@ body::before {
   pointer-events: none;
 }
 
-/* Main Header Styles */
+/* Main Header Styles - Replaced by magical header */
 .main-header {
-  text-align: center;
-  padding: 2rem 0 1rem 0;
-  margin-bottom: 2rem;
-  border-bottom: 1px solid var(--metal-border);
-}
-
-.main-title {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 4rem; /* Increased font size */
-  font-weight: 700;
-  margin: 0 0 0.5rem 0;
-  letter-spacing: 0.1em; /* Adjusted letter spacing */
-  text-align: center;
-  display: flex; /* Use flexbox for centering */
-  justify-content: center; /* Center horizontally */
-}
-
-.main-title .letter {
-  display: inline-block;
-  transition: text-shadow 0.3s ease-in-out, transform 0.3s ease-in-out;
-  color: white;
-  -webkit-text-fill-color: white;
-  opacity: 0;
-  animation: fragment-appear 0.8s ease-out forwards;
-  animation-delay: calc(var(--index) * 0.05s);
-}
-
-@keyframes fragment-appear {
-  from {
-    opacity: 0;
-    transform: translateY(20px) rotate(10deg);
-    filter: blur(5px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) rotate(0deg);
-    filter: blur(0);
-  }
-}
-
-.main-title .letter:hover {
-  transform: scale(1.1); /* Add a slight scale effect on hover */
-  text-shadow: 0 0 8px rgba(255, 0, 150, 1),
-               0 0 15px rgba(0, 150, 255, 0.9),
-               0 0 22px rgba(150, 0, 255, 0.8),
-               0 0 28px rgba(255, 100, 0, 0.7),
-               0 0 35px rgba(255, 255, 0, 0.6),
-               0 0 42px rgba(0, 255, 150, 0.5),
-               0 0 50px rgba(255, 0, 255, 0.4);
-}
-
-
-.main-subtitle {
-  font-size: 1.125rem;
-  color: var(--metal-muted);
-  margin: 0;
-  font-weight: 400;
+  /* This will be replaced by the magical header JavaScript */
 }
 
 /* AI Header - Subtle thought process integration */
@@ -2210,15 +2154,15 @@ body > * > * > *,
 
 /* Clean Input Styling */
 .clean-input {
-  width: 90vw;
-  max-width: 1400px;
+  width: 100%;
+  max-width: min(100%, 1400px);
   background: rgba(0, 0, 0, 0.3);
   border: 3px solid;
   border: 2px solid var(--metal-border);
   border-radius: 20px;
   color: var(--metal-text);
   font-family: 'Inter', sans-serif;
-  font-size: 1.125rem;
+  font-size: clamp(1rem, 1.25vw, 1.125rem);
   line-height: 1.6;
   resize: none;
   outline: none;
@@ -2226,7 +2170,7 @@ body > * > * > *,
   min-height: 60px;
   max-height: 400px;
   overflow-y: auto;
-  padding: 1.5rem 2rem;
+  padding: clamp(1rem, 2.5vw, 1.5rem) clamp(1.25rem, 3vw, 2rem);
   margin: 0 auto;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   /* backdrop-filter: blur(40px); */ /* DISABLED: Causing diffused box overlay */
@@ -2236,6 +2180,7 @@ body > * > * > *,
   /* animation: rainbow-border 3s linear infinite; */ /* DISABLED: Causing blocking issues */
   position: relative;
   field-sizing: content;
+  box-sizing: border-box;
 }
 
 /* Diffuse Glow Effect Container */
@@ -3071,7 +3016,7 @@ body > * > * > *,
   }
   
   .clean-input {
-    width: 95vw;
+    width: 100%;
     min-height: 50px;
     max-height: 300px;
     padding: 1rem 1.5rem;
@@ -3101,7 +3046,7 @@ body > * > * > *,
   }
   
   .clean-input {
-    width: 98vw;
+    width: 100%;
     min-height: 45px;
     max-height: 250px;
     padding: 0.75rem 1rem;

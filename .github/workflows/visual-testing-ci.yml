@@ -1,0 +1,579 @@
+name: Visual Testing CI Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run visual regression tests daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+env:
+  NODE_VERSION: '18'
+  GO_VERSION: '1.21'
+  PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/playwright-browsers
+
+jobs:
+  # Job 1: Build and Test Backend
+  backend-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Cache Go Modules
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Install Go Dependencies
+        run: go mod download
+
+      - name: Run Go Tests
+        run: |
+          go test -v -race -coverprofile=coverage.out ./...
+          go tool cover -html=coverage.out -o coverage.html
+
+      - name: Build Application
+        run: |
+          make build
+          chmod +x ./bin/prompt-alchemy
+
+      - name: Upload Backend Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: backend-build
+          path: |
+            ./bin/prompt-alchemy
+            coverage.html
+
+  # Job 2: Frontend Build and Unit Tests
+  frontend-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Linting
+        run: npm run lint
+
+      - name: Run Type Checking
+        run: npm run type-check
+
+      - name: Build Frontend
+        run: npm run build
+
+      - name: Upload Frontend Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: frontend-build
+          path: |
+            dist/
+            web/static/
+
+  # Job 3: Visual Regression Testing
+  visual-tests:
+    runs-on: ubuntu-latest
+    needs: [backend-tests, frontend-tests]
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, webkit, firefox]
+        test-suite: [hex-grid, accessibility, performance, cross-browser]
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Download Backend Build
+        uses: actions/download-artifact@v3
+        with:
+          name: backend-build
+          path: ./bin/
+
+      - name: Download Frontend Build
+        uses: actions/download-artifact@v3
+        with:
+          name: frontend-build
+          path: ./
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Install Playwright Browsers
+        run: |
+          npx playwright install ${{ matrix.browser }} --with-deps
+          npx playwright install-deps
+
+      - name: Cache Playwright Browsers
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.PLAYWRIGHT_BROWSERS_PATH }}
+          key: ${{ runner.os }}-playwright-${{ matrix.browser }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Start Application Server
+        run: |
+          chmod +x ./bin/prompt-alchemy
+          ./bin/prompt-alchemy server --port 8080 &
+          sleep 10
+          curl -f http://localhost:8080/health || exit 1
+        env:
+          PROMPT_ALCHEMY_SERVER_PORT: 8080
+          PROMPT_ALCHEMY_LOG_LEVEL: info
+
+      - name: Run Visual Tests
+        run: |
+          case "${{ matrix.test-suite }}" in
+            "hex-grid")
+              npx playwright test tests/visual/hex-grid-visual.spec.ts --project=${{ matrix.browser }}
+              ;;
+            "accessibility")
+              npx playwright test tests/accessibility/accessibility-test.spec.ts --project=${{ matrix.browser }}
+              ;;
+            "performance")
+              npx playwright test tests/performance/animation-performance.spec.ts --project=${{ matrix.browser }}
+              ;;
+            "cross-browser")
+              npx playwright test tests/cross-browser/compatibility.spec.ts --project=${{ matrix.browser }}
+              ;;
+          esac
+        env:
+          BASE_URL: http://localhost:8080
+          CI: true
+
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: test-results-${{ matrix.browser }}-${{ matrix.test-suite }}
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 30
+
+      - name: Upload Visual Baseline Screenshots
+        uses: actions/upload-artifact@v3
+        if: github.ref == 'refs/heads/main'
+        with:
+          name: visual-baselines-${{ matrix.browser }}
+          path: test-results/visual-baselines/
+          retention-days: 90
+
+  # Job 4: Integration Testing
+  integration-tests:
+    runs-on: ubuntu-latest
+    needs: [backend-tests, frontend-tests]
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Download Backend Build
+        uses: actions/download-artifact@v3
+        with:
+          name: backend-build
+          path: ./bin/
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Install Playwright
+        run: npx playwright install --with-deps
+
+      - name: Start Application
+        run: |
+          chmod +x ./bin/prompt-alchemy
+          ./bin/prompt-alchemy server --port 8080 &
+          sleep 10
+
+      - name: Run Integration Tests
+        run: npx playwright test tests/integration/comprehensive-ui-test.spec.ts
+        env:
+          BASE_URL: http://localhost:8080
+
+      - name: Generate Test Report
+        if: always()
+        run: |
+          npx playwright show-report --host 0.0.0.0 --port 9323 &
+          sleep 5
+          curl -o integration-report.html http://localhost:9323 || echo "Report generation failed"
+
+      - name: Upload Integration Results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: integration-test-results
+          path: |
+            test-results/
+            playwright-report/
+            integration-report.html
+
+  # Job 5: Performance Benchmarking
+  performance-benchmarks:
+    runs-on: ubuntu-latest
+    needs: [backend-tests, frontend-tests]
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: backend-build
+          path: ./bin/
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Install Playwright
+        run: npx playwright install chromium --with-deps
+
+      - name: Start Application
+        run: |
+          chmod +x ./bin/prompt-alchemy
+          ./bin/prompt-alchemy server --port 8080 &
+          sleep 10
+
+      - name: Run Performance Benchmarks
+        run: |
+          npx playwright test tests/performance/animation-performance.spec.ts \
+            --grep "should generate comprehensive performance report"
+        env:
+          BASE_URL: http://localhost:8080
+
+      - name: Extract Performance Metrics
+        run: |
+          node -e "
+            const fs = require('fs');
+            const results = JSON.parse(fs.readFileSync('test-results/performance-metrics.json', 'utf8'));
+            console.log('Performance Metrics:');
+            console.log(JSON.stringify(results, null, 2));
+            
+            // Create performance badge data
+            const badgeData = {
+              schemaVersion: 1,
+              label: 'Performance',
+              message: results.averageFrameRate + ' fps',
+              color: results.averageFrameRate > 50 ? 'brightgreen' : results.averageFrameRate > 30 ? 'yellow' : 'red'
+            };
+            
+            fs.writeFileSync('performance-badge.json', JSON.stringify(badgeData));
+          " || echo "Metrics extraction failed"
+
+      - name: Upload Performance Results
+        uses: actions/upload-artifact@v3
+        with:
+          name: performance-benchmarks
+          path: |
+            test-results/performance/
+            performance-badge.json
+
+  # Job 6: Visual Diff Analysis and Reporting
+  visual-diff-analysis:
+    runs-on: ubuntu-latest
+    needs: [visual-tests]
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Download All Visual Test Results
+        uses: actions/download-artifact@v3
+        with:
+          path: all-test-results/
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Analyze Visual Differences
+        run: |
+          node -e "
+            const fs = require('fs');
+            const path = require('path');
+            
+            // Collect all visual diff results
+            const resultsDir = 'all-test-results';
+            const diffResults = [];
+            
+            function findDiffFiles(dir) {
+              const entries = fs.readdirSync(dir, { withFileTypes: true });
+              for (const entry of entries) {
+                const fullPath = path.join(dir, entry.name);
+                if (entry.isDirectory()) {
+                  findDiffFiles(fullPath);
+                } else if (entry.name.includes('-diff.png')) {
+                  diffResults.push({
+                    file: entry.name,
+                    path: fullPath,
+                    size: fs.statSync(fullPath).size
+                  });
+                }
+              }
+            }
+            
+            if (fs.existsSync(resultsDir)) {
+              findDiffFiles(resultsDir);
+            }
+            
+            // Generate summary report
+            const report = {
+              totalDiffs: diffResults.length,
+              criticalDiffs: diffResults.filter(d => d.size > 1024).length,
+              minorDiffs: diffResults.filter(d => d.size <= 1024).length,
+              files: diffResults
+            };
+            
+            console.log('Visual Diff Summary:');
+            console.log(JSON.stringify(report, null, 2));
+            
+            fs.writeFileSync('visual-diff-summary.json', JSON.stringify(report, null, 2));
+          "
+
+      - name: Comment on PR with Visual Diff Summary
+        uses: actions/github-script@v6
+        if: github.event_name == 'pull_request'
+        with:
+          script: |
+            const fs = require('fs');
+            
+            try {
+              const summary = JSON.parse(fs.readFileSync('visual-diff-summary.json', 'utf8'));
+              
+              const comment = `## 🖼️ Visual Regression Test Results
+              
+              **Summary:**
+              - Total visual differences: ${summary.totalDiffs}
+              - Critical differences (>1KB): ${summary.criticalDiffs}
+              - Minor differences (≤1KB): ${summary.minorDiffs}
+              
+              ${summary.totalDiffs > 0 ? '⚠️ Visual changes detected. Please review the differences in the test artifacts.' : '✅ No visual regressions detected.'}
+              
+              **Next Steps:**
+              ${summary.criticalDiffs > 0 ? '- Review critical visual changes\n- Update baselines if changes are intentional' : '- All visual tests passed successfully'}
+              `;
+              
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            } catch (error) {
+              console.log('No visual diff summary found or error creating comment:', error.message);
+            }
+
+  # Job 7: Test Report Generation and Notification
+  test-report-generation:
+    runs-on: ubuntu-latest
+    needs: [visual-tests, integration-tests, performance-benchmarks]
+    if: always()
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Download All Test Results
+        uses: actions/download-artifact@v3
+        with:
+          path: all-results/
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Generate Comprehensive Test Report
+        run: |
+          node -e "
+            const fs = require('fs');
+            const path = require('path');
+            
+            // Collect test results from all jobs
+            const testResults = {
+              timestamp: new Date().toISOString(),
+              commit: '${{ github.sha }}',
+              branch: '${{ github.ref_name }}',
+              pr_number: '${{ github.event.number }}' || null,
+              results: {
+                visual_tests: {},
+                integration_tests: {},
+                performance_tests: {},
+                total_tests: 0,
+                passed_tests: 0,
+                failed_tests: 0
+              }
+            };
+            
+            // Parse results from various test suites
+            function collectResults(dir) {
+              if (!fs.existsSync(dir)) return;
+              
+              const entries = fs.readdirSync(dir, { withFileTypes: true });
+              for (const entry of entries) {
+                const fullPath = path.join(dir, entry.name);
+                if (entry.isDirectory()) {
+                  collectResults(fullPath);
+                } else if (entry.name.includes('results.json') || entry.name.includes('report.json')) {
+                  try {
+                    const data = JSON.parse(fs.readFileSync(fullPath, 'utf8'));
+                    console.log('Found test results in:', fullPath);
+                  } catch (e) {
+                    console.log('Could not parse results from:', fullPath);
+                  }
+                }
+              }
+            }
+            
+            collectResults('all-results');
+            
+            // Generate HTML report
+            const htmlReport = \`
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <title>Prompt Alchemy - Test Results</title>
+              <style>
+                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 20px; }
+                .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; }
+                .metric { display: inline-block; margin: 10px; padding: 15px; background: #f8f9fa; border-radius: 8px; }
+                .passed { color: #28a745; }
+                .failed { color: #dc3545; }
+                .timestamp { color: #6c757d; font-size: 0.9em; }
+              </style>
+            </head>
+            <body>
+              <div class=\"header\">
+                <h1>🧪 Prompt Alchemy - Test Results</h1>
+                <p class=\"timestamp\">Generated: \${testResults.timestamp}</p>
+                <p>Commit: \${testResults.commit.substring(0, 8)} | Branch: \${testResults.branch}</p>
+              </div>
+              
+              <div class=\"metrics\">
+                <div class=\"metric\">
+                  <h3>Visual Tests</h3>
+                  <p>Cross-browser compatibility and visual regression testing</p>
+                </div>
+                <div class=\"metric\">
+                  <h3>Performance Tests</h3>
+                  <p>Animation performance and resource usage monitoring</p>
+                </div>
+                <div class=\"metric\">
+                  <h3>Accessibility Tests</h3>
+                  <p>WCAG 2.1 AA compliance and keyboard navigation</p>
+                </div>
+              </div>
+              
+              <footer>
+                <p>For detailed results, check the individual test artifacts.</p>
+              </footer>
+            </body>
+            </html>
+            \`;
+            
+            fs.writeFileSync('test-report.html', htmlReport);
+            fs.writeFileSync('test-results-summary.json', JSON.stringify(testResults, null, 2));
+          "
+
+      - name: Upload Comprehensive Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: comprehensive-test-report
+          path: |
+            test-report.html
+            test-results-summary.json
+
+      - name: Deploy Test Report to GitHub Pages
+        if: github.ref == 'refs/heads/main'
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./
+          include_files: test-report.html
+          destination_dir: test-reports/${{ github.run_number }}
+
+  # Job 8: Cleanup and Maintenance
+  cleanup:
+    runs-on: ubuntu-latest
+    needs: [test-report-generation]
+    if: always()
+    
+    steps:
+      - name: Cleanup Old Artifacts
+        uses: actions/github-script@v6
+        with:
+          script: |
+            // Clean up artifacts older than 30 days
+            const { data: artifacts } = await github.rest.actions.listArtifactsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 100
+            });
+            
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            
+            for (const artifact of artifacts.artifacts) {
+              const createdAt = new Date(artifact.created_at);
+              if (createdAt < thirtyDaysAgo && artifact.name.includes('test-results')) {
+                console.log(\`Deleting old artifact: \${artifact.name}\`);
+                try {
+                  await github.rest.actions.deleteArtifact({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    artifact_id: artifact.id
+                  });
+                } catch (error) {
+                  console.log(\`Could not delete artifact \${artifact.name}: \${error.message}\`);
+                }
+              }
+            }
+
+# Notification Configuration
+notifications:
+  on_success: change
+  on_failure: always
+  channels:
+    - email
+    - slack # Configure webhook URL in repository secrets as SLACK_WEBHOOK_URL

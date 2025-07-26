@@ -307,8 +307,8 @@ class DataProcessVisualization {
 }
 
 // Add CSS for better particle and line visibility
-const style = document.createElement('style');
-style.textContent = `
+const dataProcessVisStyle = document.createElement('style');
+dataProcessVisStyle.textContent = `
     /* Data particle styles */
     .data-particle {
         pointer-events: none;
@@ -338,7 +338,7 @@ style.textContent = `
         transition: stroke 0.3s ease, stroke-width 0.3s ease, filter 0.3s ease;
     }
 `;
-document.head.appendChild(style);
+document.head.appendChild(dataProcessVisStyle);
 
 // Initialize the system
 window.dataProcessVisualization = new DataProcessVisualization();

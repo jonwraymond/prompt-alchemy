@@ -119,8 +119,12 @@ func main() {
 	r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir("web/static/"))))
 	r.Handle("/assets/*", http.StripPrefix("/assets/", http.FileServer(http.Dir("assets/"))))
 
+	// React app static files
+	r.Handle("/react/*", http.StripPrefix("/react/", http.FileServer(http.Dir("dist/"))))
+
 	// Routes
 	r.Get("/", server.handleHome)
+	r.Get("/react", server.handleReactApp)
 	r.Post("/generate", server.handleGenerate)
 	r.Get("/providers", server.handleGetProviders)
 	r.Get("/health", server.handleHealth)
@@ -157,6 +161,11 @@ func (s *WebServer) handleHome(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
+}
+
+// handleReactApp serves the React application
+func (s *WebServer) handleReactApp(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "dist/index.html")
 }
 
 // handleGenerate processes prompt generation requests

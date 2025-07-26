@@ -9,6 +9,7 @@ import (
 
 type Coagulatio struct{}
 
+// Contributes to Transmutation Core: Final crystallization phase for optimizing and perfecting the prompt
 func (c *Coagulatio) GetTemplate() string {
 	return "coagulatio" // Return template name for new system
 }

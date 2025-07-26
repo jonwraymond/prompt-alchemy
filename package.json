@@ -1,36 +1,39 @@
 {
-  "name": "prompt-alchemy-tests",
+  "name": "prompt-alchemy-frontend",
   "version": "1.0.0",
-  "description": "End-to-end tests for Prompt Alchemy HTMX interface",
-  "main": "index.js",
+  "description": "React frontend for Prompt Alchemy with 21st.dev Toolbar",
+  "main": "src/main.tsx",
   "scripts": {
-    "test": "playwright test",
-    "test:headed": "playwright test --headed",
-    "test:debug": "playwright test --debug",
-    "test:ui": "playwright test --ui",
-    "test:report": "playwright show-report",
-    "test:install": "playwright install",
-    "test:dev": "node test-dev.js",
-    "test:dev:single": "node test-dev.js --single",
-    "test:dev:debug": "node test-dev.js --debug",
-    "test:dev:ui": "node test-dev.js --ui",
-    "dev:watch": "node dev-watch.js",
-    "dev:start": "docker-compose -f docker-compose.yml -f docker-compose.dev.yml up",
-    "dev:full": "concurrently \"npm run dev:watch\" \"npm run test:dev\""
-  },
-  "keywords": [
-    "testing",
-    "playwright",
-    "htmx",
-    "e2e"
-  ],
-  "author": "Prompt Alchemy Team",
-  "license": "MIT",
-  "devDependencies": {
-    "@playwright/test": "^1.54.1",
-    "concurrently": "^8.2.0"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
-    "eslint": "^9.31.0"
-  }
-}
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@21st-extension/react": "^0.5.14",
+    "@21st-extension/toolbar-react": "^0.5.14",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "@vitejs/plugin-react": "^4.0.0",
+    "eslint": "^8.0.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.0",
+    "typescript": "^5.0.0",
+    "vite": "^4.0.0"
+  },
+  "keywords": [
+    "react",
+    "typescript",
+    "vite",
+    "21st-dev",
+    "toolbar"
+  ],
+  "author": "Prompt Alchemy Team",
+  "license": "MIT"
+} 
