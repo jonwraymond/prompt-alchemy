@@ -50,7 +50,7 @@ const suggestions: Suggestion[] = [
 
 const AIInputComponent: React.FC<AIInputComponentProps> = ({
   initialValue = '',
-  placeholder = 'Describe your prompt...',
+  placeholder = '✨ Describe your magical prompt idea...',
   maxLength = 5000,
   enableSuggestions = true,
   enableThinking = true,
