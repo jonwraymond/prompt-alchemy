@@ -6,8 +6,20 @@ const TestComponent: React.FC = () => {
 
   return (
     <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
-      <h1>21st.dev Toolbar Test Component</h1>
+      <h1>🚀 21st.dev Toolbar Test Component - LIVE EDITING! ✨</h1>
       <p>This component has interactive elements for the toolbar to work with.</p>
+      <div style={{ 
+        padding: '10px', 
+        backgroundColor: '#e7f5e7', 
+        border: '2px solid #4CAF50',
+        borderRadius: '8px',
+        marginBottom: '20px',
+        textAlign: 'center'
+      }}>
+        <strong>🎉 INSTANT FEEDBACK WORKING! 🎉</strong>
+        <br />
+        <small>This change appeared instantly in your browser!</small>
+      </div>
       
       <div style={{ marginBottom: '20px' }}>
         <h3>Counter: {count}</h3>
