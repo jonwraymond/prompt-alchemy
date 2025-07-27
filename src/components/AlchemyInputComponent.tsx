@@ -22,6 +22,9 @@ export const AlchemyInputComponent: React.FC<AlchemyInputProps> = ({
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [persona, setPersona] = useState('creative');
   const [temperature, setTemperature] = useState(0.7);
+  const [maxTokens, setMaxTokens] = useState(1000);
+  const [count, setCount] = useState(1);
+  const [phases, setPhases] = useState<string[]>(['prima-materia']);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -49,10 +52,13 @@ export const AlchemyInputComponent: React.FC<AlchemyInputProps> = ({
       onSubmit?.(value, {
         persona,
         temperature,
+        maxTokens,
+        count,
+        phases,
         attachedFiles: attachedFiles.length > 0 ? attachedFiles : undefined
       });
     }
-  }, [value, disabled, onSubmit, persona, temperature, attachedFiles]);
+  }, [value, disabled, onSubmit, persona, temperature, maxTokens, count, phases, attachedFiles]);
 
   // Handle key down
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -160,12 +166,12 @@ export const AlchemyInputComponent: React.FC<AlchemyInputProps> = ({
             {value.length}/5000
           </div>
 
-          {/* Advanced Options */}
+          {/* Generate Configuration */}
           <button
             type="button"
             className="alchemy-btn settings-btn"
             onClick={() => setShowAdvanced(!showAdvanced)}
-            title="Advanced Options"
+            title="Generate Command Configuration"
             disabled={disabled}
           >
             ⚙️
@@ -189,7 +195,7 @@ export const AlchemyInputComponent: React.FC<AlchemyInputProps> = ({
           </button>
         </div>
 
-        {/* Advanced Options Panel */}
+        {/* Generate Command Configuration Panel */}
         {showAdvanced && (
           <div className="advanced-options">
             <div className="option-group">
@@ -199,10 +205,10 @@ export const AlchemyInputComponent: React.FC<AlchemyInputProps> = ({
                 onChange={(e) => setPersona(e.target.value)}
                 disabled={disabled}
               >
-                <option value="creative">Creative</option>
-                <option value="technical">Technical</option>
-                <option value="analytical">Analytical</option>
-                <option value="conversational">Conversational</option>
+                <option value="code">Code</option>
+                <option value="writing">Writing</option>
+                <option value="analysis">Analysis</option>
+                <option value="generic">Generic</option>
               </select>
             </div>
             
@@ -211,12 +217,65 @@ export const AlchemyInputComponent: React.FC<AlchemyInputProps> = ({
               <input
                 type="range"
                 min="0.1"
-                max="1.0"
+                max="2.0"
                 step="0.1"
                 value={temperature}
                 onChange={(e) => setTemperature(parseFloat(e.target.value))}
                 disabled={disabled}
               />
+              <div className="option-description">Controls randomness: 0 = focused, 2 = creative</div>
+            </div>
+
+            <div className="option-group">
+              <label>Max Tokens: {maxTokens}</label>
+              <input
+                type="range"
+                min="500"
+                max="4000"
+                step="100"
+                value={maxTokens}
+                onChange={(e) => setMaxTokens(parseInt(e.target.value))}
+                disabled={disabled}
+              />
+              <div className="option-description">Maximum length of generated output</div>
+            </div>
+
+            <div className="option-group">
+              <label>Count: {count}</label>
+              <input
+                type="range"
+                min="1"
+                max="10"
+                step="1"
+                value={count}
+                onChange={(e) => setCount(parseInt(e.target.value))}
+                disabled={disabled}
+              />
+              <div className="option-description">Number of prompt variants to generate</div>
+            </div>
+
+            <div className="option-group">
+              <label>Alchemical Phases</label>
+              <div className="phase-select">
+                {['prima-materia', 'solutio', 'coagulatio'].map(phase => (
+                  <button
+                    key={phase}
+                    type="button"
+                    className={`phase-option ${phases.includes(phase) ? 'selected' : ''}`}
+                    onClick={() => {
+                      setPhases(prev => 
+                        prev.includes(phase)
+                          ? prev.filter(p => p !== phase)
+                          : [...prev, phase]
+                      );
+                    }}
+                    disabled={disabled}
+                  >
+                    {phase}
+                  </button>
+                ))}
+              </div>
+              <div className="option-description">Select which transformation phases to apply</div>
             </div>
           </div>
         )}

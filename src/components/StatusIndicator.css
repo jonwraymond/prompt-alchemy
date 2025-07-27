@@ -81,7 +81,7 @@
 
 /* Vibrant glowing effect for operational status */
 .status-dot.system.minimal.operational {
-  background: #10b981;
+  background-color: #10b981 !important;
   box-shadow: 
     0 0 0 1px rgba(16, 185, 129, 0.3),
     0 0 8px 1px rgba(16, 185, 129, 0.5),
@@ -92,7 +92,7 @@
 
 /* Vibrant glowing effect for degraded status */
 .status-dot.system.minimal.degraded {
-  background: #f59e0b;
+  background-color: #f59e0b !important;
   box-shadow: 
     0 0 0 1px rgba(245, 158, 11, 0.3),
     0 0 8px 1px rgba(245, 158, 11, 0.5),
@@ -103,7 +103,7 @@
 
 /* Vibrant glowing effect for down status */
 .status-dot.system.minimal.down {
-  background: #ef4444;
+  background-color: #ef4444 !important;
   box-shadow: 
     0 0 0 1px rgba(239, 68, 68, 0.3),
     0 0 8px 1px rgba(239, 68, 68, 0.5),
