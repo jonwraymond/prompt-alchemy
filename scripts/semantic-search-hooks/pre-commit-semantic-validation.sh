@@ -56,14 +56,67 @@ PROHIBITED_PATTERNS=(
     "store.*knowledge"
 )
 
-# Define required semantic tool patterns
-REQUIRED_PATTERNS=(
+# Define required Serena MCP patterns
+REQUIRED_SERENA_PATTERNS=(
     "serena.*activate_project"
     "serena.*find_symbol"
+    "serena.*get_symbols_overview"
     "serena.*search_for_pattern"
-    "code2prompt"
-    "ast-grep"
+    "serena.*write_memory"
+    "serena.*read_memory"
+    "serena.*list_memories"
+    "serena.*onboarding"
 )
+
+# Define fallback justification patterns
+FALLBACK_PATTERNS=(
+    "# semantic-fallback:"
+    "# SERENA_FALLBACK:"
+    "# Serena failed:"
+    "# Serena unavailable:"
+)
+
+# Function to check for Serena-first compliance
+check_serena_first() {
+    local file="$1"
+    local line_num="$2"
+    local violation="$3"
+    
+    # Check if there's a fallback justification within 5 lines
+    local start_line=$((line_num - 5))
+    local end_line=$((line_num + 5))
+    
+    if [ $start_line -lt 1 ]; then
+        start_line=1
+    fi
+    
+    local context=$(sed -n "${start_line},${end_line}p" "$file")
+    
+    for pattern in "${FALLBACK_PATTERNS[@]}"; do
+        if echo "$context" | grep -E "$pattern" > /dev/null 2>&1; then
+            echo -e "${YELLOW}ℹ️  Fallback justified in $file:$line_num${NC}" | tee -a "$FALLBACK_LOG"
+            return 0
+        fi
+    done
+    
+    # Check if Serena was attempted first
+    local serena_found=0
+    for pattern in "${REQUIRED_SERENA_PATTERNS[@]}"; do
+        if echo "$context" | grep -E "$pattern" > /dev/null 2>&1; then
+            serena_found=1
+            break
+        fi
+    done
+    
+    if [ $serena_found -eq 0 ]; then
+        echo -e "${RED}❌ SERENA VIOLATION in $file:$line_num${NC}" | tee -a "$COMPLIANCE_LOG"
+        echo "   Operation without Serena MCP: $violation" | tee -a "$COMPLIANCE_LOG"
+        ((SERENA_VIOLATIONS++))
+        return 1
+    fi
+    
+    return 0
+}
 
 # Function to check for violations in a file
 check_file_compliance() {
@@ -71,33 +124,55 @@ check_file_compliance() {
     local file_violations=0
     
     # Skip non-script and non-code files
-    if [[ ! "$file" =~ \.(sh|bash|go|ts|tsx|js|jsx|py)$ ]]; then
+    if [[ ! "$file" =~ \.(sh|bash|go|ts|tsx|js|jsx|py|md|yml|yaml)$ ]]; then
         return 0
     fi
     
-    # Check for prohibited patterns
-    for pattern in "${PROHIBITED_PATTERNS[@]}"; do
-        if grep -E "$pattern" "$file" > /dev/null 2>&1; then
-            echo -e "${RED}❌ Violation found in $file:${NC}" | tee -a "$COMPLIANCE_LOG"
-            echo "   Prohibited pattern: $pattern" | tee -a "$COMPLIANCE_LOG"
-            grep -n -E "$pattern" "$file" | tee -a "$COMPLIANCE_LOG"
+    # Check for Serena project activation at file start
+    if [[ "$file" =~ \.(sh|bash|py)$ ]]; then
+        if ! head -20 "$file" | grep -E "serena.*activate_project|SERENA.*PROJECT.*ACTIVATED" > /dev/null 2>&1; then
+            echo -e "${RED}❌ Missing Serena activation in $file${NC}" | tee -a "$COMPLIANCE_LOG"
+            echo "   Scripts must activate Serena project at start" | tee -a "$COMPLIANCE_LOG"
             ((file_violations++))
+            ((SERENA_VIOLATIONS++))
         fi
+    fi
+    
+    # Check for prohibited patterns with line numbers
+    for pattern in "${PROHIBITED_PATTERNS[@]}"; do
+        while IFS=: read -r line_num line_content; do
+            if [ ! -z "$line_num" ]; then
+                check_serena_first "$file" "$line_num" "$pattern"
+                if [ $? -ne 0 ]; then
+                    ((file_violations++))
+                fi
+            fi
+        done < <(grep -n -E "$pattern" "$file" 2>/dev/null || true)
     done
     
-    # Check if file contains code navigation but lacks semantic tools
-    if grep -E "(search|find|locate|analyze|navigate)" "$file" > /dev/null 2>&1; then
-        local has_semantic_tool=0
-        for pattern in "${REQUIRED_PATTERNS[@]}"; do
+    # Check for memory operations without Serena
+    if grep -E "(memory|context|knowledge|state).*\.(save|write|store|read|load|get)" "$file" > /dev/null 2>&1; then
+        if ! grep -E "serena.*(write|read)_memory" "$file" > /dev/null 2>&1; then
+            echo -e "${RED}❌ Memory operation without Serena in $file${NC}" | tee -a "$COMPLIANCE_LOG"
+            ((file_violations++))
+            ((SERENA_VIOLATIONS++))
+        fi
+    fi
+    
+    # Check for code analysis without Serena
+    if grep -E "(analyze|search|find|locate|navigate|explore|scan).*\.(code|project|codebase|repo)" "$file" > /dev/null 2>&1; then
+        local has_serena=0
+        for pattern in "${REQUIRED_SERENA_PATTERNS[@]}"; do
             if grep -E "$pattern" "$file" > /dev/null 2>&1; then
-                has_semantic_tool=1
+                has_serena=1
                 break
             fi
         done
         
-        if [ $has_semantic_tool -eq 0 ]; then
-            echo -e "${YELLOW}⚠️  Warning: $file contains navigation/search but no semantic tools${NC}" | tee -a "$COMPLIANCE_LOG"
+        if [ $has_serena -eq 0 ]; then
+            echo -e "${RED}❌ Code analysis without Serena MCP in $file${NC}" | tee -a "$COMPLIANCE_LOG"
             ((file_violations++))
+            ((SERENA_VIOLATIONS++))
         fi
     fi
     
