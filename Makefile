@@ -477,4 +477,3 @@ setup-semantic-hooks:
 	@echo "Setting up semantic tool compliance hooks..."
 	@chmod +x scripts/setup-semantic-hooks.sh
 	@scripts/setup-semantic-hooks.sh
-EOF < /dev/null
