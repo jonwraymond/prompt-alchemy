@@ -281,17 +281,24 @@
   right: auto;
   bottom: auto;
   animation: tooltip-fade-in 0.3s ease-out;
-  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.6));
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.4));
   pointer-events: auto;
-  /* Simplified dark theme styling */
-  background: rgba(18, 24, 38, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
+  /* Glass morphism styling to match */
+  background: rgba(15, 15, 15, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
   padding: 12px;
   min-width: 200px;
   max-width: 250px;
-  backdrop-filter: blur(10px);
-  color: #e5e7eb;
+  /* Strong backdrop blur for glass effect */
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  /* Enhanced glass shadow effect */
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+  color: rgba(255, 255, 255, 0.95);
   font-size: 0.8rem;
 }
 
