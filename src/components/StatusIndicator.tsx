@@ -414,11 +414,21 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
               <div
                 className={`status-dot system ${activeTooltip === system.id ? 'active' : ''}`}
                 onClick={(e) => handleDotClick(system.id, e)}
+                onMouseEnter={(e) => handleDotMouseEnter(system.id, e)}
+                onMouseLeave={() => handleDotMouseLeave(system.id)}
                 style={{ backgroundColor: getStatusColor(system.status) }}
-                title={showTooltips ? `${system.name}: ${getStatusText(system.status)}` : ''}
+                role="button"
+                tabIndex={0}
+                aria-label={`${system.name}: ${getStatusText(system.status)}`}
+                aria-describedby={activeTooltip === system.id ? `tooltip-${system.id}` : undefined}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleDotClick(system.id, e as any);
+                  }
+                }}
               >
                 <div className="status-pulse" style={{ backgroundColor: getStatusColor(system.status) }} />
-              </div>
 
             </div>
           ))}
