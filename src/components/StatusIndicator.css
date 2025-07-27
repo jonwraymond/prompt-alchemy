@@ -112,34 +112,34 @@
 
 /* Hover state for minimal dots */
 .status-dot.system.minimal:hover {
-  transform: scale(1.08);
+  transform: scale(1.15);
 }
 
 /* Enhanced hover glow for operational */
 .status-dot.system.minimal.operational:hover {
   box-shadow: 
-    0 0 0 3px rgba(16, 185, 129, 0.5),
-    0 0 16px 3px rgba(16, 185, 129, 0.7),
-    0 0 32px 10px rgba(16, 185, 129, 0.4),
-    inset 0 0 4px rgba(255, 255, 255, 0.6);
+    0 0 0 2px rgba(16, 185, 129, 0.4),
+    0 0 12px 2px rgba(16, 185, 129, 0.6),
+    0 0 24px 6px rgba(16, 185, 129, 0.3),
+    inset 0 0 3px rgba(255, 255, 255, 0.5);
 }
 
 /* Enhanced hover glow for degraded */
 .status-dot.system.minimal.degraded:hover {
   box-shadow: 
-    0 0 0 3px rgba(245, 158, 11, 0.5),
-    0 0 16px 3px rgba(245, 158, 11, 0.7),
-    0 0 32px 10px rgba(245, 158, 11, 0.4),
-    inset 0 0 4px rgba(255, 255, 255, 0.6);
+    0 0 0 2px rgba(245, 158, 11, 0.4),
+    0 0 12px 2px rgba(245, 158, 11, 0.6),
+    0 0 24px 6px rgba(245, 158, 11, 0.3),
+    inset 0 0 3px rgba(255, 255, 255, 0.5);
 }
 
 /* Enhanced hover glow for down */
 .status-dot.system.minimal.down:hover {
   box-shadow: 
-    0 0 0 3px rgba(239, 68, 68, 0.5),
-    0 0 16px 3px rgba(239, 68, 68, 0.7),
-    0 0 32px 10px rgba(239, 68, 68, 0.4),
-    inset 0 0 4px rgba(255, 255, 255, 0.6);
+    0 0 0 2px rgba(239, 68, 68, 0.4),
+    0 0 12px 2px rgba(239, 68, 68, 0.6),
+    0 0 24px 6px rgba(239, 68, 68, 0.3),
+    inset 0 0 3px rgba(255, 255, 255, 0.5);
 }
 
 /* Touch feedback */
