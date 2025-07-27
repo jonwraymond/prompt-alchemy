@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import ReactDOM from 'react-dom';
 import './AlchemyInputComponent.css';
+import { api } from '../utils/api';
 
 interface GenerateOptions {
   persona: string;
@@ -34,10 +36,289 @@ export const AlchemyInputComponent: React.FC<AlchemyInputProps> = ({
   const [maxTokens, setMaxTokens] = useState(1000);
   const [count, setCount] = useState(1);
   const [phases, setPhases] = useState<string[]>(['prima-materia']);
+  
+  // Status indicator state
+  const [systemStatus, setSystemStatus] = useState({
+    api: 'down',
+    engine: 'down',
+    providers: 'down',
+    database: 'down'
+  });
+
+  // Tooltip state
+  const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
+  const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null);
+  const [hoveredSystem, setHoveredSystem] = useState<string | null>(null);
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout>();
+  const tooltipRef = useRef<HTMLDivElement>(null);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Check if device is touch-based
+  useEffect(() => {
+    setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
+  }, []);
+
+  // Check system status
+  const checkSystemStatus = useCallback(async () => {
+    try {
+      // Check API Health
+      const healthResponse = await api.health();
+      
+      const apiStatus = healthResponse.success ? 'operational' : 'down';
+      
+      let engineStatus = 'down';
+      let providersStatus = 'down';
+      let databaseStatus = 'down';
+
+      if (healthResponse.success) {
+        // Check Engine Status
+        try {
+          const statusResponse = await api.status();
+          engineStatus = statusResponse.success ? 'operational' : 'degraded';
+        } catch {
+          engineStatus = 'degraded';
+        }
+
+        // Check Providers
+        try {
+          const providersResponse = await api.getProviders();
+          const responseData = providersResponse.data;
+          
+          if (responseData && 'total_providers' in responseData) {
+            // New backend response format with summary data
+            const totalProviders = responseData.total_providers || 0;
+            const availableProviders = responseData.available_providers || 0;
+            
+            if (totalProviders === 0) {
+              providersStatus = 'down';
+            } else if (availableProviders === 0) {
+              providersStatus = 'degraded';
+            } else if (availableProviders < totalProviders) {
+              providersStatus = 'degraded';
+            } else {
+              providersStatus = 'operational';
+            }
+          } else {
+            // Legacy response format fallback
+            const providerCount = responseData?.providers?.length || 0;
+            const availableProviders = responseData?.providers?.filter(p => p.available).length || 0;
+            
+            if (availableProviders === 0 && providerCount > 0) {
+              providersStatus = 'degraded';
+            } else if (availableProviders < providerCount) {
+              providersStatus = 'degraded';
+            } else if (providerCount > 0) {
+              providersStatus = 'operational';
+            }
+          }
+        } catch {
+          providersStatus = 'degraded';
+        }
+
+        // Check Database (assume operational if API is working)
+        databaseStatus = 'operational';
+      }
+
+      setSystemStatus({
+        api: apiStatus,
+        engine: engineStatus,
+        providers: providersStatus,
+        database: databaseStatus
+      });
+    } catch {
+      setSystemStatus({
+        api: 'down',
+        engine: 'down',
+        providers: 'down',
+        database: 'down'
+      });
+    }
+  }, []);
+
+  // Check status on mount
+  useEffect(() => {
+    checkSystemStatus();
+    const interval = setInterval(checkSystemStatus, 30000);
+    return () => clearInterval(interval);
+  }, [checkSystemStatus]);
+
+  const getStatusColor = (status: string): string => {
+    switch (status) {
+      case 'operational': return 'rgba(16, 185, 129, 1.0)'; // Green with 100% opacity
+      case 'degraded': return 'rgba(245, 158, 11, 1.0)';    // Amber with 100% opacity  
+      case 'down': return 'rgba(239, 68, 68, 1.0)';         // Red with 100% opacity
+      default: return 'rgba(107, 114, 128, 1.0)';           // Gray with 100% opacity
+    }
+  };
+
+  const getStatusText = (status: string): string => {
+    switch (status) {
+      case 'operational': return 'Operational';
+      case 'degraded': return 'Degraded';
+      case 'down': return 'Down';
+      default: return 'Unknown';
+    }
+  };
+
+  const formatLastCheck = (date: Date): string => {
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const seconds = Math.floor(diff / 1000);
+    
+    if (seconds < 60) return 'Just now';
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+    return `${Math.floor(seconds / 3600)}h ago`;
+  };
+
+  const calculateTooltipPosition = (element: HTMLElement, tooltipEl?: HTMLElement | null): { x: number; y: number } => {
+    const rect = element.getBoundingClientRect();
+    const tooltipWidth = tooltipEl?.offsetWidth || 250;
+    const tooltipHeight = tooltipEl?.offsetHeight || 150;
+    const margin = 10;
+
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const elementCenterY = rect.top + rect.height / 2;
+
+    let x = rect.right + margin;
+    let y = rect.top;
+
+    if (x + tooltipWidth + margin > viewportWidth) {
+      x = rect.left - tooltipWidth - margin;
+      
+      if (x < margin) {
+        const spaceRight = viewportWidth - rect.right - margin;
+        const spaceLeft = rect.left - margin;
+        
+        if (spaceRight > spaceLeft) {
+          x = rect.right + margin;
+          x = Math.min(x, viewportWidth - tooltipWidth - margin);
+        } else {
+          x = Math.max(margin, rect.left - tooltipWidth - margin);
+        }
+      }
+    }
+
+    if (y + tooltipHeight > viewportHeight - margin) {
+      y = rect.bottom - tooltipHeight;
+      
+      if (y < margin) {
+        y = Math.max(margin, Math.min(elementCenterY - tooltipHeight / 2, viewportHeight - tooltipHeight - margin));
+      }
+    }
+
+    x = Math.max(margin, Math.min(x, viewportWidth - tooltipWidth - margin));
+    y = Math.max(margin, Math.min(y, viewportHeight - tooltipHeight - margin));
+
+    return { x, y };
+  };
+
+  const handleDotMouseEnter = (systemId: string, event: React.MouseEvent) => {
+    if (!isTouchDevice) {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+      
+      const targetElement = event.currentTarget as HTMLElement;
+      
+      hoverTimeoutRef.current = setTimeout(() => {
+        setActiveTooltip(systemId);
+        setHoveredSystem(systemId);
+        if (targetElement) {
+          const position = calculateTooltipPosition(targetElement);
+          setTooltipPosition(position);
+          
+          setTimeout(() => {
+            if (tooltipRef.current && targetElement) {
+              const newPosition = calculateTooltipPosition(targetElement, tooltipRef.current);
+              setTooltipPosition(newPosition);
+            }
+          }, 10);
+        }
+      }, 200);
+    }
+  };
+
+  const handleDotMouseLeave = (systemId: string) => {
+    if (!isTouchDevice) {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+      
+      if (hoveredSystem === systemId && activeTooltip === systemId) {
+        setActiveTooltip(null);
+        setTooltipPosition(null);
+        setHoveredSystem(null);
+      }
+    }
+  };
+
+  const handleDotFocus = (systemId: string, event: React.FocusEvent) => {
+    if (!isTouchDevice) {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+      
+      const targetElement = event.currentTarget as HTMLElement;
+      
+      setActiveTooltip(systemId);
+      setHoveredSystem(systemId);
+      if (targetElement) {
+        const position = calculateTooltipPosition(targetElement);
+        setTooltipPosition(position);
+        
+        setTimeout(() => {
+          if (tooltipRef.current && targetElement) {
+            const newPosition = calculateTooltipPosition(targetElement, tooltipRef.current);
+            setTooltipPosition(newPosition);
+          }
+        }, 10);
+      }
+    }
+  };
+
+  const handleDotBlur = (systemId: string) => {
+    if (!isTouchDevice) {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+      
+      if (activeTooltip === systemId) {
+        setActiveTooltip(null);
+        setTooltipPosition(null);
+        setHoveredSystem(null);
+      }
+    }
+  };
+
+  const handleDotClick = (systemId: string, event: React.MouseEvent) => {
+    if (isTouchDevice) {
+      if (activeTooltip === systemId) {
+        setActiveTooltip(null);
+        setTooltipPosition(null);
+        setHoveredSystem(null);
+      } else {
+        const targetElement = event.currentTarget as HTMLElement;
+        setActiveTooltip(systemId);
+        setHoveredSystem(systemId);
+        if (targetElement) {
+          const position = calculateTooltipPosition(targetElement);
+          setTooltipPosition(position);
+          
+          setTimeout(() => {
+            if (tooltipRef.current && targetElement) {
+              const newPosition = calculateTooltipPosition(targetElement, tooltipRef.current);
+              setTooltipPosition(newPosition);
+            }
+          }, 10);
+        }
+      }
+    }
+  };
 
   // Auto-resize textarea
   const updateTextareaHeight = useCallback(() => {
@@ -100,7 +381,53 @@ export const AlchemyInputComponent: React.FC<AlchemyInputProps> = ({
     <div className={`alchemy-input-container ${className}`} ref={containerRef}>
       <div className={`alchemy-input-wrapper ${isExpanded ? 'expanded' : ''} ${isLoading ? 'loading' : ''}`}>
         
-
+        {/* Status Indicators */}
+        <div className="alchemy-icons">
+          <div 
+            className="status-dot" 
+            title="API Server"
+            style={{ backgroundColor: getStatusColor(systemStatus.api) }}
+            onMouseEnter={(e) => handleDotMouseEnter('api', e)}
+            onMouseLeave={() => handleDotMouseLeave('api')}
+            onFocus={(e) => handleDotFocus('api', e)}
+            onBlur={() => handleDotBlur('api')}
+            onClick={(e) => handleDotClick('api', e)}
+            tabIndex={0}
+          />
+          <div 
+            className="status-dot" 
+            title="Alchemy Engine"
+            style={{ backgroundColor: getStatusColor(systemStatus.engine) }}
+            onMouseEnter={(e) => handleDotMouseEnter('engine', e)}
+            onMouseLeave={() => handleDotMouseLeave('engine')}
+            onFocus={(e) => handleDotFocus('engine', e)}
+            onBlur={() => handleDotBlur('engine')}
+            onClick={(e) => handleDotClick('engine', e)}
+            tabIndex={0}
+          />
+          <div 
+            className="status-dot" 
+            title="LLM Providers"
+            style={{ backgroundColor: getStatusColor(systemStatus.providers) }}
+            onMouseEnter={(e) => handleDotMouseEnter('providers', e)}
+            onMouseLeave={() => handleDotMouseLeave('providers')}
+            onFocus={(e) => handleDotFocus('providers', e)}
+            onBlur={() => handleDotBlur('providers')}
+            onClick={(e) => handleDotClick('providers', e)}
+            tabIndex={0}
+          />
+          <div 
+            className="status-dot" 
+            title="Database"
+            style={{ backgroundColor: getStatusColor(systemStatus.database) }}
+            onMouseEnter={(e) => handleDotMouseEnter('database', e)}
+            onMouseLeave={() => handleDotMouseLeave('database')}
+            onFocus={(e) => handleDotFocus('database', e)}
+            onBlur={() => handleDotBlur('database')}
+            onClick={(e) => handleDotClick('database', e)}
+            tabIndex={0}
+          />
+        </div>
 
         {/* Main Input Area */}
         <div className="alchemy-input-main">
@@ -286,6 +613,60 @@ export const AlchemyInputComponent: React.FC<AlchemyInputProps> = ({
           </div>
         )}
       </div>
+
+      {/* Tooltip */}
+      {activeTooltip && tooltipPosition && ReactDOM.createPortal(
+        <div
+          ref={tooltipRef}
+          className="status-tooltip-portal"
+          style={{
+            position: 'fixed',
+            left: tooltipPosition.x,
+            top: tooltipPosition.y,
+            zIndex: 99999,
+            pointerEvents: 'auto',
+            opacity: 1,
+            visibility: 'visible',
+            display: 'block'
+          }}
+          role="tooltip"
+          id={`tooltip-${activeTooltip}`}
+        >
+          <div className="status-tooltip enhanced">
+            <div className="tooltip-header">
+              <span className="tooltip-title">
+                {activeTooltip === 'api' && 'API Server'}
+                {activeTooltip === 'engine' && 'Alchemy Engine'}
+                {activeTooltip === 'providers' && 'LLM Providers'}
+                {activeTooltip === 'database' && 'Database'}
+              </span>
+              <span 
+                className="tooltip-status"
+                style={{ color: getStatusColor(systemStatus[activeTooltip as keyof typeof systemStatus] || 'unknown') }}
+              >
+                {getStatusText(systemStatus[activeTooltip as keyof typeof systemStatus] || 'unknown')}
+              </span>
+            </div>
+            <div className="tooltip-details">
+              <p className="tooltip-primary">
+                {activeTooltip === 'api' && 'Backend API server status'}
+                {activeTooltip === 'engine' && 'Core alchemy processing engine'}
+                {activeTooltip === 'providers' && 'Language model providers'}
+                {activeTooltip === 'database' && 'Data storage system'}
+              </p>
+              {systemStatus[activeTooltip as keyof typeof systemStatus] === 'down' && activeTooltip === 'api' && (
+                <p className="tooltip-help">
+                  ⚠️ Check if the backend server is running on port 8080
+                </p>
+              )}
+              <p className="tooltip-timestamp">
+                Last checked: {formatLastCheck(new Date())}
+              </p>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 };

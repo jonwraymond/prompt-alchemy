@@ -1,13 +1,13 @@
-import { TwentyFirstToolbar } from '@21st-extension/toolbar-react';
-import { ReactPlugin } from '@21st-extension/react';
+// import { TwentyFirstToolbar } from '@21st-extension/toolbar-react';
+// import { ReactPlugin } from '@21st-extension/react';
 import AlchemyInterface from './components/AlchemyInterface';
 import './components/AIInputComponent.css';
 
 function App() {
   return (
     <div className="App">
-      {/* 21st.dev Toolbar - only in development mode */}
-      {import.meta.env.DEV && (
+      {/* 21st.dev Toolbar - commented out to remove connection errors */}
+      {/* {import.meta.env.DEV && (
         <TwentyFirstToolbar
           config={{
             plugins: [ReactPlugin],
@@ -27,7 +27,7 @@ function App() {
             }
           } as any}
         />
-      )}
+      )} */}
 
 
 
