@@ -35,7 +35,7 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
   ]);
   
   const [overallStatus, setOverallStatus] = useState<StatusType>('down');
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true); // Always expanded for minimal dots
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null);
   const [hoveredSystem, setHoveredSystem] = useState<string | null>(null);
@@ -248,11 +248,12 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
   }, [activeTooltip, tooltipPosition, hoveredSystem, showTooltips]);
 
   const getStatusColor = (status: StatusType): string => {
+    // Muted colors with 40% opacity for subdued appearance
     switch (status) {
-      case 'operational': return '#10b981'; // Enhanced green for better visibility
-      case 'degraded': return '#f59e0b';    // Amber yellow  
-      case 'down': return '#ef4444';        // Clear red
-      default: return '#6b7280';            // Gray
+      case 'operational': return 'rgba(16, 185, 129, 0.4)'; // Green with 40% opacity
+      case 'degraded': return 'rgba(245, 158, 11, 0.4)';    // Amber with 40% opacity  
+      case 'down': return 'rgba(239, 68, 68, 0.4)';         // Red with 40% opacity
+      default: return 'rgba(107, 114, 128, 0.4)';           // Gray with 40% opacity
     }
   };
 
@@ -382,111 +383,28 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
     }
   };
 
-  const handleDotClick = (systemId: string, event?: React.MouseEvent) => {
-    console.log(`[StatusIndicator] Click on ${systemId}`);
-    if (showTooltips) {
-      // Clear hover state
-      setHoveredSystem(null);
-      
-      if (activeTooltip === systemId) {
-        console.log(`[StatusIndicator] Hiding tooltip for ${systemId} (click toggle)`);
-        setActiveTooltip(null);
-        setTooltipPosition(null);
-      } else {
-        console.log(`[StatusIndicator] Showing tooltip for ${systemId} (click)`);
-        setActiveTooltip(systemId);
-        if (event?.currentTarget) {
-          const targetElement = event.currentTarget as HTMLElement;
-          const position = calculateTooltipPosition(targetElement);
-          console.log(`[StatusIndicator] Tooltip position calculated (click):`, position);
-          setTooltipPosition(position);
-          
-          // Recalculate position after DOM update
-          setTimeout(() => {
-            if (tooltipRef.current && targetElement) {
-              const newPosition = calculateTooltipPosition(targetElement, tooltipRef.current);
-              console.log(`[StatusIndicator] Tooltip position recalculated (click):`, newPosition);
-              setTooltipPosition(newPosition);
-            }
-          }, 10);
-        }
-      }
-    }
-  };
+  // Removed click handler - dots are non-interactive
 
-  const handleOverallClick = () => {
-    setIsExpanded(!isExpanded);
-    setActiveTooltip(null);
-    setTooltipPosition(null);
-  };
+  // Removed overall click handler - dots are non-interactive
 
   return (
-    <div className={`status-indicator ${position}`}>
-      {/* Overall Status Dot */}
-      <div 
-        className="status-dot overall"
-        onClick={handleOverallClick}
-        style={{ backgroundColor: getStatusColor(overallStatus) }}
-        role="button"
-        tabIndex={0}
-        aria-label={`Overall Status: ${getStatusText(overallStatus)}. Click to expand details.`}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            handleOverallClick();
-          }
-        }}
-      >
-        <div className="status-pulse" style={{ backgroundColor: getStatusColor(overallStatus) }} />
-      </div>
-
-      {/* Individual System Dots (shown when expanded) */}
-      {isExpanded && (
+    <div className={`status-indicator ${position} minimal`}>
+      {/* Individual System Dots - Always visible as minimal indicators */}
+      {
         <div className="system-dots">
           {systems.map((system) => (
             <div key={system.id} className="system-dot-container">
               <div
-                className={`status-dot system ${activeTooltip === system.id ? 'active' : ''}`}
-                onClick={(e) => handleDotClick(system.id, e)}
+                className="status-dot system minimal"
                 onMouseEnter={(e) => handleDotMouseEnter(system.id, e)}
                 onMouseLeave={() => handleDotMouseLeave(system.id)}
-                onFocus={(e) => {
-                  console.log(`[StatusIndicator] Focus on ${system.id}`);
-                  handleDotMouseEnter(system.id, e as any);
-                }}
-                onBlur={() => {
-                  console.log(`[StatusIndicator] Blur on ${system.id}`);
-                  handleDotMouseLeave(system.id);
-                }}
                 style={{ backgroundColor: getStatusColor(system.status) }}
-                role="button"
-                tabIndex={0}
                 aria-label={`${system.name}: ${getStatusText(system.status)}`}
                 aria-describedby={activeTooltip === system.id ? `tooltip-${system.id}` : undefined}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    handleDotClick(system.id, e as any);
-                  }
-                }}
-              >
-                <div className="status-pulse" style={{ backgroundColor: getStatusColor(system.status) }} />
-              </div>
+              />
             </div>
           ))}
         </div>
-      )}
-
-      {/* Collapse button when expanded */}
-      {isExpanded && (
-        <button 
-          className="collapse-btn"
-          onClick={handleOverallClick}
-          title="Collapse status view"
-        >
-          ×
-        </button>
-      )}
 
       {/* Portal-based tooltip for better positioning */}
       {activeTooltip && showTooltips && tooltipPosition && ReactDOM.createPortal(
@@ -547,17 +465,6 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
                     Last checked: {formatLastCheck(system.lastCheck)}
                   </p>
                 </div>
-                <button 
-                  className="tooltip-refresh"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    checkSystemHealth();
-                    setActiveTooltip(null);
-                    setTooltipPosition(null);
-                  }}
-                >
-                  Refresh Status
-                </button>
               </div>
             );
           })()}
