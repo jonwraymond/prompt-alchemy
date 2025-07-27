@@ -1,0 +1,70 @@
+name: Serena MCP-First Compliance Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main, develop]
+
+jobs:
+  serena-compliance:
+    name: Validate Serena MCP-First Usage
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup validation environment
+      run: |
+        chmod +x scripts/semantic-search-hooks/validate-semantic-compliance.sh
+        chmod +x scripts/semantic-search-hooks/serena-first-validator.sh
+        chmod +x scripts/semantic-search-hooks/pre-commit-semantic-validation.sh
+        mkdir -p reports/semantic-compliance
+        mkdir -p reports/serena-compliance
+    
+    - name: Run Serena MCP-First validation
+      id: serena-validation
+      run: |
+        ./scripts/semantic-search-hooks/serena-first-validator.sh || echo "SERENA_FAILED=true" >> $GITHUB_ENV
+    
+    - name: Run general semantic compliance validation
+      id: validation
+      continue-on-error: true
+      run: |
+        ./scripts/semantic-search-hooks/validate-semantic-compliance.sh || echo "VALIDATION_FAILED=true" >> $GITHUB_ENV
+    
+    - name: Upload Serena compliance reports
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: serena-compliance-reports
+        path: |
+          reports/serena-compliance/
+          reports/semantic-compliance/
+    
+    - name: Comment PR with Serena violations
+      if: github.event_name == 'pull_request' && env.SERENA_FAILED == 'true'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          const reportFiles = fs.readdirSync('reports/serena-compliance/');
+          const latestReport = reportFiles.sort().pop();
+          if (latestReport) {
+            const report = fs.readFileSync(`reports/serena-compliance/${latestReport}`, 'utf8');
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '## ❌ Serena MCP-First Compliance Check Failed\n\n' + 
+                    '**All operations MUST use Serena MCP first!**\n\n' + report
+            });
+          }
+    
+    - name: Fail if Serena non-compliant
+      if: env.SERENA_FAILED == 'true'
+      run: |
+        echo "❌ PR BLOCKED: Serena MCP-First violations detected"
+        echo "All code operations must use Serena MCP as the primary tool"
+        echo "See artifacts for detailed reports"
+        exit 1
