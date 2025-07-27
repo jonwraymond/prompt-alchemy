@@ -40,19 +40,19 @@
   left: 20px;
 }
 
-/* Minimal status dots - subdued and non-interactive */
+/* Minimal status dots - compact with vibrant glow */
 .status-dot.system.minimal {
-  width: 11px;
-  height: 11px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   cursor: pointer;
   position: relative;
   transition: all 0.3s ease;
   border: none;
   pointer-events: auto; /* Still allow hover for tooltips */
-  /* Add padding for touch target - creates 44x44px hit area */
-  padding: 16px;
-  margin: -16px;
+  /* Transparent padding for 44px touch target */
+  padding: 17px;
+  margin: -17px;
   background-clip: content-box;
 }
 
