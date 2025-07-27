@@ -77,10 +77,72 @@
   justify-content: center;
 }
 
+/* Soft glowing effect for operational status */
+.status-dot.system.minimal.operational {
+  background: #10b981;
+  box-shadow: 
+    0 0 8px rgba(16, 185, 129, 0.6),
+    0 0 16px rgba(16, 185, 129, 0.4),
+    0 0 24px rgba(16, 185, 129, 0.2),
+    0 0 32px rgba(16, 185, 129, 0.1),
+    inset 0 0 4px rgba(255, 255, 255, 0.3);
+}
+
+/* Soft glowing effect for degraded status */
+.status-dot.system.minimal.degraded {
+  background: #f59e0b;
+  box-shadow: 
+    0 0 8px rgba(245, 158, 11, 0.6),
+    0 0 16px rgba(245, 158, 11, 0.4),
+    0 0 24px rgba(245, 158, 11, 0.2),
+    0 0 32px rgba(245, 158, 11, 0.1),
+    inset 0 0 4px rgba(255, 255, 255, 0.3);
+}
+
+/* Soft glowing effect for down status */
+.status-dot.system.minimal.down {
+  background: #ef4444;
+  box-shadow: 
+    0 0 8px rgba(239, 68, 68, 0.6),
+    0 0 16px rgba(239, 68, 68, 0.4),
+    0 0 24px rgba(239, 68, 68, 0.2),
+    0 0 32px rgba(239, 68, 68, 0.1),
+    inset 0 0 4px rgba(255, 255, 255, 0.3);
+}
+
 /* Hover state for minimal dots */
 .status-dot.system.minimal:hover {
-  transform: scale(1.1);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  transform: scale(1.15);
+}
+
+/* Enhanced hover glow for operational */
+.status-dot.system.minimal.operational:hover {
+  box-shadow: 
+    0 0 10px rgba(16, 185, 129, 0.8),
+    0 0 20px rgba(16, 185, 129, 0.6),
+    0 0 30px rgba(16, 185, 129, 0.4),
+    0 0 40px rgba(16, 185, 129, 0.2),
+    inset 0 0 6px rgba(255, 255, 255, 0.4);
+}
+
+/* Enhanced hover glow for degraded */
+.status-dot.system.minimal.degraded:hover {
+  box-shadow: 
+    0 0 10px rgba(245, 158, 11, 0.8),
+    0 0 20px rgba(245, 158, 11, 0.6),
+    0 0 30px rgba(245, 158, 11, 0.4),
+    0 0 40px rgba(245, 158, 11, 0.2),
+    inset 0 0 6px rgba(255, 255, 255, 0.4);
+}
+
+/* Enhanced hover glow for down */
+.status-dot.system.minimal.down:hover {
+  box-shadow: 
+    0 0 10px rgba(239, 68, 68, 0.8),
+    0 0 20px rgba(239, 68, 68, 0.6),
+    0 0 30px rgba(239, 68, 68, 0.4),
+    0 0 40px rgba(239, 68, 68, 0.2),
+    inset 0 0 6px rgba(255, 255, 255, 0.4);
 }
 
 /* Touch feedback */
