@@ -34,7 +34,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
    - **Primary**: Serena MCP tools (`find_symbol`, `get_symbols_overview`, `search_for_pattern`)
    - **Secondary**: ast-grep for structural code analysis (`ast-grep run -p 'pattern'`)
    - **Tertiary**: code2prompt CLI for codebase context generation
-   - **Last Resort**: grep/ripgrep for text-based search only
+   - **Last Resort**: grep/ripgrep for text-based search only (must document justification)
 
 ### Tool Definitions & Usage
 
@@ -88,9 +88,40 @@ ast-grep scan --rule custom-rule.yml
 - Text-based searches without attempting semantic search first
 - Ignoring Serena's memory APIs for context management
 - Operating without activating the relevant project in Serena
+- Using cat, head, tail, less, more on code files
+- Using find command for code discovery
+- Direct grep usage without documented semantic tool failure
 
 **🚨 Violation Consequences:**
-Any agent, script, or contributor not following these standards is **OUT OF COMPLIANCE** and must immediately correct their approach before proceeding.
+- Pre-commit hooks will **BLOCK** non-compliant commits
+- CI/CD pipeline will **FAIL** pull requests with violations
+- Manual override requires documented exemption in `.semantic-exemptions`
+
+### Enforcement & Validation
+
+**Automated Enforcement:**
+```bash
+# Install compliance hooks (one-time setup)
+./scripts/setup-semantic-hooks.sh
+
+# Run manual compliance check
+./scripts/semantic-search-hooks/validate-semantic-compliance.sh
+
+# Check specific files before commit
+git diff --cached --name-only | xargs ./scripts/semantic-search-hooks/pre-commit-semantic-validation.sh
+```
+
+**Compliance Reports:**
+- Generated in `reports/semantic-compliance/`
+- Include violations, warnings, and recommendations
+- Tracked in CI/CD artifacts
+
+**Emergency Bypass (NOT RECOMMENDED):**
+```bash
+# Only for critical hotfixes with manager approval
+git commit --no-verify -m "EMERGENCY: [reason]"
+# Must create exemption entry immediately after
+```
 
 ### Quick Reference Commands
 
@@ -121,10 +152,20 @@ read_memory "project-overview"
 list_memories
 ```
 
+**Validation Commands:**
+```bash
+# Check compliance status
+make semantic-validate
+
+# View latest compliance report
+ls -la reports/semantic-compliance/
+```
+
 For advanced usage, refer to:
 - **Serena Documentation**: Full MCP tool reference and semantic capabilities
 - **code2prompt Documentation**: Template customization and filtering options  
 - **ast-grep Documentation**: Pattern syntax and rule configuration
+- **Compliance Scripts**: `scripts/semantic-search-hooks/README.md`
 
 ## Project Overview
 
