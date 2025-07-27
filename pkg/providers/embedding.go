@@ -14,6 +14,11 @@ import (
 func getStandardizedEmbedding(ctx context.Context, text string, registry RegistryInterface) ([]float32, error) {
 	logger := log.GetLogger()
 
+	if registry == nil {
+		logger.Error("Registry is nil for standardized embeddings")
+		return nil, fmt.Errorf("registry is nil for standardized embeddings")
+	}
+
 	provider, err := registry.Get(ProviderOpenAI)
 	if err != nil {
 		logger.WithError(err).Error("OpenAI provider not found in registry for standardized embeddings")
