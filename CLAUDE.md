@@ -130,33 +130,65 @@ git commit --no-verify -m "EMERGENCY: [reason]"
 # Must create exemption entry immediately after
 ```
 
-### Quick Reference Commands
+### Quick Reference Commands - SERENA MCP FIRST
 
-**Project Setup:**
+**MANDATORY Project Start Sequence:**
 ```bash
-# Activate project in Serena (via MCP)
-"Activate the project /path/to/prompt-alchemy"
+# 1. ALWAYS start with Serena activation
+serena activate_project "/path/to/prompt-alchemy"
 
-# Generate initial context
-code2prompt --include "**/*.go" --include "**/*.ts" --output project-context.md
+# 2. Run project onboarding
+serena onboarding
+
+# 3. List available memories
+serena list_memories
 ```
 
-**Code Analysis:**
+**Code Analysis - SERENA FIRST:**
 ```bash
-# Serena semantic search
-find_symbol "GeneratePrompt"
-get_symbols_overview "internal/engine/"
+# Primary (REQUIRED FIRST):
+serena search_for_pattern "pattern"
+serena find_symbol "GeneratePrompt"
+serena get_symbols_overview "internal/engine/"
 
-# ast-grep pattern matching  
+# Fallback ONLY if Serena fails:
+# SERENA_FALLBACK: Connection timeout after 3 retries
 ast-grep run -p 'type $NAME struct { $$$ }' --lang go
+
+# Last resort with detailed justification:
+# SERENA_FALLBACK: Serena server unreachable, ast-grep pattern too complex
+grep -r "pattern" . # AVOID unless absolutely necessary
 ```
 
-**Memory Management:**
+**Memory Management - SERENA ONLY:**
 ```bash
-# Serena memory operations (via MCP)
-write_memory "analysis-results" "content here"
-read_memory "project-overview"
-list_memories
+# ALL memory operations MUST use Serena
+serena write_memory "analysis-results" "content here"
+serena read_memory "project-overview"
+serena update_memory "key" "new content"
+serena delete_memory "old-key"
+serena list_memories
+
+# NEVER use localStorage, files, or other storage without Serena
+```
+
+**Example Compliant Workflow:**
+```bash
+# 1. Start session
+serena activate_project .
+
+# 2. Search for function
+serena find_symbol "handleRequest"
+
+# 3. Get file overview
+serena get_symbols_overview "pkg/handlers/"
+
+# 4. Save findings
+serena write_memory "analysis-2024-01-15" "Found 3 handlers needing update..."
+
+# 5. If Serena fails, document and fallback
+# SERENA_FALLBACK: Server error 500 on find_symbol
+ast-grep run -p 'func handleRequest' --lang go
 ```
 
 **Validation Commands:**
