@@ -215,6 +215,31 @@
     transform: scale(1.07);
     box-shadow: 
       0 0 0 3px rgba(245, 158, 11, 0.5),
+      0 0 16px 4px rgba(245, 158, 11, 0.7),
+      0 0 36px 12px rgba(245, 158, 11, 0.35),
+      inset 0 0 4px rgba(255, 255, 255, 0.6);
+  }
+}
+
+/* Critical pulse animation for down status */
+@keyframes criticalPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 
+      0 0 0 2px rgba(239, 68, 68, 0.4),
+      0 0 12px 2px rgba(239, 68, 68, 0.6),
+      0 0 28px 8px rgba(239, 68, 68, 0.3),
+      inset 0 0 3px rgba(255, 255, 255, 0.5);
+  }
+  50% {
+    transform: scale(1.06);
+    box-shadow: 
+      0 0 0 3px rgba(239, 68, 68, 0.5),
+      0 0 16px 4px rgba(239, 68, 68, 0.7),
+      0 0 36px 12px rgba(239, 68, 68, 0.35),
+      inset 0 0 4px rgba(255, 255, 255, 0.6);
+  }
+}
       0 0 20px rgba(245, 158, 11, 0.5),
       0 0 30px rgba(245, 158, 11, 0.3),
       0 0 40px rgba(245, 158, 11, 0.15),
