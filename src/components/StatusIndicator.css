@@ -39,8 +39,8 @@
 
 /* Overall status dot - always visible */
 .status-dot.overall {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
   cursor: pointer;
   position: relative;
@@ -80,6 +80,9 @@
   transition: all 0.2s ease;
   position: relative;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .status-dot.system:hover,
@@ -90,13 +93,14 @@
 /* Pulse animation for operational status */
 .status-pulse {
   position: absolute;
-  top: -2px;
-  left: -2px;
-  right: -2px;
-  bottom: -2px;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
   border-radius: 50%;
   opacity: 0;
   animation: pulse 2s infinite;
+  pointer-events: none;
 }
 
 .status-dot:hover .status-pulse {
@@ -109,12 +113,12 @@
     transform: scale(1);
   }
   50% {
-    opacity: 0.3;
-    transform: scale(1.2);
+    opacity: 0.4;
+    transform: scale(1.5);
   }
   100% {
     opacity: 0;
-    transform: scale(1.4);
+    transform: scale(2);
   }
 }
 
@@ -313,6 +317,8 @@
 .status-tooltip-portal {
   pointer-events: auto;
   isolation: isolate;
+  z-index: 9999 !important;
+  position: fixed !important;
 }
 
 .status-tooltip.enhanced {
@@ -324,6 +330,10 @@
   animation: tooltip-fade-in 0.2s ease-out;
   filter: drop-shadow(0 8px 32px rgba(0, 0, 0, 0.4));
   pointer-events: auto;
+  /* Temporary hot pink background for debugging */
+  background: hotpink !important;
+  border: 5px solid yellow !important;
+  color: black !important;
 }
 
 .status-tooltip.enhanced::before {
@@ -332,6 +342,11 @@
 
 /* Focus styles for accessibility */
 .status-dot:focus {
+  outline: 2px solid var(--liquid-gold, #fbbf24);
+  outline-offset: 2px;
+}
+
+.status-dot:focus-visible {
   outline: 2px solid var(--liquid-gold, #fbbf24);
   outline-offset: 2px;
 }
@@ -345,6 +360,14 @@
   max-width: calc(100vw - 20px);
   max-height: calc(100vh - 20px);
   overflow: auto;
+}
+
+/* Debug - ensure no parent is hiding tooltips */
+.status-indicator,
+.system-dots,
+.system-dot-container {
+  overflow: visible !important;
+  z-index: auto !important;
 }
 
 /* Responsive adjustments */
