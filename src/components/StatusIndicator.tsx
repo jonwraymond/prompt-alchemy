@@ -325,6 +325,7 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
   };
 
   const handleDotMouseEnter = (systemId: string, event: React.MouseEvent) => {
+    console.log(`[StatusIndicator] Mouse enter on ${systemId}`);
     if (showTooltips) {
       // Clear any existing timeout
       if (hoverTimeoutRef.current) {
@@ -333,16 +334,19 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
       
       // Show tooltip after a short delay
       hoverTimeoutRef.current = setTimeout(() => {
+        console.log(`[StatusIndicator] Showing tooltip for ${systemId}`);
         setActiveTooltip(systemId);
         setHoveredSystem(systemId);
         if (event.currentTarget) {
           const position = calculateTooltipPosition(event.currentTarget as HTMLElement);
+          console.log(`[StatusIndicator] Tooltip position calculated:`, position);
           setTooltipPosition(position);
           
           // Recalculate position after DOM update
           setTimeout(() => {
             if (tooltipRef.current && event.currentTarget) {
               const newPosition = calculateTooltipPosition(event.currentTarget as HTMLElement, tooltipRef.current);
+              console.log(`[StatusIndicator] Tooltip position recalculated:`, newPosition);
               setTooltipPosition(newPosition);
             }
           }, 10);
@@ -352,6 +356,7 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
   };
 
   const handleDotMouseLeave = (systemId: string) => {
+    console.log(`[StatusIndicator] Mouse leave on ${systemId}`);
     // Clear hover timeout
     if (hoverTimeoutRef.current) {
       clearTimeout(hoverTimeoutRef.current);
@@ -359,6 +364,7 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
     
     // Only hide tooltip if it's from hover (not click)
     if (hoveredSystem === systemId && activeTooltip === systemId) {
+      console.log(`[StatusIndicator] Hiding tooltip for ${systemId}`);
       setActiveTooltip(null);
       setTooltipPosition(null);
       setHoveredSystem(null);
@@ -366,23 +372,28 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
   };
 
   const handleDotClick = (systemId: string, event?: React.MouseEvent) => {
+    console.log(`[StatusIndicator] Click on ${systemId}`);
     if (showTooltips) {
       // Clear hover state
       setHoveredSystem(null);
       
       if (activeTooltip === systemId) {
+        console.log(`[StatusIndicator] Hiding tooltip for ${systemId} (click toggle)`);
         setActiveTooltip(null);
         setTooltipPosition(null);
       } else {
+        console.log(`[StatusIndicator] Showing tooltip for ${systemId} (click)`);
         setActiveTooltip(systemId);
         if (event?.currentTarget) {
           const position = calculateTooltipPosition(event.currentTarget as HTMLElement);
+          console.log(`[StatusIndicator] Tooltip position calculated (click):`, position);
           setTooltipPosition(position);
           
           // Recalculate position after DOM update
           setTimeout(() => {
             if (tooltipRef.current && event.currentTarget) {
               const newPosition = calculateTooltipPosition(event.currentTarget as HTMLElement, tooltipRef.current);
+              console.log(`[StatusIndicator] Tooltip position recalculated (click):`, newPosition);
               setTooltipPosition(newPosition);
             }
           }, 10);
@@ -427,6 +438,14 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
                 onClick={(e) => handleDotClick(system.id, e)}
                 onMouseEnter={(e) => handleDotMouseEnter(system.id, e)}
                 onMouseLeave={() => handleDotMouseLeave(system.id)}
+                onFocus={(e) => {
+                  console.log(`[StatusIndicator] Focus on ${system.id}`);
+                  handleDotMouseEnter(system.id, e as any);
+                }}
+                onBlur={() => {
+                  console.log(`[StatusIndicator] Blur on ${system.id}`);
+                  handleDotMouseLeave(system.id);
+                }}
                 style={{ backgroundColor: getStatusColor(system.status) }}
                 role="button"
                 tabIndex={0}
@@ -471,6 +490,8 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
           }}
           role="tooltip"
           id={`tooltip-${activeTooltip}`}
+          onMouseEnter={() => console.log(`[StatusIndicator] Mouse entered tooltip`)}
+          onMouseLeave={() => console.log(`[StatusIndicator] Mouse left tooltip`)}
         >
           {(() => {
             const system = systems.find(s => s.id === activeTooltip);
