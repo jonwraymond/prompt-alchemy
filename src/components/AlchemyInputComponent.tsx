@@ -45,6 +45,14 @@ export const AlchemyInputComponent: React.FC<AlchemyInputProps> = ({
     database: 'down'
   });
 
+  // Additional system details for rich tooltips
+  const [systemDetails, setSystemDetails] = useState({
+    api: { details: '', responseTime: 0 },
+    engine: { details: '' },
+    providers: { details: '' },
+    database: { details: '' }
+  });
+
   // Tooltip state
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null);
@@ -66,21 +74,30 @@ export const AlchemyInputComponent: React.FC<AlchemyInputProps> = ({
   const checkSystemStatus = useCallback(async () => {
     try {
       // Check API Health
+      const startTime = Date.now();
       const healthResponse = await api.health();
+      const apiResponseTime = Date.now() - startTime;
       
       const apiStatus = healthResponse.success ? 'operational' : 'down';
       
       let engineStatus = 'down';
       let providersStatus = 'down';
       let databaseStatus = 'down';
+      let engineDetails = '';
+      let providersDetails = '';
+      let databaseDetails = '';
 
       if (healthResponse.success) {
         // Check Engine Status
         try {
           const statusResponse = await api.status();
           engineStatus = statusResponse.success ? 'operational' : 'degraded';
+          engineDetails = statusResponse.success 
+            ? `Engine operational - Learning mode: ${statusResponse.data?.learning_mode ? 'enabled' : 'disabled'}`
+            : 'Engine status unknown';
         } catch {
           engineStatus = 'degraded';
+          engineDetails = 'Engine status check failed';
         }
 
         // Check Providers
@@ -92,15 +109,26 @@ export const AlchemyInputComponent: React.FC<AlchemyInputProps> = ({
             // New backend response format with summary data
             const totalProviders = responseData.total_providers || 0;
             const availableProviders = responseData.available_providers || 0;
+            const embeddingProviders = responseData.embedding_providers || 0;
             
             if (totalProviders === 0) {
               providersStatus = 'down';
+              providersDetails = 'No providers configured';
             } else if (availableProviders === 0) {
               providersStatus = 'degraded';
+              providersDetails = `${totalProviders} providers configured, but none available (check API keys)`;
             } else if (availableProviders < totalProviders) {
               providersStatus = 'degraded';
+              providersDetails = `${availableProviders}/${totalProviders} providers available`;
+              if (embeddingProviders > 0) {
+                providersDetails += `, ${embeddingProviders} support embeddings`;
+              }
             } else {
               providersStatus = 'operational';
+              providersDetails = `All ${totalProviders} providers available`;
+              if (embeddingProviders > 0) {
+                providersDetails += `, ${embeddingProviders} support embeddings`;
+              }
             }
           } else {
             // Legacy response format fallback
@@ -111,16 +139,28 @@ export const AlchemyInputComponent: React.FC<AlchemyInputProps> = ({
               providersStatus = 'degraded';
             } else if (availableProviders < providerCount) {
               providersStatus = 'degraded';
-            } else if (providerCount > 0) {
-              providersStatus = 'operational';
             }
+
+            providersDetails = providerCount === 0 
+              ? 'No providers configured' 
+              : `${availableProviders}/${providerCount} providers available (check configuration)`;
           }
         } catch {
           providersStatus = 'degraded';
+          providersDetails = 'Unable to check provider status - API connection failed';
         }
 
         // Check Database (assume operational if API is working)
         databaseStatus = 'operational';
+        databaseDetails = 'Database accessible via API';
+      } else {
+        // If API is down, mark dependent systems as down
+        engineStatus = 'down';
+        providersStatus = 'down';
+        databaseStatus = 'down';
+        engineDetails = 'Cannot check - API down';
+        providersDetails = 'Cannot check - API down';
+        databaseDetails = 'Cannot check - API down';
       }
 
       setSystemStatus({
@@ -129,12 +169,37 @@ export const AlchemyInputComponent: React.FC<AlchemyInputProps> = ({
         providers: providersStatus,
         database: databaseStatus
       });
+
+      // Store additional details for tooltips
+      setSystemDetails({
+        api: {
+          details: healthResponse.success 
+            ? `API responding in ${apiResponseTime}ms` 
+            : healthResponse.error || 'API not responding',
+          responseTime: apiResponseTime
+        },
+        engine: {
+          details: engineDetails
+        },
+        providers: {
+          details: providersDetails
+        },
+        database: {
+          details: databaseDetails
+        }
+      });
     } catch {
       setSystemStatus({
         api: 'down',
         engine: 'down',
         providers: 'down',
         database: 'down'
+      });
+      setSystemDetails({
+        api: { details: 'System check failed' },
+        engine: { details: 'System check failed' },
+        providers: { details: 'System check failed' },
+        database: { details: 'System check failed' }
       });
     }
   }, []);

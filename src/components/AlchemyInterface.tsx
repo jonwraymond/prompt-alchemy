@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { AlchemyInputComponent } from './AlchemyInputComponent';
 import { SimpleHeader } from './SimpleHeader';
 import { HexagonGrid } from './HexagonGrid';
+import AlchemyHexGrid from './AlchemyHexGrid/AlchemyHexGrid';
 import { ApiTestRunner } from './ApiTestRunner';
 import { StatusIndicator } from './StatusIndicator';
 import { UserFlowTester } from './UserFlowTester';
