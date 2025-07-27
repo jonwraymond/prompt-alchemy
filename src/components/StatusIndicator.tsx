@@ -447,17 +447,19 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
       )}
 
       {/* Portal-based tooltip for better positioning */}
-      {activeTooltip && showTooltips && (
+      {activeTooltip && showTooltips && tooltipPosition && (
         <div 
           className="status-tooltip-portal"
           ref={tooltipRef}
           style={{
             position: 'fixed',
-            left: tooltipPosition?.x || 0,
-            top: tooltipPosition?.y || 0,
+            left: tooltipPosition.x,
+            top: tooltipPosition.y,
             zIndex: 9999,
             pointerEvents: 'auto'
           }}
+          role="tooltip"
+          id={`tooltip-${activeTooltip}`}
         >
           {(() => {
             const system = systems.find(s => s.id === activeTooltip);
