@@ -4,6 +4,7 @@ import HexNode from './HexNode';
 import ConnectionPath from './ConnectionPath';
 import PhaseTooltip from './PhaseTooltip';
 import ZoomControls from './ZoomControls';
+import { usePhaseUpdates } from './usePhaseUpdates';
 import { 
   AlchemyHexGridProps, 
   HexGridState, 
