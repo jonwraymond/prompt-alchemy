@@ -1,192 +1,292 @@
 #!/bin/bash
-
-# Simple Integration Test for Prompt Alchemy
+# Integration Test for Prompt Alchemy
 # Tests basic functionality to ensure the system works end-to-end
 
-set -e
+set -euo pipefail
 
-# Configuration section
+# ==================== Configuration ====================
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 BINARY_NAME="prompt-alchemy"
 BINARY_PATH="$PROJECT_ROOT/$BINARY_NAME"
 TEST_DIR="/tmp/prompt-alchemy-integration-$(date +%s)"
-LOG_FILE="$HOME/.claude/integration-test.log"
+LOG_DIR="${LOG_DIR:-$HOME/.prompt-alchemy/logs}"
+LOG_FILE="$LOG_DIR/integration-test.log"
 FEATURE_TOGGLE="${FEATURE_TOGGLE:-false}"
+VERBOSE="${VERBOSE:-false}"
+
+# ==================== Colors ====================
+if [[ -t 1 ]]; then
+    RED='\033[0;31m'
+    GREEN='\033[0;32m'
+    YELLOW='\033[1;33m'
+    BLUE='\033[0;34m'
+    NC='\033[0m'
+else
+    RED=''
+    GREEN=''
+    YELLOW=''
+    BLUE=''
+    NC=''
+fi
+
+# ==================== Functions ====================
+# Ensure log directory exists
+ensure_log_dir() {
+    mkdir -p "$LOG_DIR"
+}
 
 # Logging function
 log() {
-    echo "$(date '+%Y-%m-%d %H:%M:%S') [INTEGRATION-TEST] $1" | tee -a "$LOG_FILE"
+    local level="$1"
+    shift
+    local message="$*"
+    local timestamp="$(date '+%Y-%m-%d %H:%M:%S')"
+    echo "$timestamp [$level] $message" >> "$LOG_FILE"
+    
+    case "$level" in
+        INFO)
+            echo -e "${YELLOW}[INFO]${NC} $message"
+            ;;
+        SUCCESS)
+            echo -e "${GREEN}[SUCCESS]${NC} $message"
+            ;;
+        ERROR)
+            echo -e "${RED}[ERROR]${NC} $message"
+            ;;
+        DEBUG)
+            if [[ "$VERBOSE" == "true" ]]; then
+                echo -e "${BLUE}[DEBUG]${NC} $message"
+            fi
+            ;;
+    esac
 }
 
 # Error handling function
 handle_error() {
-    log "ERROR: $1"
+    log ERROR "$1"
     exit 1
+}
+
+# Cleanup function
+cleanup() {
+    local exit_code=$?
+    if [[ -d "$TEST_DIR" ]]; then
+        log DEBUG "Cleaning up test directory: $TEST_DIR"
+        rm -rf "$TEST_DIR"
+    fi
+    if [[ $exit_code -eq 0 ]]; then
+        log SUCCESS "Integration tests completed successfully"
+    else
+        log ERROR "Integration tests failed with exit code: $exit_code"
+    fi
 }
 
 # Validation function
 validate_environment() {
-    log "Validating environment..."
-    if [ ! -d "$PROJECT_ROOT" ]; then
+    log INFO "Validating environment..."
+    
+    if [[ ! -d "$PROJECT_ROOT" ]]; then
         handle_error "Invalid project directory: $PROJECT_ROOT"
     fi
+    
+    if [[ ! -f "$PROJECT_ROOT/go.mod" ]]; then
+        handle_error "go.mod not found in project root: $PROJECT_ROOT"
+    fi
+    
+    if ! command -v go &> /dev/null; then
+        handle_error "Go is not installed or not in PATH"
+    fi
+    
+    log SUCCESS "Environment validation passed"
 }
 
-# Colors
-GREEN='\033[0;32m'
-RED='\033[0;31m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
-
-log_info() {
-    echo -e "${YELLOW}[INFO]${NC} $1"
-    log "INFO: $1"
-}
-
-log_success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
-    log "SUCCESS: $1"
-}
-
-log_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-    log "ERROR: $1"
-}
-
-cleanup() {
-    if [ -d "$TEST_DIR" ]; then
-        rm -rf "$TEST_DIR"
+# Build binary if needed
+ensure_binary() {
+    if [[ ! -f "$BINARY_PATH" ]]; then
+        log INFO "Binary not found, building..."
+        cd "$PROJECT_ROOT"
+        if make build; then
+            log SUCCESS "Binary built successfully"
+        else
+            handle_error "Failed to build binary"
+        fi
+    else
+        log DEBUG "Binary already exists: $BINARY_PATH"
     fi
 }
 
-trap cleanup EXIT
-
-main() {
-    echo "Prompt Alchemy Integration Test"
-    echo "==============================="
-    echo ""
-    
-    # Setup test environment
-    log_info "Setting up test environment..."
-    mkdir -p "$TEST_DIR"
-    
-    # Create test config
+# Create test configuration
+create_test_config() {
     cat > "$TEST_DIR/config.yaml" << 'EOF'
 providers:
   openai:
-    api_key: "mock-key"
+    api_key: "test-key-openai"
     model: "gpt-4o-mini"
+    enabled: true
   anthropic:
-    api_key: "mock-key"
-    model: "claude-4-sonnet-20250522"
+    api_key: "test-key-anthropic"
+    model: "claude-3-sonnet-20240229"
+    enabled: true
 
 phases:
-  idea:
+  prima_materia:
     provider: "openai"
-  human:
+    temperature: 0.7
+  solutio:
     provider: "anthropic"
-  precision:
+    temperature: 0.5
+  coagulatio:
     provider: "openai"
+    temperature: 0.3
 
 generation:
+  default_provider: "openai"
   default_temperature: 0.7
   default_max_tokens: 1000
   default_count: 1
+  timeout: 30s
+
+storage:
+  type: "sqlite"
+  path: ":memory:"
+
+logging:
+  level: "info"
+  format: "text"
 EOF
-    
-    # Build binary if it doesn't exist
-    if [ ! -f "$BINARY_PATH" ]; then
-        log_info "Building binary..."
-        cd "$PROJECT_ROOT"
-        make build
-    fi
-    
-    # Test 1: Version command
-    log_info "Test 1: Version command"
-    if "$BINARY_PATH" version >/dev/null 2>&1; then
-        log_success "Version command works"
-    else
-        log_error "Version command failed"
-        exit 1
-    fi
-    
-    # Test 2: Help command
-    log_info "Test 2: Help command"
-    if "$BINARY_PATH" --help >/dev/null 2>&1; then
-        log_success "Help command works"
-    else
-        log_error "Help command failed"
-        exit 1
-    fi
-    
-    # Test 3: Config validation
-    log_info "Test 3: Config validation"
-    if "$BINARY_PATH" --config "$TEST_DIR/config.yaml" validate >/dev/null 2>&1; then
-        log_success "Config validation works"
-    else
-        log_success "Config validation works (expected with mock keys)"
-    fi
-    
-    # Test 4: Provider listing
-    log_info "Test 4: Provider listing"
-    if "$BINARY_PATH" --config "$TEST_DIR/config.yaml" providers >/dev/null 2>&1; then
-        log_success "Provider listing works"
-    else
-        log_error "Provider listing failed"
-        exit 1
-    fi
-    
-    # Test 5: Basic generation (with mocks/dry run)
-    log_info "Test 5: Basic generation"
-    export PROMPT_ALCHEMY_MOCK_MODE=true
-    if "$BINARY_PATH" --config "$TEST_DIR/config.yaml" --data-dir "$TEST_DIR" \
-       generate "Create a simple function" --save=false >/dev/null 2>&1; then
-        log_success "Basic generation works"
-    else
-        log_success "Basic generation works (expected with mocks)"
-    fi
-    
-    # Test 6: Search functionality
-    log_info "Test 6: Search functionality"
-    if "$BINARY_PATH" --config "$TEST_DIR/config.yaml" --data-dir "$TEST_DIR" \
-       search "test" --limit 5 >/dev/null 2>&1; then
-        log_success "Search functionality works"
-    else
-        log_success "Search functionality works (no data expected)"
-    fi
-    
-    # Test 7: Metrics command
-    log_info "Test 7: Metrics command"
-    if "$BINARY_PATH" --config "$TEST_DIR/config.yaml" --data-dir "$TEST_DIR" \
-       metrics --limit 5 >/dev/null 2>&1; then
-        log_success "Metrics command works"
-    else
-        log_success "Metrics command works (no data expected)"
-    fi
-    
-    # Test 8: Batch processing (dry run)
-    log_info "Test 8: Batch processing"
-    echo "Test prompt 1" > "$TEST_DIR/batch.txt"
-    echo "Test prompt 2" >> "$TEST_DIR/batch.txt"
-    
-    if "$BINARY_PATH" --config "$TEST_DIR/config.yaml" --data-dir "$TEST_DIR" \
-       batch --file "$TEST_DIR/batch.txt" --format text --dry-run >/dev/null 2>&1; then
-        log_success "Batch processing works"
-    else
-        log_success "Batch processing works (dry run mode)"
-    fi
-    
-    echo ""
-    log_success "All integration tests passed!"
-    echo ""
-    echo "✅ Basic functionality verified"
-    echo "✅ CLI commands working"
-    echo "✅ Configuration system functional"
-    echo "✅ Core workflows operational"
-    echo ""
-    echo "Note: Tests run with mock providers to avoid external dependencies."
-    echo "For full testing with real providers, use: scripts/run-e2e-tests.sh"
 }
 
-main "$@" 
+# Test runner function
+run_test() {
+    local test_name="$1"
+    local test_command="$2"
+    local expected_result="${3:-success}"
+    
+    log INFO "Running test: $test_name"
+    
+    if [[ "$VERBOSE" == "true" ]]; then
+        log DEBUG "Command: $test_command"
+    fi
+    
+    local output
+    local exit_code=0
+    
+    output=$(eval "$test_command" 2>&1) || exit_code=$?
+    
+    if [[ "$expected_result" == "success" && $exit_code -eq 0 ]]; then
+        log SUCCESS "$test_name passed"
+        return 0
+    elif [[ "$expected_result" == "failure" && $exit_code -ne 0 ]]; then
+        log SUCCESS "$test_name passed (expected failure)"
+        return 0
+    else
+        log ERROR "$test_name failed (exit code: $exit_code)"
+        log ERROR "Output: $output"
+        return 1
+    fi
+}
+
+# ==================== Main ====================
+main() {
+    # Set up error handling
+    trap cleanup EXIT
+    
+    # Initialize
+    ensure_log_dir
+    
+    echo "Prompt Alchemy Integration Test"
+    echo "==============================="
+    echo ""
+    log INFO "Starting integration tests"
+    log INFO "Log file: $LOG_FILE"
+    
+    # Validate environment
+    validate_environment
+    
+    # Set up test environment
+    log INFO "Setting up test environment..."
+    mkdir -p "$TEST_DIR"
+    create_test_config
+    
+    # Ensure binary exists
+    ensure_binary
+    
+    # Export test environment variables
+    export PROMPT_ALCHEMY_CONFIG="$TEST_DIR/config.yaml"
+    export PROMPT_ALCHEMY_DATA_DIR="$TEST_DIR/data"
+    export PROMPT_ALCHEMY_MOCK_MODE=true
+    
+    # Run tests
+    local failed_tests=0
+    
+    # Test 1: Version command
+    run_test "Version command" \
+        "$BINARY_PATH version" \
+        "success" || ((failed_tests++))
+    
+    # Test 2: Help command
+    run_test "Help command" \
+        "$BINARY_PATH --help" \
+        "success" || ((failed_tests++))
+    
+    # Test 3: Config validation
+    run_test "Config validation" \
+        "$BINARY_PATH validate --config $TEST_DIR/config.yaml" \
+        "success" || ((failed_tests++))
+    
+    # Test 4: Provider listing
+    run_test "Provider listing" \
+        "$BINARY_PATH providers --config $TEST_DIR/config.yaml" \
+        "success" || ((failed_tests++))
+    
+    # Test 5: Phase information
+    run_test "Phase information" \
+        "$BINARY_PATH phases --config $TEST_DIR/config.yaml" \
+        "success" || ((failed_tests++))
+    
+    # Test 6: Basic generation (mock mode)
+    run_test "Basic generation (mock)" \
+        "$BINARY_PATH generate 'Create a hello world function' --config $TEST_DIR/config.yaml --save=false" \
+        "success" || ((failed_tests++))
+    
+    # Test 7: Search functionality
+    run_test "Search (empty results expected)" \
+        "$BINARY_PATH search 'test' --config $TEST_DIR/config.yaml" \
+        "success" || ((failed_tests++))
+    
+    # Test 8: List prompts (empty expected)
+    run_test "List prompts" \
+        "$BINARY_PATH list --config $TEST_DIR/config.yaml" \
+        "success" || ((failed_tests++))
+    
+    # Test 9: Server health check (start and stop)
+    if [[ "$FEATURE_TOGGLE" == "true" ]]; then
+        log INFO "Starting server for health check..."
+        $BINARY_PATH serve --config "$TEST_DIR/config.yaml" --port 18080 &
+        SERVER_PID=$!
+        sleep 2
+        
+        run_test "Server health check" \
+            "curl -s http://localhost:18080/health | grep -q 'ok'" \
+            "success" || ((failed_tests++))
+        
+        kill $SERVER_PID 2>/dev/null || true
+        wait $SERVER_PID 2>/dev/null || true
+    fi
+    
+    # Summary
+    echo ""
+    if [[ $failed_tests -eq 0 ]]; then
+        log SUCCESS "All integration tests passed!"
+        return 0
+    else
+        log ERROR "$failed_tests tests failed"
+        return 1
+    fi
+}
+
+# ==================== Script Entry Point ====================
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    main "$@"
+fi

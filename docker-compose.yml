@@ -1,22 +1,27 @@
 version: '3.8'
 
 services:
+  # Backend API service
   prompt-alchemy-api:
     build:
       context: .
       dockerfile: Dockerfile
+      cache_from:
+        - prompt-alchemy:latest
+    image: prompt-alchemy:latest
+    container_name: prompt-alchemy-api
     ports:
-      - "5747:8080"
-      - "5748:8080"
+      - "8080:8080"  # API port
     environment:
       - DATA_DIR=/data
-      - LOG_LEVEL=debug
+      - LOG_LEVEL=${LOG_LEVEL:-info}
       - PROMPT_ALCHEMY_PROVIDERS_OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - PROMPT_ALCHEMY_PROVIDERS_ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - PROMPT_ALCHEMY_PROVIDERS_GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
-      - PROMPT_ALCHEMY_GENERATION_DEFAULT_PROVIDER=openai
+      - PROMPT_ALCHEMY_PROVIDERS_OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - PROMPT_ALCHEMY_GENERATION_DEFAULT_PROVIDER=${DEFAULT_PROVIDER:-openai}
     volumes:
-      - ./data:/data
+      - prompt-alchemy-data:/data
       - ./configs:/app/configs:ro
     restart: unless-stopped
     command: ["./prompt-alchemy", "serve", "--api", "--mcp", "--host", "0.0.0.0", "--port", "8080"]
@@ -25,12 +30,23 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 40s
+    networks:
+      - prompt-alchemy-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
-  # Frontend development server (optional, for integrated development)
+  # Frontend development server (development profile)
   frontend-dev:
     build:
       context: .
       dockerfile: Dockerfile.frontend
+      target: development
+    image: prompt-alchemy-frontend:dev
+    container_name: prompt-alchemy-frontend-dev
     ports:
       - "5173:5173"
     volumes:
@@ -39,13 +55,60 @@ services:
       - ./index.html:/app/index.html:ro
       - ./vite.config.ts:/app/vite.config.ts:ro
       - ./tsconfig.json:/app/tsconfig.json:ro
+      - node_modules:/app/node_modules
     environment:
       - VITE_API_URL=http://localhost:8080
+      - NODE_ENV=development
     command: ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
     depends_on:
       - prompt-alchemy-api
     profiles:
-      - frontend
+      - development
+      - full-stack
+    networks:
+      - prompt-alchemy-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Frontend production server (production profile)
+  frontend-prod:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      target: production
+    image: prompt-alchemy-frontend:prod
+    container_name: prompt-alchemy-frontend-prod
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      - prompt-alchemy-api
+    profiles:
+      - production
+    networks:
+      - prompt-alchemy-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
-  data:
+  prompt-alchemy-data:
+    name: prompt-alchemy-data
+  node_modules:
+    name: prompt-alchemy-node-modules
+
+networks:
+  prompt-alchemy-network:
+    name: prompt-alchemy-network
+    driver: bridge
