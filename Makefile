@@ -453,3 +453,28 @@ help:
 	@echo "  make test-verbose"
 	@echo "  make test-parallel"
 	@echo "  make test-ci" 
+# Serena MCP-First validation
+.PHONY: serena-validate
+serena-validate:
+	@echo "Running Serena MCP-First compliance validation..."
+	@chmod +x scripts/semantic-search-hooks/serena-first-validator.sh
+	@scripts/semantic-search-hooks/serena-first-validator.sh
+
+# Semantic tool compliance validation
+.PHONY: semantic-validate
+semantic-validate:
+	@echo "Running semantic tool compliance validation..."
+	@chmod +x scripts/semantic-search-hooks/validate-semantic-compliance.sh
+	@scripts/semantic-search-hooks/validate-semantic-compliance.sh
+
+# Run all compliance checks
+.PHONY: compliance-check
+compliance-check: serena-validate semantic-validate
+
+# Setup semantic hooks
+.PHONY: setup-semantic-hooks
+setup-semantic-hooks:
+	@echo "Setting up semantic tool compliance hooks..."
+	@chmod +x scripts/setup-semantic-hooks.sh
+	@scripts/setup-semantic-hooks.sh
+EOF < /dev/null
