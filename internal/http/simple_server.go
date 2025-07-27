@@ -398,17 +398,6 @@ func (s *SimpleServer) handleInfo(w http.ResponseWriter, r *http.Request) {
 	s.writeJSON(w, http.StatusOK, response)
 }
 
-//nolint:unused // Reserved for future functionality
-func (s *SimpleServer) handleNotImplemented(w http.ResponseWriter, r *http.Request) {
-	response := map[string]interface{}{
-		"error":   "Not implemented yet",
-		"message": "This endpoint is under development",
-		"path":    r.URL.Path,
-		"method":  r.Method,
-	}
-	s.writeJSON(w, http.StatusNotImplemented, response)
-}
-
 // CRUD handlers for prompts
 // func (s *SimpleServer) handleListPrompts(w http.ResponseWriter, r *http.Request) {
 // 	// Parse pagination parameters
@@ -607,7 +596,7 @@ func (s *SimpleServer) handleGeneratePrompts(w http.ResponseWriter, r *http.Requ
 	// Provider-specific temperature validation
 	// Determine the primary provider for temperature validation
 	primaryProvider := ""
-	if req.Providers != nil && len(req.Providers) > 0 {
+	if len(req.Providers) > 0 {
 		// If specific providers are set, use the first one for validation
 		for _, provider := range req.Providers {
 			primaryProvider = provider
