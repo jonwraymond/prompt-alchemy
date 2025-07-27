@@ -184,25 +184,62 @@
   }
 }
 
-/* Pulsating animation for operational status */
-@keyframes pulsate {
+/* Soft radiant glow animation */
+@keyframes radiantGlow {
   0% {
-    transform: scale(1);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), 0 0 0 0 rgba(16, 185, 129, 0.4);
+    box-shadow: 
+      0 0 8px rgba(16, 185, 129, 0.6),
+      0 0 16px rgba(16, 185, 129, 0.4),
+      0 0 24px rgba(16, 185, 129, 0.2),
+      0 0 32px rgba(16, 185, 129, 0.1),
+      inset 0 0 4px rgba(255, 255, 255, 0.3);
   }
   50% {
-    transform: scale(1.05);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), 0 0 0 8px rgba(16, 185, 129, 0);
+    box-shadow: 
+      0 0 12px rgba(16, 185, 129, 0.8),
+      0 0 24px rgba(16, 185, 129, 0.6),
+      0 0 36px rgba(16, 185, 129, 0.4),
+      0 0 48px rgba(16, 185, 129, 0.2),
+      inset 0 0 6px rgba(255, 255, 255, 0.4);
   }
   100% {
-    transform: scale(1);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), 0 0 0 0 rgba(16, 185, 129, 0);
+    box-shadow: 
+      0 0 8px rgba(16, 185, 129, 0.6),
+      0 0 16px rgba(16, 185, 129, 0.4),
+      0 0 24px rgba(16, 185, 129, 0.2),
+      0 0 32px rgba(16, 185, 129, 0.1),
+      inset 0 0 4px rgba(255, 255, 255, 0.3);
   }
 }
 
-/* Apply pulsating animation to operational dots */
+/* Misty pulse animation for degraded status */
+@keyframes mistyPulse {
+  0%, 100% {
+    box-shadow: 
+      0 0 8px rgba(245, 158, 11, 0.6),
+      0 0 16px rgba(245, 158, 11, 0.4),
+      0 0 24px rgba(245, 158, 11, 0.2),
+      0 0 32px rgba(245, 158, 11, 0.1),
+      inset 0 0 4px rgba(255, 255, 255, 0.3);
+  }
+  50% {
+    box-shadow: 
+      0 0 10px rgba(245, 158, 11, 0.7),
+      0 0 20px rgba(245, 158, 11, 0.5),
+      0 0 30px rgba(245, 158, 11, 0.3),
+      0 0 40px rgba(245, 158, 11, 0.15),
+      inset 0 0 5px rgba(255, 255, 255, 0.35);
+  }
+}
+
+/* Apply radiant glow animation to operational dots */
 .status-dot.system.minimal.operational {
-  animation: pulsate 2s ease-in-out infinite;
+  animation: radiantGlow 3s ease-in-out infinite;
+}
+
+/* Apply misty pulse to degraded dots */
+.status-dot.system.minimal.degraded {
+  animation: mistyPulse 4s ease-in-out infinite;
 }
 
 /* Disable animation for reduced motion preference */
