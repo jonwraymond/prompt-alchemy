@@ -311,7 +311,8 @@
 
 /* Enhanced portal-based tooltip */
 .status-tooltip-portal {
-  pointer-events: none;
+  pointer-events: auto;
+  isolation: isolate;
 }
 
 .status-tooltip.enhanced {
@@ -322,10 +323,28 @@
   bottom: auto;
   animation: tooltip-fade-in 0.2s ease-out;
   filter: drop-shadow(0 8px 32px rgba(0, 0, 0, 0.4));
+  pointer-events: auto;
 }
 
 .status-tooltip.enhanced::before {
   display: none; /* Remove arrows for portal tooltips as positioning is dynamic */
+}
+
+/* Focus styles for accessibility */
+.status-dot:focus {
+  outline: 2px solid var(--liquid-gold, #fbbf24);
+  outline-offset: 2px;
+}
+
+.status-dot:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Ensure tooltips stay within viewport */
+.status-tooltip-portal {
+  max-width: calc(100vw - 20px);
+  max-height: calc(100vh - 20px);
+  overflow: auto;
 }
 
 /* Responsive adjustments */
