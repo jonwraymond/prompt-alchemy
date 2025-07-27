@@ -64,7 +64,7 @@
 .system-dots {
   display: flex;
   flex-direction: row;
-  gap: 12px;
+  gap: 6px;
   margin: 0;
   padding: 15px; /* Add padding to ensure touch targets don't get clipped */
   border: none;
@@ -81,34 +81,25 @@
   justify-content: center;
 }
 
-/* Vibrant glowing effect for operational status */
+/* Solid dot for operational status */
 .status-dot.system.minimal.operational {
   background-color: #10b981 !important;
-  box-shadow: 
-    0 0 8px 2px rgba(16, 185, 129, 0.5),
-    0 0 20px 4px rgba(16, 185, 129, 0.25),
-    inset 0 0 2px rgba(255, 255, 255, 0.4);
-  animation: radiantGlow 3s ease-in-out infinite;
+  box-shadow: none;
+  animation: none;
 }
 
-/* Vibrant glowing effect for degraded status */
+/* Solid dot for degraded status */
 .status-dot.system.minimal.degraded {
   background-color: #f59e0b !important;
-  box-shadow: 
-    0 0 8px 2px rgba(245, 158, 11, 0.5),
-    0 0 20px 4px rgba(245, 158, 11, 0.25),
-    inset 0 0 2px rgba(255, 255, 255, 0.4);
-  animation: mistyPulse 3.2s ease-in-out infinite;
+  box-shadow: none;
+  animation: none;
 }
 
-/* Vibrant glowing effect for down status */
+/* Solid dot for down status */
 .status-dot.system.minimal.down {
   background-color: #ef4444 !important;
-  box-shadow: 
-    0 0 8px 2px rgba(239, 68, 68, 0.5),
-    0 0 20px 4px rgba(239, 68, 68, 0.25),
-    inset 0 0 2px rgba(255, 255, 255, 0.4);
-  animation: criticalPulse 3.5s ease-in-out infinite;
+  box-shadow: none;
+  animation: none;
 }
 
 /* Hover state for minimal dots */
@@ -116,28 +107,19 @@
   transform: scale(1.15);
 }
 
-/* Enhanced hover glow for operational */
+/* Simple hover for operational */
 .status-dot.system.minimal.operational:hover {
-  box-shadow: 
-    0 0 12px 3px rgba(16, 185, 129, 0.6),
-    0 0 24px 6px rgba(16, 185, 129, 0.3),
-    inset 0 0 3px rgba(255, 255, 255, 0.5);
+  box-shadow: none;
 }
 
-/* Enhanced hover glow for degraded */
+/* Simple hover for degraded */
 .status-dot.system.minimal.degraded:hover {
-  box-shadow: 
-    0 0 12px 3px rgba(245, 158, 11, 0.6),
-    0 0 24px 6px rgba(245, 158, 11, 0.3),
-    inset 0 0 3px rgba(255, 255, 255, 0.5);
+  box-shadow: none;
 }
 
-/* Enhanced hover glow for down */
+/* Simple hover for down */
 .status-dot.system.minimal.down:hover {
-  box-shadow: 
-    0 0 12px 3px rgba(239, 68, 68, 0.6),
-    0 0 24px 6px rgba(239, 68, 68, 0.3),
-    inset 0 0 3px rgba(255, 255, 255, 0.5);
+  box-shadow: none;
 }
 
 /* Touch feedback */
@@ -153,9 +135,9 @@
     height: 7px !important;
   }
   
-  /* Even more spacing on touch devices */
+  /* Tight spacing on touch devices too */
   .system-dots {
-    gap: 14px;
+    gap: 8px;
   }
 }
 
