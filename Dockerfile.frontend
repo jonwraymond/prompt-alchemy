@@ -1,6 +1,59 @@
-# Frontend development container
-FROM node:18-alpine
+# Multi-stage build for frontend
+# Stage 1: Build stage
+FROM node:20-alpine AS builder
 
+# Set working directory
+WORKDIR /app
+
+# Copy package files first for better caching
+COPY package*.json ./
+COPY tsconfig*.json ./
+COPY vite.config.ts ./
+
+# Install dependencies with CI for reproducible builds
+RUN npm ci --no-audit --no-fund
+
+# Copy source code
+COPY src ./src
+COPY public ./public
+COPY index.html ./
+
+# Build the application
+RUN npm run build
+
+# Stage 2: Production runtime
+FROM node:20-alpine AS production
+
+# Install serve for static file serving
+RUN npm install -g serve
+
+# Create non-root user
+RUN addgroup -g 1000 -S appgroup && \
+    adduser -u 1000 -S appuser -G appgroup
+
+# Set working directory
+WORKDIR /app
+
+# Copy built files from builder
+COPY --from=builder --chown=appuser:appgroup /app/dist ./dist
+
+# Switch to non-root user
+USER appuser
+
+# Expose port
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:3000 || exit 1
+
+# Serve the production build
+CMD ["serve", "-s", "dist", "-l", "3000"]
+
+# Stage 3: Development runtime (default)
+FROM node:20-alpine AS development
+
+# Set working directory
 WORKDIR /app
 
 # Copy package files
