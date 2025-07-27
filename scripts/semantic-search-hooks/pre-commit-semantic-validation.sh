@@ -192,10 +192,11 @@ done
 
 # Generate compliance report
 echo "═══════════════════════════════════════════" | tee -a "$COMPLIANCE_LOG"
-echo "Semantic Tool Compliance Report" | tee -a "$COMPLIANCE_LOG"
+echo "Serena MCP-First Compliance Report" | tee -a "$COMPLIANCE_LOG"
 echo "═══════════════════════════════════════════" | tee -a "$COMPLIANCE_LOG"
 echo "Timestamp: $(date)" | tee -a "$COMPLIANCE_LOG"
-echo "Total violations found: $VIOLATIONS_FOUND" | tee -a "$COMPLIANCE_LOG"
+echo "Total violations: $VIOLATIONS_FOUND" | tee -a "$COMPLIANCE_LOG"
+echo "Serena MCP violations: $SERENA_VIOLATIONS" | tee -a "$COMPLIANCE_LOG"
 
 # Check for exemptions
 EXEMPTION_FILE=".semantic-exemptions"
@@ -204,25 +205,42 @@ if [ -f "$EXEMPTION_FILE" ] && [ $VIOLATIONS_FOUND -gt 0 ]; then
     # Process exemptions here if needed
 fi
 
-# Final decision
-if [ $VIOLATIONS_FOUND -gt 0 ]; then
+# Log fallback justifications if any
+if [ -f "$FALLBACK_LOG" ] && [ -s "$FALLBACK_LOG" ]; then
+    echo -e "${BLUE}═══════════════════════════════════════════${NC}"
+    echo -e "${BLUE}Fallback Justifications Found:${NC}"
+    cat "$FALLBACK_LOG"
+fi
+
+# Final decision - Serena violations are critical
+if [ $SERENA_VIOLATIONS -gt 0 ]; then
     echo -e "${RED}════════════════════════════════════════════${NC}"
-    echo -e "${RED}❌ COMMIT BLOCKED: Semantic tool compliance violations detected${NC}"
+    echo -e "${RED}❌ COMMIT BLOCKED: Serena MCP-First violations detected${NC}"
     echo -e "${RED}════════════════════════════════════════════${NC}"
     echo ""
-    echo "Required actions:"
-    echo "1. Replace direct file operations with Serena MCP tools"
-    echo "2. Use code2prompt for codebase context generation"
-    echo "3. Use ast-grep for pattern matching instead of grep"
-    echo "4. Activate project in Serena before navigation"
+    echo "MANDATORY: All operations MUST use Serena MCP first:"
     echo ""
-    echo "See $COMPLIANCE_LOG for details"
+    echo "1. START with: serena activate_project"
+    echo "2. SEARCH with: serena search_for_pattern / find_symbol"
+    echo "3. BROWSE with: serena get_symbols_overview"
+    echo "4. MEMORY with: serena write_memory / read_memory"
     echo ""
-    echo "To bypass (NOT RECOMMENDED), use: git commit --no-verify"
+    echo "Fallback to other tools ONLY if Serena fails, with justification:"
+    echo "   # SERENA_FALLBACK: [error message and reason]"
+    echo ""
+    echo "Logs:"
+    echo "- Violations: $COMPLIANCE_LOG"
+    echo "- Fallbacks: $FALLBACK_LOG"
+    echo ""
+    echo "To bypass (REQUIRES MANAGER APPROVAL): git commit --no-verify"
     exit 1
+elif [ $VIOLATIONS_FOUND -gt 0 ]; then
+    echo -e "${YELLOW}⚠️  Non-critical violations found. Review recommended.${NC}"
+    echo "See $COMPLIANCE_LOG for details"
+    # Allow commit but warn
 else
-    echo -e "${GREEN}✅ All semantic tool compliance checks passed!${NC}"
-    echo "Compliance log saved to: $COMPLIANCE_LOG"
+    echo -e "${GREEN}✅ All Serena MCP-First compliance checks passed!${NC}"
+    echo "Logs saved to: $COMPLIANCE_LOG"
 fi
 
 exit 0
