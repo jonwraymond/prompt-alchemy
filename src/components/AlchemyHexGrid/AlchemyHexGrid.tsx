@@ -116,15 +116,36 @@ const AlchemyHexGrid: React.FC<AlchemyHexGridProps> = ({
   const svgRef = useRef<SVGSVGElement>(null);
   const [metrics] = useState<HexMetrics>(DEFAULT_HEX_METRICS);
   
+  const defaultNodes = createDefaultNodes(metrics);
+  const defaultConnections = createDefaultConnections();
+  
+  const { 
+    nodes, 
+    connections, 
+    currentPhase, 
+    isProcessing, 
+    startPhaseProcessing 
+  } = usePhaseUpdates(defaultNodes, defaultConnections);
+  
   const [state, setState] = useState<HexGridState>({
-    nodes: createDefaultNodes(metrics),
-    connections: createDefaultConnections(),
+    nodes: defaultNodes,
+    connections: defaultConnections,
     activePhase: null,
     focusedNode: null,
     zoomLevel: initialZoom,
     panOffset: { x: width / 2, y: height / 2 },
     animationSpeed
   });
+  
+  // Update state when nodes/connections change from the hook
+  useEffect(() => {
+    setState(prev => ({
+      ...prev,
+      nodes,
+      connections,
+      activePhase: currentPhase
+    }));
+  }, [nodes, connections, currentPhase]);
 
   const [tooltip, setTooltip] = useState<TooltipData>({
     node: null as any,
