@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Pre-commit hook to enforce semantic tool usage compliance
-# This hook validates that all code navigation and analysis uses approved semantic tools
+# Pre-commit hook to enforce Serena MCP-first semantic tool usage compliance
+# This hook validates that ALL code navigation, analysis, and memory operations use Serena MCP
 
 set -e
 
@@ -9,36 +9,51 @@ set -e
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-echo "🔍 Running Semantic Tool Compliance Check..."
+echo "🔍 Running Serena MCP-First Compliance Check..."
 
 # Configuration
 COMPLIANCE_LOG="/tmp/semantic-compliance-$(date +%s).log"
+FALLBACK_LOG="/tmp/semantic-fallback-$(date +%s).log"
 VIOLATIONS_FOUND=0
+SERENA_VIOLATIONS=0
 
-# Define prohibited patterns that indicate non-semantic tool usage
+# Define prohibited patterns that indicate non-Serena operations
 PROHIBITED_PATTERNS=(
-    # Direct file operations without semantic tools
-    "cat\s+[^|]*\.(go|ts|tsx|js|jsx)"
-    "head\s+[^|]*\.(go|ts|tsx|js|jsx)"
-    "tail\s+[^|]*\.(go|ts|tsx|js|jsx)"
-    "less\s+[^|]*\.(go|ts|tsx|js|jsx)"
-    "more\s+[^|]*\.(go|ts|tsx|js|jsx)"
+    # Direct file operations without Serena MCP
+    "cat\s+[^|]*\.(go|ts|tsx|js|jsx|py|sh|md)"
+    "head\s+[^|]*\.(go|ts|tsx|js|jsx|py|sh|md)"
+    "tail\s+[^|]*\.(go|ts|tsx|js|jsx|py|sh|md)"
+    "less\s+[^|]*\.(go|ts|tsx|js|jsx|py|sh|md)"
+    "more\s+[^|]*\.(go|ts|tsx|js|jsx|py|sh|md)"
     
-    # Direct grep usage without attempting semantic search first
+    # Direct grep usage without Serena search_for_pattern
     "grep\s+-[^|]*\s+['\"].*['\"]"
     "egrep\s+"
     "fgrep\s+"
+    "ripgrep\s+"
+    "rg\s+"
     
-    # Manual directory traversal
+    # Manual directory traversal without Serena
     "find\s+\.\s+-name"
     "find\s+\./\s+-type"
+    "ls\s+-[la]*\s+[^|]*/"
     
-    # Direct file reading in scripts
-    "open\(['\"].*\.(go|ts|tsx|js|jsx)['\"]"
-    "readFile.*\.(go|ts|tsx|js|jsx)"
+    # Direct file reading in code
+    "open\(['\"].*\.(go|ts|tsx|js|jsx|py)['\"]"
+    "readFile.*\.(go|ts|tsx|js|jsx|py)"
     "fs\.read.*\.(go|ts|tsx|js|jsx)"
+    "File\.read"
+    "with\s+open"
+    
+    # Direct memory/storage access without Serena
+    "localStorage\."
+    "sessionStorage\."
+    "fs\.write.*memory"
+    "save.*context"
+    "store.*knowledge"
 )
 
 # Define required semantic tool patterns
