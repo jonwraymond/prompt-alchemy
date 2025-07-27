@@ -95,16 +95,10 @@ func TestOllamaProvider_GetEmbedding(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	// Check if Ollama is available
-	if provider.IsAvailable() {
-		// If Ollama is running, we expect GetEmbedding to succeed
-		_, err := provider.GetEmbedding(ctx, "test text", nil)
-		assert.NoError(t, err, "GetEmbedding should succeed when Ollama is available")
-	} else {
-		// If Ollama is not running, we expect GetEmbedding to fail
-		_, err := provider.GetEmbedding(ctx, "test text", nil)
-		assert.Error(t, err, "GetEmbedding should fail when Ollama is not available")
-	}
+	// Test with nil registry - should always fail gracefully
+	_, err := provider.GetEmbedding(ctx, "test text", nil)
+	assert.Error(t, err, "GetEmbedding should fail when registry is nil")
+	assert.Contains(t, err.Error(), "registry is nil", "Error should mention nil registry")
 }
 
 func TestOllamaProvider_IsAvailable(t *testing.T) {
