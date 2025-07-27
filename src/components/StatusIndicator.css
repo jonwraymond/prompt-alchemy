@@ -89,6 +89,20 @@
   transform: scale(0.95);
 }
 
+/* Ensure dots are easily tappable on touch devices */
+@media (pointer: coarse) {
+  .status-dot.system.minimal {
+    /* Slightly larger visual size on touch devices */
+    width: 16px;
+    height: 16px;
+  }
+  
+  /* Even more spacing on touch devices */
+  .system-dots {
+    gap: 14px;
+  }
+}
+
 /* No pulse animation for minimal dots */
 .status-dot.minimal .status-pulse {
   display: none;
