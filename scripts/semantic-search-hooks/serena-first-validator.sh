@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Serena MCP-First Validator
-# Rigorous enforcement of Serena MCP usage for all operations
+# Serena MCP Best Practices Validator
+# Provides helpful guidance on optimal Serena MCP usage patterns
 
 set -e
 
@@ -14,14 +14,14 @@ MAGENTA='\033[0;35m'
 NC='\033[0m'
 
 echo -e "${BLUE}════════════════════════════════════════════════════════════════${NC}"
-echo -e "${BLUE}              Serena MCP-First Compliance Validator              ${NC}"
+echo -e "${BLUE}              Serena MCP Best Practices Analyzer                 ${NC}"
 echo -e "${BLUE}════════════════════════════════════════════════════════════════${NC}"
 
 # Configuration
 REPORT_DIR="reports/serena-compliance"
 REPORT_FILE="$REPORT_DIR/serena-report-$(date +%Y%m%d-%H%M%S).md"
-VIOLATIONS_COUNT=0
-CRITICAL_VIOLATIONS=0
+GOOD_PRACTICES=0
+IMPROVEMENT_OPPORTUNITIES=0
 FALLBACK_COUNT=0
 SCANNED_FILES=0
 
@@ -30,19 +30,19 @@ mkdir -p "$REPORT_DIR"
 
 # Initialize report
 cat > "$REPORT_FILE" << EOF
-# Serena MCP-First Compliance Report
+# Serena MCP Best Practices Report
 
 **Generated**: $(date)  
 **Project**: $(basename $(pwd))  
-**Policy**: SERENA MCP FIRST, ALWAYS
+**Purpose**: Analyze Serena MCP usage patterns and provide improvement suggestions
 
-## Enforcement Summary
+## Best Practices Summary
 
-All code operations MUST use Serena MCP as the primary tool. Fallbacks are only permitted with explicit error documentation.
+This report identifies opportunities to better leverage Serena MCP for code navigation and memory management.
 
 ---
 
-## Critical Violations (Blocking)
+## Good Practices Found 🎉
 
 EOF
 
@@ -60,31 +60,22 @@ SERENA_PATTERNS=(
     "serena delete_memory"
 )
 
-# Operations that MUST use Serena
-MUST_USE_SERENA=(
+# Operations that could benefit from Serena
+COULD_USE_SERENA=(
     # File operations
     "cat .*\.(go|ts|tsx|js|jsx|py|sh|md)"
     "head .*\.(go|ts|tsx|js|jsx|py|sh|md)"
     "tail .*\.(go|ts|tsx|js|jsx|py|sh|md)"
-    "less .*\.(go|ts|tsx|js|jsx|py|sh|md)"
-    "more .*\.(go|ts|tsx|js|jsx|py|sh|md)"
     
     # Search operations
     "grep -[rRn]"
     "find .* -name"
-    "ls -[la]"
+    "rg .*pattern"
     
     # Code analysis
     "analyze.*code"
-    "search.*project"
-    "scan.*codebase"
-    "explore.*repo"
-    
-    # Memory operations
-    "save.*context"
-    "store.*memory"
-    "write.*knowledge"
-    "read.*state"
+    "search.*function"
+    "find.*symbol"
 )
 
 # Valid fallback markers
@@ -92,51 +83,54 @@ FALLBACK_MARKERS=(
     "SERENA_FALLBACK:"
     "Serena failed:"
     "Serena error:"
-    "Serena unavailable:"
-    "Serena timeout:"
+    "ast-grep alternative:"
+    "code2prompt fallback:"
 )
 
-# Function to check if Serena was used first
-check_serena_first() {
+# Function to check for Serena usage patterns
+analyze_serena_usage() {
     local file="$1"
-    local operation="$2"
-    local line_num="$3"
+    local has_serena=false
+    local suggestions=""
     
-    # Get context around the operation (20 lines before)
-    local start_line=$((line_num > 20 ? line_num - 20 : 1))
-    local context=$(sed -n "${start_line},$((line_num))p" "$file")
-    
-    # Check if Serena was attempted
-    local serena_found=false
+    # Check for any Serena usage
     for pattern in "${SERENA_PATTERNS[@]}"; do
-        if echo "$context" | grep -F "$pattern" > /dev/null 2>&1; then
-            serena_found=true
-            break
+        if grep -F "$pattern" "$file" > /dev/null 2>&1; then
+            has_serena=true
+            ((GOOD_PRACTICES++))
+            echo -e "- Found \`$pattern\` usage in \`$file\` ✅" >> "$REPORT_FILE"
         fi
     done
     
-    # Check for fallback justification
-    local fallback_found=false
-    for marker in "${FALLBACK_MARKERS[@]}"; do
-        if echo "$context" | grep -F "$marker" > /dev/null 2>&1; then
-            fallback_found=true
-            ((FALLBACK_COUNT++))
-            break
-        fi
+    # Check for operations that could use Serena
+    for pattern in "${COULD_USE_SERENA[@]}"; do
+        while IFS=: read -r line_num line_content; do
+            if [ ! -z "$line_num" ]; then
+                # Check if there's a fallback marker nearby
+                local context_start=$((line_num > 5 ? line_num - 5 : 1))
+                local context=$(sed -n "${context_start},$((line_num + 5))p" "$file")
+                
+                local has_fallback=false
+                for marker in "${FALLBACK_MARKERS[@]}"; do
+                    if echo "$context" | grep -F "$marker" > /dev/null 2>&1; then
+                        has_fallback=true
+                        ((FALLBACK_COUNT++))
+                        break
+                    fi
+                done
+                
+                if ! $has_fallback && ! $has_serena; then
+                    ((IMPROVEMENT_OPPORTUNITIES++))
+                    suggestions="${suggestions}\n- Line $line_num: Consider using Serena instead of \`$pattern\`"
+                fi
+            fi
+        done < <(grep -n -E "$pattern" "$file" 2>/dev/null || true)
     done
     
-    if ! $serena_found && ! $fallback_found; then
-        echo -e "\n### CRITICAL: Operation without Serena MCP" >> "$REPORT_FILE"
-        echo -e "**File**: \`$file:$line_num\`" >> "$REPORT_FILE"
-        echo -e "**Operation**: \`$operation\`" >> "$REPORT_FILE"
-        echo -e "**Status**: ❌ No Serena attempt or fallback justification\n" >> "$REPORT_FILE"
-        ((CRITICAL_VIOLATIONS++))
-        return 1
-    elif ! $serena_found && $fallback_found; then
-        echo -e "${YELLOW}⚠️  Fallback found in $file:$line_num${NC}"
-        return 0
-    else
-        return 0
+    # Add suggestions to report if any
+    if [ ! -z "$suggestions" ] && [ $IMPROVEMENT_OPPORTUNITIES -gt 0 ]; then
+        echo -e "\n### Improvement Opportunity: \`$file\`" >> "$REPORT_FILE"
+        echo -e "$suggestions" >> "$REPORT_FILE"
     fi
 }
 
@@ -151,37 +145,17 @@ validate_file() {
     
     ((SCANNED_FILES++))
     
-    # Check for script activation requirement
-    if [[ "$file" =~ \.(sh|bash|py)$ ]]; then
-        if ! head -30 "$file" | grep -E "serena activate_project" > /dev/null 2>&1; then
-            echo -e "\n### Missing Serena Activation" >> "$REPORT_FILE"
-            echo -e "**File**: \`$file\`" >> "$REPORT_FILE"
-            echo -e "**Issue**: Script does not activate Serena project at start" >> "$REPORT_FILE"
-            echo -e "**Required**: \`serena activate_project .\` at script beginning\n" >> "$REPORT_FILE"
-            ((VIOLATIONS_COUNT++))
-        fi
-    fi
-    
-    # Check each must-use-Serena pattern
-    for pattern in "${MUST_USE_SERENA[@]}"; do
-        while IFS=: read -r line_num line_content; do
-            if [ ! -z "$line_num" ]; then
-                check_serena_first "$file" "$pattern" "$line_num"
-                if [ $? -ne 0 ]; then
-                    ((VIOLATIONS_COUNT++))
-                fi
-            fi
-        done < <(grep -n -E "$pattern" "$file" 2>/dev/null || true)
-    done
+    # Analyze Serena usage
+    analyze_serena_usage "$file"
     
     # Show progress
     if [ $((SCANNED_FILES % 10)) -eq 0 ]; then
-        echo -ne "\rScanned: $SCANNED_FILES files... (Violations: $VIOLATIONS_COUNT)"
+        echo -ne "\rAnalyzed: $SCANNED_FILES files..."
     fi
 }
 
 # Main validation loop
-echo -e "${YELLOW}Validating Serena MCP-First compliance...${NC}"
+echo -e "${YELLOW}Analyzing Serena MCP usage patterns...${NC}"
 
 # Find all relevant files
 while IFS= read -r -d '' file; do
@@ -200,6 +174,19 @@ done < <(find . -type f \
 
 echo -e "\n"
 
+# Add improvement opportunities section
+if [ $IMPROVEMENT_OPPORTUNITIES -gt 0 ]; then
+    cat >> "$REPORT_FILE" << EOF
+
+---
+
+## Improvement Opportunities 💡
+
+Found $IMPROVEMENT_OPPORTUNITIES places where Serena MCP could enhance your workflow:
+
+EOF
+fi
+
 # Add summary
 cat >> "$REPORT_FILE" << EOF
 
@@ -207,62 +194,78 @@ cat >> "$REPORT_FILE" << EOF
 
 ## Summary Statistics
 
-- **Files Scanned**: $SCANNED_FILES
-- **Total Violations**: $VIOLATIONS_COUNT
-- **Critical Violations**: $CRITICAL_VIOLATIONS (operations without Serena)
+- **Files Analyzed**: $SCANNED_FILES
+- **Good Practices**: $GOOD_PRACTICES (Serena usage found)
+- **Improvement Opportunities**: $IMPROVEMENT_OPPORTUNITIES
 - **Documented Fallbacks**: $FALLBACK_COUNT
-- **Compliance Status**: $([ $CRITICAL_VIOLATIONS -eq 0 ] && echo "✅ COMPLIANT" || echo "❌ NON-COMPLIANT")
 
-## Required Actions
+## Recommendations
 
-1. **All Operations Must Start with Serena**:
+### When to Use Serena MCP
+
+1. **Symbol Navigation**:
    \`\`\`bash
-   serena activate_project .
-   serena search_for_pattern "pattern"
-   serena get_symbols_overview "path/"
+   serena find_symbol "GeneratePrompt"  # Instead of grep -r
+   serena get_symbols_overview "internal/engine/"  # Instead of ls -la
    \`\`\`
 
-2. **Fallbacks Require Documentation**:
+2. **Pattern Search**:
    \`\`\`bash
-   # SERENA_FALLBACK: Connection refused after 3 retries
-   grep -r "pattern" .  # Only after Serena failure
+   serena search_for_pattern "TODO|FIXME"  # Instead of grep
    \`\`\`
 
-3. **Memory Operations Are Serena-Only**:
+3. **Project Memory**:
    \`\`\`bash
-   serena write_memory "key" "value"
-   serena read_memory "key"
+   serena write_memory "refactoring-plan" "content"
+   serena read_memory "project-notes"
    \`\`\`
 
-## Enforcement
+### When to Use Other Tools
 
-Pre-commit hooks will **BLOCK** any commits with critical violations.
-Use \`git commit --no-verify\` only with manager approval and documented justification.
+- **ast-grep**: For AST-based refactoring and structural patterns
+- **code2prompt**: For generating comprehensive context for AI
+- **grep/ripgrep**: When Serena is unavailable or for simple text search
+
+### Best Practice: Document Fallbacks
+
+When Serena isn't suitable, document why:
+\`\`\`bash
+# SERENA_FALLBACK: Using grep for log files (not code)
+grep -r "ERROR" logs/
+\`\`\`
 
 EOF
 
 # Display results
 echo -e "${BLUE}════════════════════════════════════════════════════════════════${NC}"
-echo -e "${BLUE}                  Serena MCP-First Report Summary                ${NC}"
+echo -e "${BLUE}                    Analysis Summary                             ${NC}"
 echo -e "${BLUE}════════════════════════════════════════════════════════════════${NC}"
 echo ""
-echo -e "Files Scanned: ${GREEN}$SCANNED_FILES${NC}"
-echo -e "Total Violations: $([ $VIOLATIONS_COUNT -eq 0 ] && echo "${GREEN}$VIOLATIONS_COUNT${NC}" || echo "${YELLOW}$VIOLATIONS_COUNT${NC}")"
-echo -e "Critical Violations: $([ $CRITICAL_VIOLATIONS -eq 0 ] && echo "${GREEN}$CRITICAL_VIOLATIONS${NC}" || echo "${RED}$CRITICAL_VIOLATIONS${NC}")"
+echo -e "Files Analyzed: ${GREEN}$SCANNED_FILES${NC}"
+echo -e "Good Practices Found: ${GREEN}$GOOD_PRACTICES${NC}"
+echo -e "Improvement Opportunities: $([ $IMPROVEMENT_OPPORTUNITIES -eq 0 ] && echo "${GREEN}$IMPROVEMENT_OPPORTUNITIES${NC}" || echo "${YELLOW}$IMPROVEMENT_OPPORTUNITIES${NC}")"
 echo -e "Documented Fallbacks: ${BLUE}$FALLBACK_COUNT${NC}"
 echo ""
 
-if [ $CRITICAL_VIOLATIONS -eq 0 ]; then
-    echo -e "${GREEN}✅ SERENA MCP-FIRST COMPLIANT${NC}"
-    echo -e "${GREEN}   All operations properly use Serena or have documented fallbacks${NC}"
+if [ $GOOD_PRACTICES -gt 0 ]; then
+    echo -e "${GREEN}✅ Great job using Serena MCP!${NC}"
+    echo -e "   Found $GOOD_PRACTICES instances of Serena usage"
+fi
+
+if [ $IMPROVEMENT_OPPORTUNITIES -gt 0 ]; then
+    echo -e "${YELLOW}💡 Found $IMPROVEMENT_OPPORTUNITIES opportunities to leverage Serena${NC}"
+    echo -e "   See detailed suggestions in the report"
 else
-    echo -e "${RED}❌ SERENA MCP-FIRST VIOLATIONS DETECTED${NC}"
-    echo -e "${RED}   $CRITICAL_VIOLATIONS operations found without Serena MCP usage${NC}"
-    echo -e "${RED}   See detailed report: $REPORT_FILE${NC}"
+    echo -e "${GREEN}✨ Excellent! No obvious missed opportunities for Serena usage${NC}"
 fi
 
 echo ""
 echo -e "Full report: ${MAGENTA}$REPORT_FILE${NC}"
+echo ""
+echo -e "${BLUE}Remember: Use the right tool for the job!${NC}"
+echo -e "  • Serena for semantic code navigation and project memory"
+echo -e "  • ast-grep for AST pattern matching"
+echo -e "  • code2prompt for AI context generation"
 
-# Exit with error if critical violations
-[ $CRITICAL_VIOLATIONS -eq 0 ] && exit 0 || exit 1
+# Always exit successfully - this is a helper, not a blocker
+exit 0

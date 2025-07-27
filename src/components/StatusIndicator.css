@@ -343,8 +343,10 @@
 .status-tooltip-portal {
   pointer-events: auto;
   isolation: isolate;
-  z-index: 9999 !important;
+  z-index: 99999 !important;
   position: fixed !important;
+  /* Ensure it's above everything */
+  transform: translateZ(9999px);
 }
 
 .status-tooltip.enhanced {

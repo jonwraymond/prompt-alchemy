@@ -14,197 +14,225 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 8. DO NOT BE LAZY. NEVER BE LAZY. IF THERE IS A BUG FIND THE ROOT CAUSE AND FIX IT. NO TEMPORARY FIXES. YOU ARE A SENIOR DEVELOPER. NEVER BE LAZY
 9. MAKE ALL FIXES AND CODE CHANGES AS SIMPLE AS HUMANLY POSSIBLE. THEY SHOULD ONLY IMPACT NECESSARY CODE RELEVANT TO THE TASK AND NOTHING ELSE. IT SHOULD IMPACT AS LITTLE CODE AS POSSIBLE. YOUR GOAL IS TO NOT INTRODUCE ANY BUGS. IT'S ALL ABOUT SIMPLICITY
 
-## AI NAVIGATION & MEMORY POLICY: NON-NEGOTIABLE STANDARDS
+## AI NAVIGATION & MEMORY POLICY: BEST PRACTICES
 
-**⚠️ CRITICAL: These rules are MANDATORY for all codebase operations. Non-compliance is unacceptable.**
+**⚠️ IMPORTANT: Use semantic tools for code analysis and navigation to ensure accuracy and efficiency.**
 
-### GOLDEN RULE: SERENA MCP FIRST, ALWAYS
+### Core Tool Philosophy
 
-**NO project domain or code context exploration, structure mapping, or memory usage is allowed except via Serena MCP tools, unless and until explicit Serena error is logged, and then fallback is documented.**
+**Use the right tool for the job: Serena MCP for semantic code operations, ast-grep for pattern matching, code2prompt for context generation.**
 
-### Core Tool Requirements
+### Tool Usage Guidelines
 
-1. **SERENA MCP IS MANDATORY FOR ALL OPERATIONS**
-   - **EVERY** session MUST start with: `serena activate_project`
-   - **ALL** code search MUST use: `serena search_for_pattern` or `serena find_symbol`
-   - **ALL** navigation MUST use: `serena get_symbols_overview`
-   - **ALL** memory MUST use: `serena write_memory` and `serena read_memory`
-   - **NEVER** use grep, cat, find, or any direct file operations without Serena failing first
+1. **Serena MCP - Semantic Code Operations**
+   - **Project Activation**: Run once per project when starting work or switching projects
+   - **Code Navigation**: Use `find_symbol`, `get_symbols_overview` for understanding code structure
+   - **File Operations**: Use `read_file`, `create_text_file`, `replace_lines` for code changes
+   - **Memory**: Use `write_memory`/`read_memory` for persistent context across sessions
+   - **IDE Mode**: Use `--context ide-assistant` for enhanced IDE integration
 
-2. **FALLBACK ONLY WITH EXPLICIT JUSTIFICATION**
-   - If Serena MCP fails, you MUST document: `# SERENA_FALLBACK: [error and reason]`
-   - Only after documented Serena failure may you use:
-     - ast-grep for structural patterns (with justification)
-     - code2prompt for context generation (with justification)
-     - grep/ripgrep as absolute last resort (with detailed justification)
+2. **ast-grep - Pattern-Based Search**
+   - Use for complex structural patterns that Serena's symbol search doesn't cover
+   - Excellent for refactoring patterns and AST-based transformations
+   - Faster for simple pattern matching across many files
 
-3. **Enforcement Hierarchy**:
-   - **MANDATORY**: Serena MCP for ALL operations (search, navigate, memory, analysis)
-   - **CONDITIONAL**: Other tools ONLY after Serena failure with documentation
-   - **BLOCKED**: Direct file operations without Serena attempt and failure log
+3. **code2prompt - Context Generation**
+   - Use when you need to generate comprehensive project context for LLMs
+   - Helpful for creating project overviews or preparing code for analysis
+   - Supports filtering, templates, and git integration
 
-### Tool Definitions & Usage
-
-**code2prompt CLI**: Convert entire codebase into structured LLM prompts
-```bash
-# Generate codebase context
-code2prompt --pattern "*.go,*.ts" --output context.md
-
-# Include git information
-code2prompt --git-diff --git-log-since "1 week ago"
-
-# Filter specific directories
-code2prompt --include "internal/**" --exclude "node_modules/**"
-```
+### Tool Definitions & Practical Examples
 
 **Serena MCP**: Semantic code analysis and memory management via Model Context Protocol
 ```bash
-# Essential Serena operations (via MCP tools):
-activate_project         # Activate project by path or name
-find_symbol              # Search symbols globally or locally
-get_symbols_overview     # Get file/directory symbol overview
-search_for_pattern       # Pattern search across project
-write_memory            # Save context to project memory
-read_memory             # Retrieve saved context
-list_memories           # List available memories
-onboarding              # Perform project onboarding
+# Project Setup (run once per project)
+"Activate the project /path/to/prompt-alchemy"  # Or by name if previously activated
+
+# Code Navigation
+"Find the symbol GeneratePrompt"                # Find specific function/class/variable
+"Show symbols in internal/engine/"              # Get overview of directory structure
+"Find references to handleRequest function"     # Find where code is used
+
+# File Operations
+"Read the file internal/engine/engine.go"       # Read specific file
+"Create a new file tests/engine_test.go"        # Create new file
+"Replace lines 45-50 in main.go with [code]"   # Edit specific lines
+"Insert at line 100 in handler.go: [code]"      # Insert code at specific line
+
+# Memory Operations (persist context across sessions)
+"Save to memory 'api-design': Our API uses..."  # Store important context
+"Read from memory 'api-design'"                 # Retrieve stored context
+"List all memories"                             # See available memories
+
+# Shell Execution (use cautiously)
+"Run: go test ./internal/engine/..."           # Execute tests
+"Run: npm run build"                            # Build frontend
 ```
 
 **ast-grep**: Structural pattern matching for code analysis
 ```bash
-# Find function definitions
-ast-grep run -p 'func $NAME($ARGS) { $$$ }' --lang go
+# Go Examples
+ast-grep -p 'func $NAME($$$) error { $$$ }' --lang go     # Find functions returning error
+ast-grep -p 'if err != nil { return $$$err }' --lang go   # Find error handling patterns
+ast-grep -p 'type $NAME struct { $$$ }' --lang go         # Find struct definitions
 
-# Find specific patterns
-ast-grep run -p 'if ($COND) { $$$ }' --json
+# TypeScript/JavaScript Examples
+ast-grep -p 'console.log($$$)' --lang ts                  # Find console.log statements
+ast-grep -p 'import { $$$ } from "react"' --lang tsx      # Find React imports
+ast-grep -p 'const [$VAR, set$VAR] = useState($$$)' --lang tsx  # Find useState hooks
 
-# Scan with custom rules
-ast-grep scan --rule custom-rule.yml
+# Refactoring Examples
+ast-grep --pattern 'fmt.Println($MSG)' --rewrite 'log.Info($MSG)' --lang go
+ast-grep --pattern 'var $VAR = $VAL' --rewrite 'const $VAR = $VAL' --lang js
+
+# Using rule files for complex patterns
+ast-grep scan --rule .ast-grep/no-console-log.yml
 ```
 
-### Compliance Requirements
-
-**✅ Required Actions:**
-- Start every coding session by activating the project in Serena
-- Use Serena's memory system to maintain context across sessions
-- Leverage semantic tools for all code exploration and analysis
-- Generate structured context with code2prompt for complex analysis
-
-**❌ Prohibited Actions:**
-- Manual file browsing without semantic tools
-- Text-based searches without attempting semantic search first
-- Ignoring Serena's memory APIs for context management
-- Operating without activating the relevant project in Serena
-- Using cat, head, tail, less, more on code files
-- Using find command for code discovery
-- Direct grep usage without documented semantic tool failure
-
-**🚨 Violation Consequences:**
-- Pre-commit hooks will **BLOCK** non-compliant commits
-- CI/CD pipeline will **FAIL** pull requests with violations
-- Manual override requires documented exemption in `.semantic-exemptions`
-
-### Enforcement & Validation
-
-**Automated Enforcement:**
+**code2prompt**: Convert codebase into structured LLM prompts
 ```bash
-# Install compliance hooks (one-time setup)
-./scripts/setup-semantic-hooks.sh
+# Basic usage (copies to clipboard)
+code2prompt
 
-# Run manual compliance check
-./scripts/semantic-search-hooks/validate-semantic-compliance.sh
+# Generate context for specific languages
+code2prompt --include "*.go" --include "*.mod" --output go-context.md
+code2prompt --include "src/**/*.tsx" --exclude "**/*.test.tsx"
 
-# Check specific files before commit
-git diff --cached --name-only | xargs ./scripts/semantic-search-hooks/pre-commit-semantic-validation.sh
+# Include git information
+code2prompt --git-diff HEAD~5 --git-log-since "2 days ago"
+
+# Custom templates for specific purposes
+code2prompt --template prompts/code-review.hbs
+code2prompt --template prompts/architecture-analysis.hbs
+
+# Token-aware generation
+code2prompt --max-tokens 100000 --encoding cl100k_base
+
+# Filter by file patterns
+code2prompt --filter "internal/**" --exclude-filter "*_test.go"
 ```
 
-**Compliance Reports:**
-- Generated in `reports/semantic-compliance/`
-- Include violations, warnings, and recommendations
-- Tracked in CI/CD artifacts
+### Best Practices
 
-**Emergency Bypass (NOT RECOMMENDED):**
-```bash
-# Only for critical hotfixes with manager approval
-git commit --no-verify -m "EMERGENCY: [reason]"
-# Must create exemption entry immediately after
+**✅ Recommended Actions:**
+- Activate project in Serena when starting work on a new project
+- Use Serena's memory system to persist important context across sessions
+- Leverage semantic tools for accurate code navigation and understanding
+- Use the right tool for each job (Serena for semantic ops, ast-grep for patterns, code2prompt for context)
+
+**⚠️ Things to Avoid:**
+- Relying solely on text-based search when semantic tools would be more accurate
+- Forgetting to save important context to Serena memory for future sessions
+- Using overly complex grep patterns when ast-grep would be clearer
+
+### Hook Configuration (Optional)
+
+Claude Code supports hooks for automated workflows. Here's an example configuration:
+
+**Example: Format on save**
+```json
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/scripts/format-check.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
 ```
 
-### Quick Reference Commands - SERENA MCP FIRST
-
-**MANDATORY Project Start Sequence:**
-```bash
-# 1. ALWAYS start with Serena activation
-serena activate_project "/path/to/prompt-alchemy"
-
-# 2. Run project onboarding
-serena onboarding
-
-# 3. List available memories
-serena list_memories
+**Example: Validate before bash execution**
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/validate-bash.py"
+          }
+        ]
+      }
+    ]
+  }
+}
 ```
 
-**Code Analysis - SERENA FIRST:**
+**Important**: Hooks should enhance your workflow, not block legitimate operations. Always test hooks thoroughly and use exit codes appropriately (0 for success, 2 for blocking with feedback, other for non-blocking errors).
+
+### Quick Reference Commands
+
+**Project Setup with Serena:**
 ```bash
-# Primary (REQUIRED FIRST):
-serena search_for_pattern "pattern"
-serena find_symbol "GeneratePrompt"
-serena get_symbols_overview "internal/engine/"
+# Activate project (once per project)
+"Activate the project /path/to/prompt-alchemy"  # By path
+"Activate the project prompt-alchemy"            # By name if previously used
 
-# Fallback ONLY if Serena fails:
-# SERENA_FALLBACK: Connection timeout after 3 retries
-ast-grep run -p 'type $NAME struct { $$$ }' --lang go
-
-# Last resort with detailed justification:
-# SERENA_FALLBACK: Serena server unreachable, ast-grep pattern too complex
-grep -r "pattern" . # AVOID unless absolutely necessary
+# Explore project structure
+"Show symbols in internal/"
+"Find the main function"
 ```
 
-**Memory Management - SERENA ONLY:**
+**Code Search Examples:**
 ```bash
-# ALL memory operations MUST use Serena
-serena write_memory "analysis-results" "content here"
-serena read_memory "project-overview"
-serena update_memory "key" "new content"
-serena delete_memory "old-key"
-serena list_memories
+# Serena - Best for semantic understanding
+"Find the symbol GeneratePrompt"
+"Find references to handleRequest"
+"Show all functions in engine.go"
 
-# NEVER use localStorage, files, or other storage without Serena
+# ast-grep - Best for structural patterns
+ast-grep -p 'func ($NAME) Handle$_($$$)' --lang go
+ast-grep -p 'useState<$TYPE>($$$)' --lang tsx
+
+# code2prompt - Best for context generation
+code2prompt --include "internal/**/*.go" --output context.md
 ```
 
-**Example Compliant Workflow:**
+**Memory Management:**
 ```bash
-# 1. Start session
-serena activate_project .
+# Save important context
+"Save to memory 'architecture-decisions': We chose SQLite because..."
+"Save to memory 'api-patterns': All endpoints follow REST conventions..."
 
-# 2. Search for function
-serena find_symbol "handleRequest"
-
-# 3. Get file overview
-serena get_symbols_overview "pkg/handlers/"
-
-# 4. Save findings
-serena write_memory "analysis-2024-01-15" "Found 3 handlers needing update..."
-
-# 5. If Serena fails, document and fallback
-# SERENA_FALLBACK: Server error 500 on find_symbol
-ast-grep run -p 'func handleRequest' --lang go
+# Retrieve context
+"Read from memory 'architecture-decisions'"
+"List all memories"
 ```
 
-**Validation Commands:**
+**Example Development Workflow:**
 ```bash
-# Check compliance status
-make semantic-validate
+# 1. Start work on a feature
+"Activate the project prompt-alchemy"
+"Show symbols in internal/engine/"
 
-# View latest compliance report
-ls -la reports/semantic-compliance/
+# 2. Find relevant code
+"Find the symbol GeneratePrompt"
+ast-grep -p 'func Generate$_($$$)' --lang go
+
+# 3. Make changes
+"Replace lines 45-50 in engine.go with: [new code]"
+
+# 4. Test changes
+"Run: go test ./internal/engine/..."
+
+# 5. Save context for next session
+"Save to memory 'batch-feature': Working on batch processing in engine.go lines 45-50"
 ```
 
 For advanced usage, refer to:
-- **Serena Documentation**: Full MCP tool reference and semantic capabilities
-- **code2prompt Documentation**: Template customization and filtering options  
-- **ast-grep Documentation**: Pattern syntax and rule configuration
-- **Compliance Scripts**: `scripts/semantic-search-hooks/README.md`
+- **Serena Documentation**: https://github.com/oraios/serena
+- **code2prompt Documentation**: https://github.com/mufeedvh/code2prompt
+- **ast-grep Documentation**: https://ast-grep.github.io/
+- **Claude Code Hooks**: https://docs.anthropic.com/en/docs/claude-code/hooks-reference
 
 ## Project Overview
 

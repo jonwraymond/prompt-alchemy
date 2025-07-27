@@ -343,26 +343,29 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
         clearTimeout(hoverTimeoutRef.current);
       }
       
+      // Capture the element reference before the timeout
+      const targetElement = event.currentTarget as HTMLElement;
+      
       // Show tooltip after a short delay
       hoverTimeoutRef.current = setTimeout(() => {
         console.log(`[StatusIndicator] Showing tooltip for ${systemId}`);
         setActiveTooltip(systemId);
         setHoveredSystem(systemId);
-        if (event.currentTarget) {
-          const position = calculateTooltipPosition(event.currentTarget as HTMLElement);
+        if (targetElement) {
+          const position = calculateTooltipPosition(targetElement);
           console.log(`[StatusIndicator] Tooltip position calculated:`, position);
           setTooltipPosition(position);
           
           // Recalculate position after DOM update
           setTimeout(() => {
-            if (tooltipRef.current && event.currentTarget) {
-              const newPosition = calculateTooltipPosition(event.currentTarget as HTMLElement, tooltipRef.current);
+            if (tooltipRef.current && targetElement) {
+              const newPosition = calculateTooltipPosition(targetElement, tooltipRef.current);
               console.log(`[StatusIndicator] Tooltip position recalculated:`, newPosition);
               setTooltipPosition(newPosition);
             }
           }, 10);
         }
-      }, 200); // 200ms delay to prevent accidental hovers
+      }, 0); // Temporarily removed delay for debugging
     }
   };
 
@@ -396,14 +399,15 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
         console.log(`[StatusIndicator] Showing tooltip for ${systemId} (click)`);
         setActiveTooltip(systemId);
         if (event?.currentTarget) {
-          const position = calculateTooltipPosition(event.currentTarget as HTMLElement);
+          const targetElement = event.currentTarget as HTMLElement;
+          const position = calculateTooltipPosition(targetElement);
           console.log(`[StatusIndicator] Tooltip position calculated (click):`, position);
           setTooltipPosition(position);
           
           // Recalculate position after DOM update
           setTimeout(() => {
-            if (tooltipRef.current && event.currentTarget) {
-              const newPosition = calculateTooltipPosition(event.currentTarget as HTMLElement, tooltipRef.current);
+            if (tooltipRef.current && targetElement) {
+              const newPosition = calculateTooltipPosition(targetElement, tooltipRef.current);
               console.log(`[StatusIndicator] Tooltip position recalculated (click):`, newPosition);
               setTooltipPosition(newPosition);
             }
@@ -510,6 +514,9 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
             
             return (
               <div className="status-tooltip enhanced">
+                <div style={{ fontSize: '10px', color: '#888', marginBottom: '4px' }}>
+                  REAL PROVIDER TOOLTIP
+                </div>
                 <div className="tooltip-header">
                   <span className="tooltip-title">{system.name}</span>
                   <span 
