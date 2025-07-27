@@ -442,8 +442,11 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
             <div key={system.id} className="system-dot-container">
               <div
                 className="status-dot system minimal"
+                tabIndex={0}
                 onMouseEnter={(e) => handleDotMouseEnter(system.id, e)}
                 onMouseLeave={() => handleDotMouseLeave(system.id)}
+                onFocus={(e) => handleDotFocus(system.id, e)}
+                onBlur={() => handleDotBlur(system.id)}
                 style={{ backgroundColor: getStatusColor(system.status) }}
                 aria-label={`${system.name}: ${getStatusText(system.status)}`}
                 aria-describedby={activeTooltip === system.id ? `tooltip-${system.id}` : undefined}
