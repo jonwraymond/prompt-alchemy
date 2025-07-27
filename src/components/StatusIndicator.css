@@ -241,20 +241,13 @@
   }
 }
 
-/* Apply radiant glow animation to operational dots */
-.status-dot.system.minimal.operational {
-  animation: radiantGlow 3s ease-in-out infinite;
-}
-
-/* Apply misty pulse to degraded dots */
-.status-dot.system.minimal.degraded {
-  animation: mistyPulse 4s ease-in-out infinite;
-}
+/* Remove duplicate animation declarations since they're already in the status definitions above */
 
 /* Disable animation for reduced motion preference */
 @media (prefers-reduced-motion: reduce) {
   .status-dot.system.minimal.operational,
-  .status-dot.system.minimal.degraded {
+  .status-dot.system.minimal.degraded,
+  .status-dot.system.minimal.down {
     animation: none;
   }
 }
