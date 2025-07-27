@@ -17,6 +17,15 @@ import {
 } from './types';
 import './AlchemyHexGrid.css';
 
+// Extend window for global access
+declare global {
+  interface Window {
+    AlchemyHexGrid?: {
+      startProcessing?: (sessionId: string) => void;
+    };
+  }
+}
+
 // Default hex metrics
 const DEFAULT_HEX_METRICS: HexMetrics = {
   size: 50,
