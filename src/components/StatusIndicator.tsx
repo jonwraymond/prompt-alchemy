@@ -404,7 +404,15 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
         className="status-dot overall"
         onClick={handleOverallClick}
         style={{ backgroundColor: getStatusColor(overallStatus) }}
-        title={showTooltips ? `Overall Status: ${getStatusText(overallStatus)} (click for details)` : ''}
+        role="button"
+        tabIndex={0}
+        aria-label={`Overall Status: ${getStatusText(overallStatus)}. Click to expand details.`}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleOverallClick();
+          }
+        }}
       >
         <div className="status-pulse" style={{ backgroundColor: getStatusColor(overallStatus) }} />
       </div>
