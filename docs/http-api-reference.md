@@ -15,6 +15,14 @@ This document provides a reference for the RESTful API exposed by the `http-serv
 
 All request and response bodies are in JSON format.
 
+## Recent API Enhancements (v1.1.0)
+
+- **Enhanced Model Tracking**: All responses now include detailed ModelMetadata with cost and performance metrics
+- **Complete CRUD Operations**: Full implementation of ListPrompts, GetPrompt, and SearchPrompts endpoints
+- **Improved Search**: Text-based search across prompt content and original input
+- **Consolidated Types**: Unified request/response schemas for consistency
+- **Better Error Handling**: Enhanced error responses with detailed debugging information
+
 ---
 
 ## Endpoints

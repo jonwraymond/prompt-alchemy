@@ -11,11 +11,18 @@ Prompt Alchemy uses SQLite as its primary storage engine, providing a lightweigh
 
 The database stores all prompt data, metadata, metrics, and learning information in a single SQLite file located at `~/.prompt-alchemy/prompts.db` by default.
 
+## Recent Schema Enhancements (v1.1.0)
+
+- **Enhanced ModelMetadata**: Comprehensive tracking of model usage, costs, and performance
+- **Complete Storage API**: Fully implemented CRUD operations for all entities
+- **Improved Search**: Text-based search capabilities across content and metadata
+- **Better Lifecycle Tracking**: Enhanced prompt lifecycle and usage analytics
+
 ## Schema Design
 
 ### Core Tables
 
-#### `prompts` - Main prompt storage
+#### `prompts` - Enhanced prompt storage
 ```sql
 CREATE TABLE prompts (
     id TEXT PRIMARY KEY,
@@ -23,32 +30,55 @@ CREATE TABLE prompts (
     phase TEXT NOT NULL,
     provider TEXT NOT NULL,
     model TEXT NOT NULL,
-    persona TEXT,
+    temperature REAL,
+    max_tokens INTEGER,
+    actual_tokens INTEGER,
     tags TEXT,
-    context TEXT,
+    parent_id TEXT,
+    session_id TEXT NOT NULL,
+    
+    -- Lifecycle management
+    source_type TEXT NOT NULL,              -- How prompt was created
+    enhancement_method TEXT,                -- How it was improved
+    relevance_score REAL DEFAULT 0.0,      -- Dynamic relevance (0.0-1.0)
+    usage_count INTEGER DEFAULT 0,         -- Times accessed/used
+    generation_count INTEGER DEFAULT 0,    -- Prompts this generated
+    last_used_at DATETIME,                 -- Last access timestamp
+    
+    -- Original input tracking
+    original_input TEXT,                   -- Original user input
+    persona_used TEXT,                     -- Persona used for generation
+    target_model_family TEXT,             -- Target model family
+    target_use_case TEXT,                 -- Target use case
+    
+    -- Embedding support
     embedding BLOB,
     embedding_model TEXT,
-    embedding_dimensions INTEGER,
+    embedding_provider TEXT,
+    
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    parent_id TEXT,
-    variant_of TEXT,
-    effectiveness_score REAL DEFAULT 0.0,
-    usage_count INTEGER DEFAULT 0
+    
+    FOREIGN KEY (parent_id) REFERENCES prompts(id)
 );
 ```
 
-#### `model_metadata` - Generation metadata
+#### `model_metadata` - Enhanced generation metadata
 ```sql
 CREATE TABLE model_metadata (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    prompt_id TEXT NOT NULL,
-    generation_model TEXT NOT NULL,
-    total_tokens INTEGER,
-    input_tokens INTEGER,
-    output_tokens INTEGER,
-    temperature REAL,
-    max_tokens INTEGER,
+    id TEXT PRIMARY KEY,                    -- UUID identifier
+    prompt_id TEXT NOT NULL,               -- Associated prompt ID
+    generation_model TEXT NOT NULL,        -- Model used for generation
+    generation_provider TEXT NOT NULL,     -- Provider used for generation
+    embedding_model TEXT,                  -- Model used for embeddings
+    embedding_provider TEXT,               -- Provider used for embeddings
+    model_version TEXT,                    -- Specific model version
+    api_version TEXT,                      -- API version used
+    processing_time INTEGER NOT NULL,      -- Processing time in milliseconds
+    input_tokens INTEGER NOT NULL,         -- Number of input tokens
+    output_tokens INTEGER NOT NULL,        -- Number of output tokens
+    total_tokens INTEGER NOT NULL,         -- Total tokens (input + output)
+    cost REAL,                            -- Cost in USD if available
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (prompt_id) REFERENCES prompts(id)
 );

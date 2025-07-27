@@ -845,12 +845,23 @@ func (s *MCPServer) handleSearchPrompts(ctx context.Context, id interface{}, arg
 		limit = int(l)
 	}
 
-	// For now, return high quality historical prompts
-	// TODO: Implement actual search when storage API is updated
-	prompts, err := s.storage.GetHighQualityHistoricalPrompts(ctx, limit)
+	// Use actual search functionality
+	var prompts []*models.Prompt
+	promptSlice, err := s.storage.SearchPrompts(ctx, query, limit)
 	if err != nil {
-		s.sendToolError(id, fmt.Sprintf("Search failed: %v", err))
-		return
+		// Fallback to high quality historical prompts if search fails
+		historicalPrompts, fallbackErr := s.storage.GetHighQualityHistoricalPrompts(ctx, limit)
+		if fallbackErr != nil {
+			s.sendToolError(id, fmt.Sprintf("Search and fallback failed: %v, %v", err, fallbackErr))
+			return
+		}
+		prompts = historicalPrompts
+	} else {
+		// Convert []models.Prompt to []*models.Prompt
+		prompts = make([]*models.Prompt, len(promptSlice))
+		for i := range promptSlice {
+			prompts[i] = &promptSlice[i]
+		}
 	}
 
 	// Filter by query (simple substring match)

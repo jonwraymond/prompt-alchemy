@@ -7,6 +7,14 @@ title: CLI Reference
 
 Complete documentation for all Prompt Alchemy command-line interface options, flags, and usage patterns.
 
+## Recent CLI Enhancements (v1.1.0)
+
+- **Enhanced Search**: Improved `search` command with text-based search across content and metadata
+- **Better Metrics**: `metrics` command now displays comprehensive model usage and cost data
+- **Improved Output**: All commands now support enhanced JSON output with ModelMetadata
+- **Storage Completion**: All storage operations now fully implemented (list, get, search)
+- **Type Safety**: Consolidated request/response types for better error handling
+
 ## Table of Contents
 
 1. [Global Options](#global-options)

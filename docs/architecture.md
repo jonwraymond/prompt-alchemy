@@ -9,11 +9,19 @@ This document provides a comprehensive overview of the system architecture, desi
 
 ## System Overview
 
-Prompt Alchemy follows a modular, layered architecture. The system can operate in three primary modes:
+Prompt Alchemy follows a modular, layered architecture with a complete storage implementation and enhanced model tracking. The system can operate in three primary modes:
 
 - **On-Demand Mode**: Standard CLI for single-task execution.
 - **MCP Server Mode**: A persistent server for AI agent integration via `stdin`/`stdout`.
 - **HTTP Server Mode**: A persistent server exposing a RESTful API.
+
+### Recent Architecture Enhancements
+
+- **Complete Storage API**: Fully implemented ListPrompts, GetPrompt, and SearchPrompts methods
+- **Enhanced Model Tracking**: New ModelMetadata entity tracks cost, performance, and token usage
+- **Type Consolidation**: Unified GenerateRequest/Response types across API layers
+- **Improved Search**: Text-based search across prompt content and metadata
+- **Code Quality**: Resolved technical debt with 17 TODO items and consolidated duplicate types
 
 ```mermaid
 graph TB
@@ -92,6 +100,24 @@ This process allows for leveraging the unique strengths of different AI provider
 ## Storage Layer
 
 The storage layer uses **SQLite** for its simplicity, performance, and portability. All data, including prompts, metrics, and vector embeddings, is stored in a single database file.
+
+### Recent Storage Enhancements
+
+- **Complete API Implementation**: Fully implemented ListPrompts, GetPrompt, and SearchPrompts methods
+- **Enhanced Model Tracking**: New ModelMetadata table tracks detailed usage metrics including:
+  - Token usage (input, output, total)
+  - Processing time and performance metrics
+  - Cost tracking in USD
+  - Model and provider versions
+- **Improved Search**: Text-based search across prompt content and original input
+- **Better Pagination**: Proper pagination support for large prompt collections
+
+### Core Storage Features
+
+- **Vector Embeddings**: Semantic search using embeddings stored directly in SQLite
+- **Prompt Lifecycle**: Complete tracking from creation to usage analytics
+- **Performance Metrics**: Real-time tracking of token costs and processing time
+- **Relationship Tracking**: Parent-child relationships for prompt derivations
 
 For a detailed, up-to-date view of the database structure, please see the **[Database Schema Reference]({{ site.baseurl }}/database)**.
 

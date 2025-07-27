@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/jonwraymond/prompt-alchemy/internal/engine"
+	"github.com/jonwraymond/prompt-alchemy/pkg/models"
 	"github.com/jonwraymond/prompt-alchemy/pkg/providers"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -48,7 +49,7 @@ func TestDatabaseTransactionIntegrity(t *testing.T) {
 	tests := []struct {
 		name        string
 		setupMock   func()
-		request     GenerateRequest
+		request     models.GenerateRequest
 		expectSaved bool
 		expectError bool
 	}{
@@ -63,7 +64,7 @@ func TestDatabaseTransactionIntegrity(t *testing.T) {
 					}, nil
 				}
 			},
-			request: GenerateRequest{
+			request: models.GenerateRequest{
 				Input: "Test successful generation",
 				Save:  false, // Testing API layer, not actual saving
 			},
@@ -77,7 +78,7 @@ func TestDatabaseTransactionIntegrity(t *testing.T) {
 					return nil, fmt.Errorf("generation failed")
 				}
 			},
-			request: GenerateRequest{
+			request: models.GenerateRequest{
 				Input: "Test generation failure",
 				Save:  false,
 			},
@@ -96,7 +97,7 @@ func TestDatabaseTransactionIntegrity(t *testing.T) {
 					}, nil
 				}
 			},
-			request: GenerateRequest{
+			request: models.GenerateRequest{
 				Input: "Test multiple generation",
 				Save:  false,
 				Count: 3,
@@ -179,7 +180,7 @@ func TestConcurrentDatabaseAccess(t *testing.T) {
 			defer wg.Done()
 
 			for j := 0; j < numRequestsPerWorker; j++ {
-				request := GenerateRequest{
+				request := models.GenerateRequest{
 					Input: fmt.Sprintf("Concurrent worker %d request %d", workerID, j),
 					Save:  false, // API layer testing without actual storage
 				}
@@ -198,7 +199,7 @@ func TestConcurrentDatabaseAccess(t *testing.T) {
 				}
 
 				// Check for duplicate IDs
-				var response GenerateResponse
+				var response models.GenerateResponse
 				if err := json.Unmarshal(rr.Body.Bytes(), &response); err == nil {
 					for _, prompt := range response.Prompts {
 						if _, exists := idMap.LoadOrStore(prompt.ID.String(), true); exists {
@@ -269,7 +270,7 @@ func TestDatabaseConnectionPooling(t *testing.T) {
 			semaphore <- struct{}{}        // Acquire
 			defer func() { <-semaphore }() // Release
 
-			request := GenerateRequest{
+			request := models.GenerateRequest{
 				Input: fmt.Sprintf("Pool test %d", requestID),
 				Save:  false, // API layer testing without actual storage
 			}

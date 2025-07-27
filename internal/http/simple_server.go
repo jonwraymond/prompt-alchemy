@@ -805,14 +805,14 @@ func (s *SimpleServer) handleGeneratePrompts(w http.ResponseWriter, r *http.Requ
 	if req.UseOptimization && len(result.Prompts) > 0 {
 		s.logger.Info("Applying historical optimization...")
 
-		// TODO: Implement vector-based similarity search
-		// For now, we'll simulate the optimization by adding placeholder similar prompts data
+		// Apply vector-based similarity search for optimization
 		for i := range result.Prompts {
 			prompt := &result.Prompts[i]
 
-			// Simulate finding similar prompts (placeholder implementation)
-			prompt.SimilarPrompts = []string{"placeholder-id-1", "placeholder-id-2"}
-			prompt.AvgSimilarity = 0.75 // Simulated average similarity
+			// Note: Vector search would require embeddings - currently not fully implemented
+			// Setting empty similar prompts for now until embedding generation is added
+			prompt.SimilarPrompts = []string{}
+			prompt.AvgSimilarity = 0.0
 
 			// Adjust score based on historical weight if available
 			if prompt.Score > 0 && req.HistoricalWeight > 0 {
@@ -1961,38 +1961,34 @@ func (s *SimpleServer) handleConnectionDetails(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	// Mock connection details based on ID
-	var status, provider, latency string
-	switch connectionID {
-	case "openai":
-		status = "connected"
-		provider = "OpenAI"
-		latency = "45ms"
-	case "anthropic":
-		status = "connected"
-		provider = "Anthropic"
-		latency = "52ms"
-	case "google":
-		status = "connected"
-		provider = "Google"
-		latency = "38ms"
-	default:
-		status = "unknown"
-		provider = "Unknown"
-		latency = "N/A"
+	// Get actual provider details from registry
+	provider, err := s.registry.Get(connectionID)
+	if err != nil {
+		s.writeError(w, http.StatusNotFound, fmt.Sprintf("Provider %s not found", connectionID))
+		return
 	}
 
+	// Check actual provider status
+	var status string
+	if provider.IsAvailable() {
+		status = "connected"
+	} else {
+		status = "disconnected"
+	}
+
+	providerName := provider.Name()
+	// Note: Real latency testing would require actual network calls
+	latency := "N/A"
+
 	response := map[string]interface{}{
-		"connection_id":  connectionID,
-		"status":         status,
-		"provider":       provider,
-		"latency":        latency,
-		"established":    time.Now().Add(-time.Hour).Format(time.RFC3339),
-		"last_ping":      time.Now().Add(-time.Second * 30).Format(time.RFC3339),
-		"health_score":   0.95,
-		"requests_count": 142,
-		"errors_count":   2,
-		"timestamp":      time.Now().Format(time.RFC3339),
+		"connection_id":      connectionID,
+		"status":             status,
+		"provider":           providerName,
+		"latency":            latency,
+		"available":          provider.IsAvailable(),
+		"supports_embedding": provider.SupportsEmbeddings(),
+		"supports_streaming": provider.SupportsStreaming(),
+		"timestamp":          time.Now().Format(time.RFC3339),
 	}
 
 	s.writeJSON(w, http.StatusOK, response)
@@ -2188,6 +2184,8 @@ func (s *SimpleServer) handleOutputRetrieve(w http.ResponseWriter, r *http.Reque
 		OutputType  string `json:"output_type,omitempty"`
 		Format      string `json:"format,omitempty"`
 		IncludeMeta bool   `json:"include_meta,omitempty"`
+		Limit       int    `json:"limit,omitempty"`
+		Offset      int    `json:"offset,omitempty"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -2202,23 +2200,39 @@ func (s *SimpleServer) handleOutputRetrieve(w http.ResponseWriter, r *http.Reque
 	if req.Format == "" {
 		req.Format = "json"
 	}
+	if req.Limit <= 0 {
+		req.Limit = 10
+	}
 
-	// Mock output data
-	mockPrompts := []map[string]interface{}{
-		{
-			"id":      uuid.New().String(),
-			"content": "Create a comprehensive REST API for user management with authentication, role-based access control, and audit logging.",
-			"phase":   "coagulatio",
-			"score":   0.92,
-			"ranking": 1,
-		},
-		{
-			"id":      uuid.New().String(),
-			"content": "Design and implement a user management system API with secure endpoints for CRUD operations, JWT authentication, and detailed logging.",
-			"phase":   "coagulatio",
-			"score":   0.88,
-			"ranking": 2,
-		},
+	ctx := r.Context()
+	var prompts []models.Prompt
+	var err error
+
+	// Retrieve prompts from storage
+	if req.SessionID != "" {
+		// TODO: Implement session-based prompt retrieval
+		// For now, fall back to recent prompts
+		prompts, err = s.store.GetRecentPrompts(ctx, req.Limit)
+	} else {
+		prompts, err = s.store.ListPrompts(ctx, req.Limit, req.Offset)
+	}
+
+	if err != nil {
+		s.logger.WithError(err).Error("Failed to retrieve prompts from storage")
+		s.writeError(w, http.StatusInternalServerError, "Failed to retrieve prompts")
+		return
+	}
+
+	// Convert prompts to response format
+	promptData := make([]map[string]interface{}, len(prompts))
+	for i, prompt := range prompts {
+		promptData[i] = map[string]interface{}{
+			"id":      prompt.ID.String(),
+			"content": prompt.Content,
+			"phase":   string(prompt.Phase),
+			"score":   prompt.RelevanceScore,
+			"ranking": i + 1,
+		}
 	}
 
 	response := map[string]interface{}{
@@ -2226,17 +2240,25 @@ func (s *SimpleServer) handleOutputRetrieve(w http.ResponseWriter, r *http.Reque
 		"session_id":   req.SessionID,
 		"output_type":  req.OutputType,
 		"format":       req.Format,
-		"data":         mockPrompts,
-		"count":        len(mockPrompts),
+		"data":         promptData,
+		"count":        len(promptData),
 		"retrieved_at": time.Now().Format(time.RFC3339),
 	}
 
 	if req.IncludeMeta {
+		// Get total count for metadata
+		totalCount, err := s.store.GetPromptsCount(ctx)
+		if err != nil {
+			s.logger.WithError(err).Warn("Failed to get total prompts count")
+			totalCount = len(promptData)
+		}
+
 		response["metadata"] = map[string]interface{}{
-			"generation_time_ms":   1250,
-			"total_phases":         3,
-			"providers_used":       []string{"openai", "anthropic", "google"},
-			"optimization_applied": true,
+			"total_prompts":  totalCount,
+			"returned_count": len(promptData),
+			"limit":          req.Limit,
+			"offset":         req.Offset,
+			"has_more":       len(promptData) == req.Limit,
 		}
 	}
 

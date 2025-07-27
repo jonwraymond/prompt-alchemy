@@ -105,6 +105,61 @@ type PromptRequest struct {
 	SessionID     uuid.UUID
 }
 
+// GenerateRequest represents a consolidated prompt generation request
+// This consolidates the duplicate types from internal/http/simple_server.go,
+// internal/api/v1/handlers.go, and internal/domain/prompt/service.go
+type GenerateRequest struct {
+	Input               string            `json:"input" binding:"required"`
+	Phases              []string          `json:"phases,omitempty"`
+	Count               int               `json:"count,omitempty"`
+	Providers           map[string]string `json:"providers,omitempty"`
+	Temperature         float64           `json:"temperature,omitempty"`
+	MaxTokens           int               `json:"max_tokens,omitempty"`
+	Tags                []string          `json:"tags,omitempty"`
+	Context             []string          `json:"context,omitempty"`
+	Persona             string            `json:"persona,omitempty"`
+	TargetModel         string            `json:"target_model,omitempty"`
+	TargetUseCase       string            `json:"target_use_case,omitempty"`
+	UseParallel         bool              `json:"use_parallel,omitempty"`
+	Save                bool              `json:"save,omitempty"`
+	UseOptimization     bool              `json:"use_optimization,omitempty"`
+	SimilarityThreshold float64           `json:"similarity_threshold,omitempty"`
+	HistoricalWeight    float64           `json:"historical_weight,omitempty"`
+	EnableJudging       bool              `json:"enable_judging,omitempty"`
+	JudgeProvider       string            `json:"judge_provider,omitempty"`
+	ScoringCriteria     string            `json:"scoring_criteria,omitempty"`
+}
+
+// GenerateResponse represents a consolidated prompt generation response
+type GenerateResponse struct {
+	Prompts   []Prompt         `json:"prompts"`
+	Rankings  []PromptRanking  `json:"rankings,omitempty"`
+	Selected  *Prompt          `json:"selected,omitempty"`
+	SessionID uuid.UUID        `json:"session_id"`
+	Metadata  GenerateMetadata `json:"metadata"`
+}
+
+// GenerateMetadata contains metadata about the generation process
+type GenerateMetadata struct {
+	Duration         string                 `json:"duration"`
+	PhaseCount       int                    `json:"phase_count"`
+	TotalGenerated   int                    `json:"total_generated"`
+	PhasesTiming     map[string]int         `json:"phases_timing_ms,omitempty"`
+	PhasesCompleted  []string               `json:"phases_completed"`
+	GenerationTime   string                 `json:"generation_time"`
+	OptimizationUsed bool                   `json:"optimization_used,omitempty"`
+	SimilarPrompts   []SimilarPrompt        `json:"similar_prompts,omitempty"`
+	JudgingResults   map[string]interface{} `json:"judging_results,omitempty"`
+}
+
+// SimilarPrompt represents a prompt that is similar to the generated one
+type SimilarPrompt struct {
+	ID         uuid.UUID `json:"id"`
+	Content    string    `json:"content"`
+	Similarity float64   `json:"similarity"`
+	Tags       []string  `json:"tags,omitempty"`
+}
+
 // UseCase represents different target use cases for prompts
 type UseCase string
 

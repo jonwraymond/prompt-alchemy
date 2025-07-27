@@ -14,6 +14,10 @@ import (
 // StorageInterface defines the storage operations needed by the service
 type StorageInterface interface {
 	SavePrompt(ctx context.Context, prompt *models.Prompt) error
+	ListPrompts(ctx context.Context, limit, offset int) ([]models.Prompt, error)
+	GetPrompt(ctx context.Context, id string) (*models.Prompt, error)
+	DeletePrompt(ctx context.Context, id string) error
+	SearchPrompts(ctx context.Context, query string, limit int) ([]models.Prompt, error)
 	Close() error
 }
 
@@ -199,22 +203,19 @@ func (s *Service) Generate(ctx context.Context, req GenerateRequest) (*GenerateR
 
 // ListPrompts returns a paginated list of prompts
 func (s *Service) ListPrompts(ctx context.Context, limit, offset int) ([]models.Prompt, error) {
-	// For now, return empty list - implementation depends on storage interface
 	s.logger.WithFields(logrus.Fields{
 		"limit":  limit,
 		"offset": offset,
 	}).Info("Listing prompts")
 
-	// TODO: Implement when storage interface is updated
-	return []models.Prompt{}, nil
+	return s.storage.ListPrompts(ctx, limit, offset)
 }
 
 // GetPrompt retrieves a specific prompt by ID
 func (s *Service) GetPrompt(ctx context.Context, id string) (*models.Prompt, error) {
 	s.logger.WithField("prompt_id", id).Info("Getting prompt")
 
-	// TODO: Implement when storage interface is updated
-	return nil, fmt.Errorf("not implemented")
+	return s.storage.GetPrompt(ctx, id)
 }
 
 // SavePrompt saves a prompt
@@ -235,8 +236,7 @@ func (s *Service) SavePrompt(ctx context.Context, prompt *models.Prompt) error {
 func (s *Service) DeletePrompt(ctx context.Context, id string) error {
 	s.logger.WithField("prompt_id", id).Info("Deleting prompt")
 
-	// TODO: Implement when storage interface is updated
-	return fmt.Errorf("not implemented")
+	return s.storage.DeletePrompt(ctx, id)
 }
 
 // SearchPrompts searches for prompts
@@ -246,6 +246,5 @@ func (s *Service) SearchPrompts(ctx context.Context, query string, limit int) ([
 		"limit": limit,
 	}).Info("Searching prompts")
 
-	// TODO: Implement when storage interface is updated
-	return []models.Prompt{}, nil
+	return s.storage.SearchPrompts(ctx, query, limit)
 }

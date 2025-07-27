@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/jonwraymond/prompt-alchemy/pkg/models"
 	"github.com/jonwraymond/prompt-alchemy/pkg/providers"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -33,7 +34,7 @@ func TestSQLInjectionPrevention(t *testing.T) {
 	for _, payload := range sqlInjectionPayloads {
 		t.Run(fmt.Sprintf("payload_%s", sanitizeTestName(payload)), func(t *testing.T) {
 			// Test in various fields
-			requests := []GenerateRequest{
+			requests := []models.GenerateRequest{
 				{Input: payload},
 				{Input: "Test", Tags: []string{payload}},
 				{Input: "Test", Persona: payload},
@@ -46,7 +47,7 @@ func TestSQLInjectionPrevention(t *testing.T) {
 				assert.NoError(t, err)
 
 				// Validate that the payload can be decoded
-				var decoded GenerateRequest
+				var decoded models.GenerateRequest
 				err = json.Unmarshal(body, &decoded)
 				assert.NoError(t, err)
 
@@ -75,7 +76,7 @@ func TestXSSPrevention(t *testing.T) {
 
 	for _, payload := range xssPayloads {
 		t.Run(fmt.Sprintf("payload_%s", sanitizeTestName(payload)), func(t *testing.T) {
-			req := GenerateRequest{Input: payload}
+			req := models.GenerateRequest{Input: payload}
 
 			// Test JSON encoding/decoding
 			body, err := json.Marshal(req)
@@ -113,7 +114,7 @@ func TestPathTraversalPrevention(t *testing.T) {
 	for _, payload := range pathTraversalPayloads {
 		t.Run(fmt.Sprintf("payload_%s", sanitizeTestName(payload)), func(t *testing.T) {
 			// Test in context that might reference files
-			req := GenerateRequest{
+			req := models.GenerateRequest{
 				Input:   "Read file",
 				Context: []string{payload},
 			}
@@ -124,7 +125,7 @@ func TestPathTraversalPrevention(t *testing.T) {
 
 			// Ensure the path traversal attempts are handled as plain strings
 			// not as actual file paths
-			var decoded GenerateRequest
+			var decoded models.GenerateRequest
 			err = json.Unmarshal(body, &decoded)
 			assert.NoError(t, err)
 			assert.Equal(t, payload, decoded.Context[0])
@@ -235,31 +236,31 @@ func TestHTTPHeaderInjection(t *testing.T) {
 func TestDoSPrevention(t *testing.T) {
 	tests := []struct {
 		name    string
-		request GenerateRequest
+		request models.GenerateRequest
 	}{
 		{
 			name: "extremely large input",
-			request: GenerateRequest{
+			request: models.GenerateRequest{
 				Input: strings.Repeat("a", 1000000), // 1MB of data
 			},
 		},
 		{
 			name: "deeply nested json",
-			request: GenerateRequest{
+			request: models.GenerateRequest{
 				Input:   "test",
 				Context: generateDeeplyNestedArray(100),
 			},
 		},
 		{
 			name: "many tags",
-			request: GenerateRequest{
+			request: models.GenerateRequest{
 				Input: "test",
 				Tags:  generateManyStrings(10000),
 			},
 		},
 		{
 			name: "high count request",
-			request: GenerateRequest{
+			request: models.GenerateRequest{
 				Input: "test",
 				Count: 1000000,
 			},
@@ -287,7 +288,7 @@ func TestDoSPrevention(t *testing.T) {
 			}
 
 			// Verify we can unmarshal back
-			var decoded GenerateRequest
+			var decoded models.GenerateRequest
 			err = json.Unmarshal(body, &decoded)
 			if err == nil {
 				// Validate reasonable limits would be enforced
@@ -375,13 +376,13 @@ func TestSecurityHeadersValidation(t *testing.T) {
 func TestInputValidationLimits(t *testing.T) {
 	tests := []struct {
 		name            string
-		request         GenerateRequest
+		request         models.GenerateRequest
 		expectValid     bool
 		validationNotes string
 	}{
 		{
 			name: "negative count",
-			request: GenerateRequest{
+			request: models.GenerateRequest{
 				Input: "test",
 				Count: -1,
 			},
@@ -390,7 +391,7 @@ func TestInputValidationLimits(t *testing.T) {
 		},
 		{
 			name: "zero count",
-			request: GenerateRequest{
+			request: models.GenerateRequest{
 				Input: "test",
 				Count: 0,
 			},
@@ -399,7 +400,7 @@ func TestInputValidationLimits(t *testing.T) {
 		},
 		{
 			name: "excessive count",
-			request: GenerateRequest{
+			request: models.GenerateRequest{
 				Input: "test",
 				Count: 1000,
 			},
@@ -408,7 +409,7 @@ func TestInputValidationLimits(t *testing.T) {
 		},
 		{
 			name: "negative temperature",
-			request: GenerateRequest{
+			request: models.GenerateRequest{
 				Input:       "test",
 				Temperature: -1.0,
 			},
@@ -417,7 +418,7 @@ func TestInputValidationLimits(t *testing.T) {
 		},
 		{
 			name: "excessive temperature",
-			request: GenerateRequest{
+			request: models.GenerateRequest{
 				Input:       "test",
 				Temperature: 100.0,
 			},
@@ -426,7 +427,7 @@ func TestInputValidationLimits(t *testing.T) {
 		},
 		{
 			name: "negative max tokens",
-			request: GenerateRequest{
+			request: models.GenerateRequest{
 				Input:     "test",
 				MaxTokens: -100,
 			},
@@ -435,7 +436,7 @@ func TestInputValidationLimits(t *testing.T) {
 		},
 		{
 			name: "excessive max tokens",
-			request: GenerateRequest{
+			request: models.GenerateRequest{
 				Input:     "test",
 				MaxTokens: 1000000,
 			},
@@ -444,7 +445,7 @@ func TestInputValidationLimits(t *testing.T) {
 		},
 		{
 			name: "empty phases",
-			request: GenerateRequest{
+			request: models.GenerateRequest{
 				Input:  "test",
 				Phases: []string{},
 			},
@@ -453,7 +454,7 @@ func TestInputValidationLimits(t *testing.T) {
 		},
 		{
 			name: "invalid phases",
-			request: GenerateRequest{
+			request: models.GenerateRequest{
 				Input:  "test",
 				Phases: []string{"invalid-phase", "another-invalid"},
 			},
@@ -462,7 +463,7 @@ func TestInputValidationLimits(t *testing.T) {
 		},
 		{
 			name: "null byte in string",
-			request: GenerateRequest{
+			request: models.GenerateRequest{
 				Input: "test\x00null",
 			},
 			expectValid:     true,
@@ -470,7 +471,7 @@ func TestInputValidationLimits(t *testing.T) {
 		},
 		{
 			name: "unicode control characters",
-			request: GenerateRequest{
+			request: models.GenerateRequest{
 				Input: "test\u0001\u0002\u0003",
 			},
 			expectValid:     true,
@@ -485,7 +486,7 @@ func TestInputValidationLimits(t *testing.T) {
 			assert.NoError(t, err)
 
 			// Test deserialization
-			var decoded GenerateRequest
+			var decoded models.GenerateRequest
 			err = json.Unmarshal(body, &decoded)
 			assert.NoError(t, err)
 

@@ -1,4 +1,4 @@
-package v1
+package testhelpers
 
 import (
 	"context"
@@ -9,6 +9,8 @@ import (
 )
 
 // Mock implementations for testing
+
+// MockStorage provides a mock implementation of the storage interface for testing
 type MockStorage struct {
 	mock.Mock
 	saveCount int
@@ -35,6 +37,7 @@ func (m *MockStorage) ResetSaveCount() {
 	m.saveCount = 0
 }
 
+// MockEngine provides a mock implementation of the engine interface for testing
 type MockEngine struct {
 	mock.Mock
 }
@@ -54,6 +57,7 @@ func CreateMockEngine() *engine.Engine {
 	return nil
 }
 
+// MockRanker provides a mock implementation of the ranker interface for testing
 type MockRanker struct {
 	mock.Mock
 }

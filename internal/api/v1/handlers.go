@@ -92,40 +92,18 @@ func (h *V1Handler) SetupRoutes(r chi.Router) {
 	})
 }
 
-// GenerateRequest represents a prompt generation request
-type GenerateRequest struct {
-	Input         string            `json:"input" binding:"required"`
-	Phases        []string          `json:"phases,omitempty"`
-	Count         int               `json:"count,omitempty"`
-	Providers     map[string]string `json:"providers,omitempty"`
-	Temperature   float64           `json:"temperature,omitempty"`
-	MaxTokens     int               `json:"max_tokens,omitempty"`
-	Tags          []string          `json:"tags,omitempty"`
-	Context       []string          `json:"context,omitempty"`
-	Persona       string            `json:"persona,omitempty"`
-	TargetUseCase string            `json:"target_use_case,omitempty"` // Optional: auto-inferred from persona if not provided
-	TargetModel   string            `json:"target_model,omitempty"`
-	UseParallel   bool              `json:"use_parallel,omitempty"`
-	Save          bool              `json:"save,omitempty"`
-}
-
-// GenerateResponse represents a prompt generation response
-type GenerateResponse struct {
-	Prompts   []models.Prompt        `json:"prompts"`
-	Rankings  []models.PromptRanking `json:"rankings,omitempty"`
-	Selected  *models.Prompt         `json:"selected,omitempty"`
-	SessionID uuid.UUID              `json:"session_id"`
-	Metadata  GenerateMetadata       `json:"metadata"`
-}
+// Using consolidated types from models package
+// GenerateRequest is now models.GenerateRequest
+// GenerateResponse is now models.GenerateResponse
 
 // CompactGenerateResponse represents an optimized prompt generation response with reduced duplication
 type CompactGenerateResponse struct {
-	Prompts    []CompactPrompt        `json:"prompts"`
-	Rankings   []models.PromptRanking `json:"rankings,omitempty"`
-	SelectedID *string                `json:"selected_id,omitempty"`
-	SessionID  uuid.UUID              `json:"session_id"`
-	Metadata   GenerateMetadata       `json:"metadata"`
-	CommonData PromptCommonData       `json:"common_data"`
+	Prompts    []CompactPrompt         `json:"prompts"`
+	Rankings   []models.PromptRanking  `json:"rankings,omitempty"`
+	SelectedID *string                 `json:"selected_id,omitempty"`
+	SessionID  uuid.UUID               `json:"session_id"`
+	Metadata   models.GenerateMetadata `json:"metadata"`
+	CommonData PromptCommonData        `json:"common_data"`
 }
 
 // CompactPrompt represents a prompt with reduced metadata duplication
@@ -158,13 +136,7 @@ type PromptCommonData struct {
 	GenerationRequest *models.PromptRequest `json:"generation_request,omitempty"`
 }
 
-// GenerateMetadata contains metadata about the generation process
-type GenerateMetadata struct {
-	Duration    string    `json:"duration"`
-	PhaseCount  int       `json:"phase_count"`
-	TotalTokens int       `json:"total_tokens,omitempty"`
-	Timestamp   time.Time `json:"timestamp"`
-}
+// GenerateMetadata is now defined in models package
 
 // HandleHealth returns the health status of the API
 func (h *V1Handler) HandleHealth(w http.ResponseWriter, r *http.Request) {
@@ -206,7 +178,7 @@ func (h *V1Handler) HandleInfo(w http.ResponseWriter, r *http.Request) {
 
 // HandleGeneratePrompts handles POST /api/v1/prompts/generate
 func (h *V1Handler) HandleGeneratePrompts(w http.ResponseWriter, r *http.Request) {
-	var req GenerateRequest
+	var req models.GenerateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		h.logger.WithError(err).Error("Failed to decode request body")
 		httputil.BadRequest(w, "Invalid JSON")
@@ -261,6 +233,19 @@ func (h *V1Handler) HandleGeneratePrompts(w http.ResponseWriter, r *http.Request
 		providers[models.Phase(phaseStr)] = provider
 	}
 
+	// Build PhaseConfigs from providers map or use defaults
+	phaseConfigs := make([]models.PhaseConfig, len(phases))
+	for i, phase := range phases {
+		provider := "mock" // Default to mock for tests and API calls without provider config
+		if providerName, exists := providers[phase]; exists && providerName != "" {
+			provider = providerName
+		}
+		phaseConfigs[i] = models.PhaseConfig{
+			Phase:    phase,
+			Provider: provider,
+		}
+	}
+
 	// Create models.GenerateOptions from the HTTP request
 	generateOpts := models.GenerateOptions{
 		Request: models.PromptRequest{
@@ -275,7 +260,8 @@ func (h *V1Handler) HandleGeneratePrompts(w http.ResponseWriter, r *http.Request
 			Persona:       req.Persona,
 			TargetUseCase: req.TargetUseCase,
 		},
-		UseParallel: req.UseParallel,
+		PhaseConfigs: phaseConfigs,
+		UseParallel:  req.UseParallel,
 	}
 
 	// Generate prompts using the engine
@@ -325,14 +311,14 @@ func (h *V1Handler) HandleGeneratePrompts(w http.ResponseWriter, r *http.Request
 	} else {
 		h.logger.Info("=== USING STANDARD RESPONSE ===")
 		// Build standard response
-		response := GenerateResponse{
+		response := models.GenerateResponse{
 			Prompts:   result.Prompts,
 			Rankings:  rankings,
 			SessionID: uuid.New(),
-			Metadata: GenerateMetadata{
-				Duration:   time.Since(start).String(),
-				PhaseCount: len(phases),
-				Timestamp:  time.Now(),
+			Metadata: models.GenerateMetadata{
+				Duration:       time.Since(start).String(),
+				PhaseCount:     len(phases),
+				GenerationTime: time.Now().Format(time.RFC3339),
 			},
 		}
 
@@ -352,10 +338,10 @@ func (h *V1Handler) buildCompactResponse(prompts []models.Prompt, rankings []mod
 			Prompts:   []CompactPrompt{},
 			Rankings:  rankings,
 			SessionID: uuid.New(),
-			Metadata: GenerateMetadata{
-				Duration:   time.Since(start).String(),
-				PhaseCount: len(phases),
-				Timestamp:  time.Now(),
+			Metadata: models.GenerateMetadata{
+				Duration:       time.Since(start).String(),
+				PhaseCount:     len(phases),
+				GenerationTime: time.Now().Format(time.RFC3339),
 			},
 		}
 	}
@@ -407,10 +393,10 @@ func (h *V1Handler) buildCompactResponse(prompts []models.Prompt, rankings []mod
 		SelectedID: selectedID,
 		SessionID:  uuid.New(),
 		CommonData: commonData,
-		Metadata: GenerateMetadata{
-			Duration:   time.Since(start).String(),
-			PhaseCount: len(phases),
-			Timestamp:  time.Now(),
+		Metadata: models.GenerateMetadata{
+			Duration:       time.Since(start).String(),
+			PhaseCount:     len(phases),
+			GenerationTime: time.Now().Format(time.RFC3339),
 		},
 	}
 }

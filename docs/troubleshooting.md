@@ -9,6 +9,21 @@ keywords: troubleshooting, errors, fixes, common issues, debug, problems, soluti
 
 This guide helps you resolve common issues with Prompt Alchemy. Use the decision tree below to quickly find solutions.
 
+## 🆕 Recent Changes (v1.1.0)
+
+With the latest code cleanup and improvements, you may encounter some new behaviors:
+
+- **Enhanced Error Messages**: Storage errors now provide more detailed context
+- **Type Validation**: Stricter type checking may reveal previously ignored issues  
+- **ModelMetadata Tracking**: New cost and performance tracking may affect response times
+- **Complete Storage API**: All CRUD operations are now fully implemented
+
+### Migration Notes
+
+- **Database Schema**: Existing databases will work but won't have new ModelMetadata features until prompts are regenerated
+- **API Responses**: Response format includes new `model_metadata` fields
+- **Search Improvements**: Search now covers more fields but may return different result ordering
+
 ## 🔍 Quick Diagnostics
 
 <div class="diagnostic-tree">
@@ -55,6 +70,15 @@ This guide helps you resolve common issues with Prompt Alchemy. Use the decision
   - [Vector dimension mismatch](#vector-dimensions)
   - [Self-learning not working](#self-learning-issues)
   - [Optimization timeout](#optimization-timeout)
+  </details>
+
+  <details>
+    <summary><strong>Code Quality Issues (v1.1.0)</strong></summary>
+    
+  - [Type consolidation errors](#type-consolidation)
+  - [Storage method not found](#storage-methods)
+  - [ModelMetadata validation errors](#model-metadata-errors)
+  - [Search functionality changes](#search-changes)
   </details>
 </div>
 
@@ -679,3 +703,95 @@ pre code {
   overflow-x: auto;
 }
 </style>
+
+---
+
+## 🛠️ Code Quality Issues (v1.1.0)
+
+With the recent cleanup and improvements, some legacy integrations may need updates.
+
+### <span id="type-consolidation">Type Consolidation Errors</span>
+
+**Symptoms:**
+- "GenerateRequest type not found" errors
+- Import errors in custom integrations
+- Mismatched field names
+
+**Solutions:**
+```bash
+# 1. Update imports to use consolidated types
+# Old: internal/api/v1.GenerateRequest
+# New: pkg/models.GenerateRequest
+
+# 2. Check field mappings
+# Some fields moved to different nested structures
+
+# 3. Review API documentation
+# OpenAPI spec updated with new schema
+```
+
+### <span id="storage-methods">Storage Method Implementation</span>
+
+**Symptoms:**
+- "Method not implemented" errors for storage
+- Database operation failures
+- Search returning empty results
+
+**Solutions:**
+```bash
+# 1. Verify database migration
+prompt-alchemy migrate --check
+
+# 2. Update to latest database schema
+prompt-alchemy migrate --up
+
+# 3. Test storage operations
+prompt-alchemy search "test" --debug
+
+# 4. Check storage permissions
+ls -la ~/.prompt-alchemy/prompts.db
+```
+
+### <span id="model-metadata-errors">ModelMetadata Validation</span>
+
+**Symptoms:**
+- Cost tracking errors
+- Token usage not recorded
+- Processing time validation failures
+
+**Solutions:**
+```bash
+# 1. Check provider capabilities
+prompt-alchemy providers list
+
+# 2. Verify token tracking enabled
+# Set in config.yaml:
+# tracking:
+#   enabled: true
+#   cost_tracking: true
+
+# 3. Update provider configurations
+prompt-alchemy config providers validate
+```
+
+### <span id="search-changes">Search Functionality Changes</span>
+
+**Symptoms:**
+- Different search results than before
+- Search not finding expected prompts
+- Text search not working
+
+**Solutions:**
+```bash
+# 1. Rebuild search indexes
+prompt-alchemy search --rebuild-index
+
+# 2. Test new search capabilities
+prompt-alchemy search "your query" --text-only
+
+# 3. Check search fields
+# Now searches: content, original_input, tags
+
+# 4. Verify prompt data
+prompt-alchemy list --format json | jq '.prompts[0]'
+```

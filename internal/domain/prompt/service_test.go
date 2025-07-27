@@ -22,6 +22,29 @@ func (m *MockStorage) SavePrompt(ctx context.Context, prompt *models.Prompt) err
 	return args.Error(0)
 }
 
+func (m *MockStorage) ListPrompts(ctx context.Context, limit, offset int) ([]models.Prompt, error) {
+	args := m.Called(ctx, limit, offset)
+	return args.Get(0).([]models.Prompt), args.Error(1)
+}
+
+func (m *MockStorage) GetPrompt(ctx context.Context, id string) (*models.Prompt, error) {
+	args := m.Called(ctx, id)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.Prompt), args.Error(1)
+}
+
+func (m *MockStorage) DeletePrompt(ctx context.Context, id string) error {
+	args := m.Called(ctx, id)
+	return args.Error(0)
+}
+
+func (m *MockStorage) SearchPrompts(ctx context.Context, query string, limit int) ([]models.Prompt, error) {
+	args := m.Called(ctx, query, limit)
+	return args.Get(0).([]models.Prompt), args.Error(1)
+}
+
 func (m *MockStorage) Close() error {
 	args := m.Called()
 	return args.Error(0)
@@ -273,55 +296,82 @@ func TestService_SavePrompt(t *testing.T) {
 
 // TestService_ListPrompts tests listing functionality
 func TestService_ListPrompts(t *testing.T) {
+	mockStorage := new(MockStorage)
 	logger := logrus.New()
-	service := NewService(nil, nil, nil, nil, logger)
+	service := NewService(mockStorage, nil, nil, nil, logger)
+
+	expectedPrompts := []models.Prompt{
+		{ID: uuid.New(), Content: "Test prompt 1"},
+		{ID: uuid.New(), Content: "Test prompt 2"},
+	}
+
+	mockStorage.On("ListPrompts", mock.Anything, 10, 0).Return(expectedPrompts, nil)
 
 	ctx := context.Background()
 	prompts, err := service.ListPrompts(ctx, 10, 0)
 
-	// Currently returns empty list as it's not implemented
 	assert.NoError(t, err)
-	assert.Empty(t, prompts)
+	assert.Len(t, prompts, 2)
+	assert.Equal(t, expectedPrompts, prompts)
+	mockStorage.AssertExpectations(t)
 }
 
 // TestService_GetPrompt tests single prompt retrieval
 func TestService_GetPrompt(t *testing.T) {
+	mockStorage := new(MockStorage)
 	logger := logrus.New()
-	service := NewService(nil, nil, nil, nil, logger)
+	service := NewService(mockStorage, nil, nil, nil, logger)
+
+	expectedPrompt := &models.Prompt{
+		ID:      uuid.New(),
+		Content: "Test prompt",
+	}
+
+	mockStorage.On("GetPrompt", mock.Anything, "test-id").Return(expectedPrompt, nil)
 
 	ctx := context.Background()
 	prompt, err := service.GetPrompt(ctx, "test-id")
 
-	// Currently returns error as it's not implemented
-	assert.Error(t, err)
-	assert.Nil(t, prompt)
-	assert.Contains(t, err.Error(), "not implemented")
+	assert.NoError(t, err)
+	assert.NotNil(t, prompt)
+	assert.Equal(t, expectedPrompt, prompt)
+	mockStorage.AssertExpectations(t)
 }
 
 // TestService_SearchPrompts tests search functionality
 func TestService_SearchPrompts(t *testing.T) {
+	mockStorage := new(MockStorage)
 	logger := logrus.New()
-	service := NewService(nil, nil, nil, nil, logger)
+	service := NewService(mockStorage, nil, nil, nil, logger)
+
+	expectedPrompts := []models.Prompt{
+		{ID: uuid.New(), Content: "Test query result"},
+	}
+
+	mockStorage.On("SearchPrompts", mock.Anything, "test query", 10).Return(expectedPrompts, nil)
 
 	ctx := context.Background()
 	prompts, err := service.SearchPrompts(ctx, "test query", 10)
 
-	// Currently returns empty list as it's not implemented
 	assert.NoError(t, err)
-	assert.Empty(t, prompts)
+	assert.Len(t, prompts, 1)
+	assert.Equal(t, expectedPrompts, prompts)
+	mockStorage.AssertExpectations(t)
 }
 
 // TestService_DeletePrompt tests prompt deletion
 func TestService_DeletePrompt(t *testing.T) {
+	mockStorage := new(MockStorage)
 	logger := logrus.New()
-	service := NewService(nil, nil, nil, nil, logger)
+	service := NewService(mockStorage, nil, nil, nil, logger)
+
+	mockStorage.On("DeletePrompt", mock.Anything, "test-id").Return(nil)
 
 	ctx := context.Background()
 	err := service.DeletePrompt(ctx, "test-id")
 
-	// Currently returns error as it's not implemented
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "not implemented")
+	assert.NoError(t, err)
+	mockStorage.AssertExpectations(t)
 }
 
 // Benchmark tests

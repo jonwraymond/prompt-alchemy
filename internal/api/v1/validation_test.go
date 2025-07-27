@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/jonwraymond/prompt-alchemy/internal/engine"
+	"github.com/jonwraymond/prompt-alchemy/pkg/models"
 	"github.com/jonwraymond/prompt-alchemy/pkg/providers"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -31,7 +32,7 @@ func TestInputValidation(t *testing.T) {
 		// String field validations
 		{
 			name: "empty input field",
-			request: GenerateRequest{
+			request: models.GenerateRequest{
 				Input: "",
 			},
 			endpoint:       "/api/v1/prompts/generate",
@@ -40,7 +41,7 @@ func TestInputValidation(t *testing.T) {
 		},
 		{
 			name: "whitespace only input",
-			request: GenerateRequest{
+			request: models.GenerateRequest{
 				Input: "   \t\n   ",
 			},
 			endpoint:       "/api/v1/prompts/generate",
@@ -48,7 +49,7 @@ func TestInputValidation(t *testing.T) {
 		},
 		{
 			name: "extremely long input",
-			request: GenerateRequest{
+			request: models.GenerateRequest{
 				Input: strings.Repeat("a", 100000), // 100KB
 			},
 			endpoint:       "/api/v1/prompts/generate",
@@ -56,7 +57,7 @@ func TestInputValidation(t *testing.T) {
 		},
 		{
 			name: "null characters in input",
-			request: GenerateRequest{
+			request: models.GenerateRequest{
 				Input: "test\x00null\x00characters",
 			},
 			endpoint:       "/api/v1/prompts/generate",
@@ -64,7 +65,7 @@ func TestInputValidation(t *testing.T) {
 		},
 		{
 			name: "mixed valid and invalid unicode",
-			request: GenerateRequest{
+			request: models.GenerateRequest{
 				Input: "Valid text 🎉 with \xc3\x28 invalid UTF-8",
 			},
 			endpoint:       "/api/v1/prompts/generate",
@@ -74,7 +75,7 @@ func TestInputValidation(t *testing.T) {
 		// Numeric field validations
 		{
 			name: "negative count",
-			request: GenerateRequest{
+			request: models.GenerateRequest{
 				Input: "test",
 				Count: -5,
 			},
@@ -83,7 +84,7 @@ func TestInputValidation(t *testing.T) {
 		},
 		{
 			name: "zero count",
-			request: GenerateRequest{
+			request: models.GenerateRequest{
 				Input: "test",
 				Count: 0,
 			},
@@ -92,7 +93,7 @@ func TestInputValidation(t *testing.T) {
 		},
 		{
 			name: "excessive count",
-			request: GenerateRequest{
+			request: models.GenerateRequest{
 				Input: "test",
 				Count: 10000,
 			},
@@ -101,7 +102,7 @@ func TestInputValidation(t *testing.T) {
 		},
 		{
 			name: "invalid temperature - negative",
-			request: GenerateRequest{
+			request: models.GenerateRequest{
 				Input:       "test",
 				Temperature: -0.5,
 			},
@@ -110,7 +111,7 @@ func TestInputValidation(t *testing.T) {
 		},
 		{
 			name: "invalid temperature - too high",
-			request: GenerateRequest{
+			request: models.GenerateRequest{
 				Input:       "test",
 				Temperature: 3.0,
 			},
@@ -137,7 +138,7 @@ func TestInputValidation(t *testing.T) {
 		},
 		{
 			name: "negative max tokens",
-			request: GenerateRequest{
+			request: models.GenerateRequest{
 				Input:     "test",
 				MaxTokens: -100,
 			},
@@ -146,7 +147,7 @@ func TestInputValidation(t *testing.T) {
 		},
 		{
 			name: "excessive max tokens",
-			request: GenerateRequest{
+			request: models.GenerateRequest{
 				Input:     "test",
 				MaxTokens: 1000000,
 			},
@@ -157,7 +158,7 @@ func TestInputValidation(t *testing.T) {
 		// Array field validations
 		{
 			name: "empty phases array",
-			request: GenerateRequest{
+			request: models.GenerateRequest{
 				Input:  "test",
 				Phases: []string{},
 			},
@@ -166,7 +167,7 @@ func TestInputValidation(t *testing.T) {
 		},
 		{
 			name: "invalid phase names",
-			request: GenerateRequest{
+			request: models.GenerateRequest{
 				Input:  "test",
 				Phases: []string{"invalid-phase-1", "invalid-phase-2"},
 			},
@@ -175,7 +176,7 @@ func TestInputValidation(t *testing.T) {
 		},
 		{
 			name: "duplicate phases",
-			request: GenerateRequest{
+			request: models.GenerateRequest{
 				Input:  "test",
 				Phases: []string{"prima-materia", "prima-materia", "prima-materia"},
 			},
@@ -184,7 +185,7 @@ func TestInputValidation(t *testing.T) {
 		},
 		{
 			name: "too many tags",
-			request: GenerateRequest{
+			request: models.GenerateRequest{
 				Input: "test",
 				Tags:  generateStringArray(1000),
 			},
@@ -193,7 +194,7 @@ func TestInputValidation(t *testing.T) {
 		},
 		{
 			name: "empty string in tags",
-			request: GenerateRequest{
+			request: models.GenerateRequest{
 				Input: "test",
 				Tags:  []string{"valid", "", "also-valid"},
 			},
@@ -202,7 +203,7 @@ func TestInputValidation(t *testing.T) {
 		},
 		{
 			name: "very long individual tag",
-			request: GenerateRequest{
+			request: models.GenerateRequest{
 				Input: "test",
 				Tags:  []string{strings.Repeat("x", 1000)},
 			},
@@ -213,7 +214,7 @@ func TestInputValidation(t *testing.T) {
 		// Map field validations
 		{
 			name: "invalid provider names",
-			request: GenerateRequest{
+			request: models.GenerateRequest{
 				Input: "test",
 				Providers: map[string]string{
 					"phase1": "non-existent-provider",
@@ -225,7 +226,7 @@ func TestInputValidation(t *testing.T) {
 		},
 		{
 			name: "empty provider map values",
-			request: GenerateRequest{
+			request: models.GenerateRequest{
 				Input: "test",
 				Providers: map[string]string{
 					"phase1": "",
@@ -239,7 +240,7 @@ func TestInputValidation(t *testing.T) {
 		// Special character handling
 		{
 			name: "HTML in input",
-			request: GenerateRequest{
+			request: models.GenerateRequest{
 				Input: "<h1>Test</h1><script>alert('xss')</script>",
 			},
 			endpoint:       "/api/v1/prompts/generate",
@@ -247,7 +248,7 @@ func TestInputValidation(t *testing.T) {
 		},
 		{
 			name: "JSON in input",
-			request: GenerateRequest{
+			request: models.GenerateRequest{
 				Input: `{"key": "value", "nested": {"array": [1,2,3]}}`,
 			},
 			endpoint:       "/api/v1/prompts/generate",
@@ -255,7 +256,7 @@ func TestInputValidation(t *testing.T) {
 		},
 		{
 			name: "SQL in input",
-			request: GenerateRequest{
+			request: models.GenerateRequest{
 				Input: "SELECT * FROM users WHERE id = 1; DROP TABLE users;",
 			},
 			endpoint:       "/api/v1/prompts/generate",
@@ -263,7 +264,7 @@ func TestInputValidation(t *testing.T) {
 		},
 		{
 			name: "regex patterns in input",
-			request: GenerateRequest{
+			request: models.GenerateRequest{
 				Input: "^[a-zA-Z0-9+_.-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$",
 			},
 			endpoint:       "/api/v1/prompts/generate",
@@ -271,7 +272,7 @@ func TestInputValidation(t *testing.T) {
 		},
 		{
 			name: "control characters",
-			request: GenerateRequest{
+			request: models.GenerateRequest{
 				Input: "test\r\nwith\r\ncontrol\x01\x02\x03characters",
 			},
 			endpoint:       "/api/v1/prompts/generate",
@@ -281,7 +282,7 @@ func TestInputValidation(t *testing.T) {
 		// Persona validation
 		{
 			name: "empty persona",
-			request: GenerateRequest{
+			request: models.GenerateRequest{
 				Input:   "test",
 				Persona: "",
 			},
@@ -290,7 +291,7 @@ func TestInputValidation(t *testing.T) {
 		},
 		{
 			name: "invalid persona",
-			request: GenerateRequest{
+			request: models.GenerateRequest{
 				Input:   "test",
 				Persona: "non-existent-persona",
 			},
@@ -299,7 +300,7 @@ func TestInputValidation(t *testing.T) {
 		},
 		{
 			name: "very long persona name",
-			request: GenerateRequest{
+			request: models.GenerateRequest{
 				Input:   "test",
 				Persona: strings.Repeat("persona", 100),
 			},
@@ -310,7 +311,7 @@ func TestInputValidation(t *testing.T) {
 		// Complex nested validation
 		{
 			name: "deeply nested context",
-			request: GenerateRequest{
+			request: models.GenerateRequest{
 				Input:   "test",
 				Context: generateDeeplyNestedContext(50),
 			},
@@ -319,7 +320,7 @@ func TestInputValidation(t *testing.T) {
 		},
 		{
 			name: "mixed valid and invalid data",
-			request: GenerateRequest{
+			request: models.GenerateRequest{
 				Input:       "Valid input",
 				Count:       -5,                        // Invalid, should use default
 				Temperature: 10.0,                      // Invalid, should cap
@@ -341,7 +342,7 @@ func TestInputValidation(t *testing.T) {
 
 			// Handle different request types
 			switch r := tt.request.(type) {
-			case GenerateRequest:
+			case models.GenerateRequest:
 				body, err = json.Marshal(r)
 			case map[string]interface{}:
 				body, err = json.Marshal(r)
@@ -542,7 +543,7 @@ func TestEncodingValidation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			request := GenerateRequest{Input: tt.input}
+			request := models.GenerateRequest{Input: tt.input}
 			body, _ := json.Marshal(request)
 
 			req := httptest.NewRequest(http.MethodPost, "/api/v1/prompts/generate", bytes.NewReader(body))
@@ -591,7 +592,7 @@ func TestRequestSizeValidation(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create a request with specified size
 			input := strings.Repeat("a", tt.requestSize)
-			request := GenerateRequest{Input: input}
+			request := models.GenerateRequest{Input: input}
 			body, _ := json.Marshal(request)
 
 			req := httptest.NewRequest(http.MethodPost, "/api/v1/prompts/generate", bytes.NewReader(body))

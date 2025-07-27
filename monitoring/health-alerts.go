@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -155,7 +156,7 @@ func (m *Monitor) sendSlackAlert(message string, critical bool) {
 	}
 
 	jsonData, _ := json.Marshal(payload)
-	http.Post(m.config.SlackWebhook, "application/json", nil)
+	http.Post(m.config.SlackWebhook, "application/json", bytes.NewBuffer(jsonData))
 }
 
 func (m *Monitor) logAlert(message string, critical bool) {

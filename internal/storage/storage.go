@@ -692,18 +692,45 @@ func (s *Storage) ListPrompts(ctx context.Context, limit, offset int) ([]models.
 		"offset": offset,
 	}).Debug("Listing prompts")
 
-	// TODO: Implement actual database query
-	// For now, return empty slice
-	return []models.Prompt{}, nil
+	if s.db == nil {
+		return []models.Prompt{}, fmt.Errorf("database connection not initialized")
+	}
+
+	query := strings.Replace(s.baseSelectQuery(), ";", " ORDER BY created_at DESC LIMIT ? OFFSET ?;", 1)
+	stmt, _, err := s.db.Prepare(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to prepare list prompts query: %w", err)
+	}
+	defer func() { _ = stmt.Close() }()
+
+	_ = stmt.BindInt(1, limit)
+	_ = stmt.BindInt(2, offset)
+
+	prompts, err := s.scanPrompts(stmt)
+	if err != nil {
+		return nil, fmt.Errorf("failed to scan prompts: %w", err)
+	}
+
+	// Return slice instead of pointer slice
+	result := make([]models.Prompt, len(prompts))
+	for i, p := range prompts {
+		result[i] = *p
+	}
+	return result, nil
 }
 
 // GetPrompt retrieves a single prompt by ID
 func (s *Storage) GetPrompt(ctx context.Context, id string) (*models.Prompt, error) {
 	s.logger.WithField("prompt_id", id).Debug("Getting prompt by ID")
 
-	// TODO: Implement actual database query
-	// For now, return not found error
-	return nil, fmt.Errorf("prompt not found")
+	// Parse UUID string
+	promptID, err := uuid.Parse(id)
+	if err != nil {
+		return nil, fmt.Errorf("invalid prompt ID format: %w", err)
+	}
+
+	// Use the existing GetPromptByID method
+	return s.GetPromptByID(ctx, promptID)
 }
 
 // SearchPrompts performs text-based search on prompts
@@ -713,8 +740,43 @@ func (s *Storage) SearchPrompts(ctx context.Context, query string, limit int) ([
 		"limit": limit,
 	}).Debug("Searching prompts")
 
-	// TODO: Implement actual text search
-	return []models.Prompt{}, nil
+	// Use LIKE for simple text search on content and original_input
+	searchQuery := `
+		SELECT
+			id, content, phase, provider, model, temperature, max_tokens,
+			actual_tokens, tags, parent_id, session_id, source_type,
+			enhancement_method, relevance_score, usage_count, generation_count,
+			last_used_at, original_input, persona_used, target_model_family,
+			created_at, updated_at, embedding_model, embedding_provider
+		FROM prompts
+		WHERE content LIKE ? OR original_input LIKE ?
+		ORDER BY relevance_score DESC, created_at DESC
+		LIMIT ?;
+	`
+
+	stmt, _, err := s.db.Prepare(searchQuery)
+	if err != nil {
+		return nil, fmt.Errorf("failed to prepare search prompts query: %w", err)
+	}
+	defer func() { _ = stmt.Close() }()
+
+	// Add wildcards for LIKE search
+	searchPattern := "%" + query + "%"
+	_ = stmt.BindText(1, searchPattern)
+	_ = stmt.BindText(2, searchPattern)
+	_ = stmt.BindInt(3, limit)
+
+	prompts, err := s.scanPrompts(stmt)
+	if err != nil {
+		return nil, fmt.Errorf("failed to scan search results: %w", err)
+	}
+
+	// Return slice instead of pointer slice
+	result := make([]models.Prompt, len(prompts))
+	for i, p := range prompts {
+		result[i] = *p
+	}
+	return result, nil
 }
 
 // SearchPromptsWithVector performs semantic search using embeddings
@@ -736,8 +798,44 @@ func (s *Storage) GetPromptsByTags(ctx context.Context, tags []string, limit int
 		"limit": limit,
 	}).Debug("Getting prompts by tags")
 
-	// TODO: Implement tag-based filtering
-	return []models.Prompt{}, nil
+	if len(tags) == 0 {
+		return []models.Prompt{}, nil
+	}
+
+	// Build query with JSON array checking
+	// SQLite JSON functions to check if any tag exists in the JSON array
+	query := s.baseSelectQuery()
+	whereClauses := make([]string, 0, len(tags))
+	for range tags {
+		whereClauses = append(whereClauses, "json_extract(tags, '$') LIKE ?")
+	}
+
+	whereClause := " WHERE " + strings.Join(whereClauses, " OR ")
+	query = strings.Replace(query, ";", whereClause+" ORDER BY created_at DESC LIMIT ?;", 1)
+
+	stmt, _, err := s.db.Prepare(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to prepare tags query: %w", err)
+	}
+	defer func() { _ = stmt.Close() }()
+
+	// Bind tag parameters with wildcards for LIKE matching
+	for i, tag := range tags {
+		_ = stmt.BindText(i+1, fmt.Sprintf("%%%q%%", tag))
+	}
+	_ = stmt.BindInt(len(tags)+1, limit)
+
+	prompts, err := s.scanPrompts(stmt)
+	if err != nil {
+		return nil, fmt.Errorf("failed to scan prompts by tags: %w", err)
+	}
+
+	// Return slice instead of pointer slice
+	result := make([]models.Prompt, len(prompts))
+	for i, p := range prompts {
+		result[i] = *p
+	}
+	return result, nil
 }
 
 // GetPromptsByPhase retrieves prompts from a specific alchemical phase
@@ -747,8 +845,27 @@ func (s *Storage) GetPromptsByPhase(ctx context.Context, phase models.Phase, lim
 		"limit": limit,
 	}).Debug("Getting prompts by phase")
 
-	// TODO: Implement phase-based filtering
-	return []models.Prompt{}, nil
+	query := strings.Replace(s.baseSelectQuery(), ";", " WHERE phase = ? ORDER BY created_at DESC LIMIT ?;", 1)
+	stmt, _, err := s.db.Prepare(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to prepare phase query: %w", err)
+	}
+	defer func() { _ = stmt.Close() }()
+
+	_ = stmt.BindText(1, string(phase))
+	_ = stmt.BindInt(2, limit)
+
+	prompts, err := s.scanPrompts(stmt)
+	if err != nil {
+		return nil, fmt.Errorf("failed to scan prompts by phase: %w", err)
+	}
+
+	// Return slice instead of pointer slice
+	result := make([]models.Prompt, len(prompts))
+	for i, p := range prompts {
+		result[i] = *p
+	}
+	return result, nil
 }
 
 // GetPromptsByProvider retrieves prompts generated by a specific provider
@@ -758,16 +875,64 @@ func (s *Storage) GetPromptsByProvider(ctx context.Context, provider string, lim
 		"limit":    limit,
 	}).Debug("Getting prompts by provider")
 
-	// TODO: Implement provider-based filtering
-	return []models.Prompt{}, nil
+	query := strings.Replace(s.baseSelectQuery(), ";", " WHERE provider = ? ORDER BY created_at DESC LIMIT ?;", 1)
+	stmt, _, err := s.db.Prepare(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to prepare provider query: %w", err)
+	}
+	defer func() { _ = stmt.Close() }()
+
+	_ = stmt.BindText(1, provider)
+	_ = stmt.BindInt(2, limit)
+
+	prompts, err := s.scanPrompts(stmt)
+	if err != nil {
+		return nil, fmt.Errorf("failed to scan prompts by provider: %w", err)
+	}
+
+	// Return slice instead of pointer slice
+	result := make([]models.Prompt, len(prompts))
+	for i, p := range prompts {
+		result[i] = *p
+	}
+	return result, nil
 }
 
 // DeletePrompt removes a prompt from storage
 func (s *Storage) DeletePrompt(ctx context.Context, id string) error {
 	s.logger.WithField("prompt_id", id).Debug("Deleting prompt")
 
-	// TODO: Implement actual deletion
-	return fmt.Errorf("delete not implemented")
+	// Parse UUID string
+	promptID, err := uuid.Parse(id)
+	if err != nil {
+		return fmt.Errorf("invalid prompt ID format: %w", err)
+	}
+
+	// Delete from SQLite
+	stmt, _, err := s.db.Prepare("DELETE FROM prompts WHERE id = ?")
+	if err != nil {
+		return fmt.Errorf("failed to prepare delete prompt statement: %w", err)
+	}
+	defer func() { _ = stmt.Close() }()
+
+	_ = stmt.BindText(1, promptID.String())
+
+	if !stmt.Step() {
+		if err := stmt.Err(); err != nil {
+			return fmt.Errorf("failed to execute delete prompt statement: %w", err)
+		}
+	}
+
+	// Also delete from vector storage if it exists
+	collection := s.getOrCreateCollection()
+	if collection != nil {
+		// chromem-go doesn't have a direct delete method, but we can work around this
+		// by not including it in future queries
+		s.logger.WithField("prompt_id", promptID).Debug("Note: Vector deletion not supported in chromem-go")
+	}
+
+	s.logger.WithField("prompt_id", promptID).Info("Successfully deleted prompt")
+	return nil
 }
 
 // UpdatePrompt updates an existing prompt
@@ -776,13 +941,31 @@ func (s *Storage) UpdatePrompt(ctx context.Context, prompt *models.Prompt) error
 
 	prompt.UpdatedAt = time.Now()
 
-	// TODO: Implement actual update
-	return fmt.Errorf("update not implemented")
+	// Use the existing SavePrompt method which handles both insert and update
+	// It uses ON CONFLICT to update existing records
+	return s.SavePrompt(ctx, prompt)
 }
 
 // GetPromptsCount returns the total number of prompts
 func (s *Storage) GetPromptsCount(ctx context.Context) (int, error) {
-	// TODO: Implement actual count query
+	s.logger.Debug("Getting prompts count")
+
+	stmt, _, err := s.db.Prepare("SELECT COUNT(*) FROM prompts")
+	if err != nil {
+		return 0, fmt.Errorf("failed to prepare count query: %w", err)
+	}
+	defer func() { _ = stmt.Close() }()
+
+	if stmt.Step() {
+		count := stmt.ColumnInt(0)
+		s.logger.WithField("count", count).Debug("Retrieved prompts count")
+		return count, nil
+	}
+
+	if err := stmt.Err(); err != nil {
+		return 0, fmt.Errorf("failed to execute count query: %w", err)
+	}
+
 	return 0, nil
 }
 
@@ -790,16 +973,54 @@ func (s *Storage) GetPromptsCount(ctx context.Context) (int, error) {
 func (s *Storage) GetPopularPrompts(ctx context.Context, limit int) ([]models.Prompt, error) {
 	s.logger.WithField("limit", limit).Debug("Getting popular prompts")
 
-	// TODO: Implement based on usage_count or access frequency
-	return []models.Prompt{}, nil
+	// Order by usage_count and generation_count to find most popular prompts
+	query := strings.Replace(s.baseSelectQuery(), ";", " ORDER BY usage_count DESC, generation_count DESC, relevance_score DESC LIMIT ?;", 1)
+	stmt, _, err := s.db.Prepare(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to prepare popular prompts query: %w", err)
+	}
+	defer func() { _ = stmt.Close() }()
+
+	_ = stmt.BindInt(1, limit)
+
+	prompts, err := s.scanPrompts(stmt)
+	if err != nil {
+		return nil, fmt.Errorf("failed to scan popular prompts: %w", err)
+	}
+
+	// Return slice instead of pointer slice
+	result := make([]models.Prompt, len(prompts))
+	for i, p := range prompts {
+		result[i] = *p
+	}
+	return result, nil
 }
 
 // GetRecentPrompts returns the most recently created prompts
 func (s *Storage) GetRecentPrompts(ctx context.Context, limit int) ([]models.Prompt, error) {
 	s.logger.WithField("limit", limit).Debug("Getting recent prompts")
 
-	// TODO: Implement with ORDER BY created_at DESC
-	return []models.Prompt{}, nil
+	// Order by created_at to find most recent prompts
+	query := strings.Replace(s.baseSelectQuery(), ";", " ORDER BY created_at DESC LIMIT ?;", 1)
+	stmt, _, err := s.db.Prepare(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to prepare recent prompts query: %w", err)
+	}
+	defer func() { _ = stmt.Close() }()
+
+	_ = stmt.BindInt(1, limit)
+
+	prompts, err := s.scanPrompts(stmt)
+	if err != nil {
+		return nil, fmt.Errorf("failed to scan recent prompts: %w", err)
+	}
+
+	// Return slice instead of pointer slice
+	result := make([]models.Prompt, len(prompts))
+	for i, p := range prompts {
+		result[i] = *p
+	}
+	return result, nil
 }
 
 // NewSQLiteStorage creates a new SQLite storage instance

@@ -11,6 +11,13 @@ info:
     - **Solutio**: Dissolution - refines and humanizes prompts  
     - **Coagulatio**: Crystallization - creates precise, optimized final prompts
     
+    ## Recent Enhancements (v1.1.0)
+    
+    - **Enhanced Model Tracking**: New ModelMetadata with cost, token usage, and processing metrics
+    - **Complete Storage API**: Implemented ListPrompts, GetPrompt, and SearchPrompts methods
+    - **Consolidated Types**: Unified GenerateRequest/Response types for consistency
+    - **Improved Search**: Text-based search across prompt content and metadata
+    
     ## Authentication
     
     The API supports multiple authentication methods:
@@ -29,7 +36,7 @@ info:
     - `X-RateLimit-Remaining`: Remaining requests
     - `X-RateLimit-Reset`: Reset time (Unix timestamp)
     
-  version: 1.0.0
+  version: 1.1.0
   contact:
     name: Prompt Alchemy Support
     url: https://github.com/jonwraymond/prompt-alchemy
@@ -785,12 +792,75 @@ components:
         avg_similarity:
           type: number
           description: Average similarity score for UI
+        model_metadata:
+          $ref: '#/components/schemas/ModelMetadata'
+          description: Detailed model usage metrics and cost tracking
       required:
         - id
         - content
         - phase
         - provider
         - model
+
+    ModelMetadata:
+      type: object
+      description: Detailed information about model usage including cost and performance metrics
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the model metadata
+        prompt_id:
+          type: string
+          format: uuid
+          description: Associated prompt ID
+        generation_model:
+          type: string
+          description: Model used for prompt generation
+        generation_provider:
+          type: string
+          description: Provider used for prompt generation
+        embedding_model:
+          type: string
+          description: Model used for embeddings
+        embedding_provider:
+          type: string
+          description: Provider used for embeddings
+        model_version:
+          type: string
+          description: Specific model version if available
+        api_version:
+          type: string
+          description: API version used for the request
+        processing_time:
+          type: integer
+          description: Processing time in milliseconds
+        input_tokens:
+          type: integer
+          description: Number of input tokens processed
+        output_tokens:
+          type: integer
+          description: Number of output tokens generated
+        total_tokens:
+          type: integer
+          description: Total tokens (input + output)
+        cost:
+          type: number
+          format: float
+          description: Cost in USD if available
+        created_at:
+          type: string
+          format: date-time
+          description: When the metadata was recorded
+      required:
+        - id
+        - prompt_id
+        - generation_model
+        - generation_provider
+        - processing_time
+        - input_tokens
+        - output_tokens
+        - total_tokens
         - created_at
         - updated_at
 

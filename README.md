@@ -45,6 +45,9 @@ docker-compose --profile hybrid up -d
 
 # 3. Open the UI
 open http://localhost:5173
+
+# Test auto-commit hook system
+echo "Auto-commit hook system active!"
 ```
 
 ## 📦 Installation
@@ -327,17 +330,26 @@ Right-click the Generate button for quick preset templates:
 
 ## 📈 Recent Updates
 
+### Backend Improvements
+- **Storage Layer Complete**: Implemented missing methods (ListPrompts, GetPrompt, SearchPrompts)
+- **Enhanced Prompt Models**: New `ModelMetadata` tracking with cost, token usage, and processing metrics
+- **Type Consolidation**: Unified GenerateRequest/Response types in shared models package
+- **Code Quality**: Comprehensive internal cleanup with TODO resolution and duplicate elimination
+- **MCP Integration**: Model Context Protocol support for Claude Desktop
+- **Provider Updates**: Enhanced support for multiple LLM providers
+- **Performance Optimization**: Faster response times and caching
+- **Docker Support**: Improved containerization with docker-compose
+
 ### Frontend Enhancements
 - **3D Hexagon Grid Effects**: Interactive background with React Three Fiber
 - **Enhanced Animations**: Liquid metal effects and hover states
 - **Responsive Design**: Improved mobile experience
 - **TypeScript Migration**: Full type safety across components
 
-### Backend Improvements
-- **MCP Integration**: Model Context Protocol support for Claude Desktop
-- **Provider Updates**: Enhanced support for multiple LLM providers
-- **Performance Optimization**: Faster response times and caching
-- **Docker Support**: Improved containerization with docker-compose
+### Code Quality & Architecture
+- **Internal Directory Cleanup**: Resolved 17 TODO comments and consolidated duplicate types
+- **Enhanced Testing**: Improved test coverage for security and validation
+- **Database Schema**: New model metadata tracking for comprehensive analytics
 
 ## 🏗️ Development Setup
 

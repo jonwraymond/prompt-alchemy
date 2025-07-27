@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"sync"
 	"syscall"
 	"time"
@@ -24,7 +23,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/subosito/gotenv"
 )
 
 var (
@@ -465,4 +463,70 @@ func initConfig() {
 	} else {
 		logger.WithField("file", viper.ConfigFileUsed()).Info("Using config file")
 	}
+}
+
+func registerProviders(registry *providers.Registry, logger *logrus.Logger) error {
+	// Register providers based on configuration
+	if apiKey := viper.GetString("providers.openai.api_key"); apiKey != "" {
+		config := providers.Config{
+			APIKey: apiKey,
+			Model:  viper.GetString("providers.openai.model"),
+		}
+		openai := providers.NewOpenAIProvider(config)
+		_ = registry.Register(providers.ProviderOpenAI, openai)
+		logger.Info("Registered OpenAI provider")
+	}
+
+	if apiKey := viper.GetString("providers.anthropic.api_key"); apiKey != "" {
+		config := providers.Config{
+			APIKey: apiKey,
+			Model:  viper.GetString("providers.anthropic.model"),
+		}
+		anthropic := providers.NewAnthropicProvider(config)
+		_ = registry.Register(providers.ProviderAnthropic, anthropic)
+		logger.Info("Registered Anthropic provider")
+	}
+
+	if apiKey := viper.GetString("providers.google.api_key"); apiKey != "" {
+		config := providers.Config{
+			APIKey: apiKey,
+			Model:  viper.GetString("providers.google.model"),
+		}
+		google := providers.NewGoogleProvider(config)
+		_ = registry.Register(providers.ProviderGoogle, google)
+		logger.Info("Registered Google provider")
+	}
+
+	if apiKey := viper.GetString("providers.grok.api_key"); apiKey != "" {
+		config := providers.Config{
+			APIKey: apiKey,
+			Model:  viper.GetString("providers.grok.model"),
+		}
+		grok := providers.NewGrokProvider(config)
+		_ = registry.Register(providers.ProviderGrok, grok)
+		logger.Info("Registered Grok provider")
+	}
+
+	// Always register Ollama if base URL is configured
+	if baseURL := viper.GetString("providers.ollama.base_url"); baseURL != "" {
+		config := providers.Config{
+			BaseURL: baseURL,
+			Model:   viper.GetString("providers.ollama.model"),
+		}
+		ollama := providers.NewOllamaProvider(config)
+		_ = registry.Register(providers.ProviderOllama, ollama)
+		logger.Info("Registered Ollama provider")
+	}
+
+	if apiKey := viper.GetString("providers.openrouter.api_key"); apiKey != "" {
+		config := providers.Config{
+			APIKey: apiKey,
+			Model:  viper.GetString("providers.openrouter.model"),
+		}
+		openrouter := providers.NewOpenRouterProvider(config)
+		_ = registry.Register(providers.ProviderOpenRouter, openrouter)
+		logger.Info("Registered OpenRouter provider")
+	}
+
+	return nil
 }
