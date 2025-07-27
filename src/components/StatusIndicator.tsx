@@ -321,8 +321,52 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
     return { x, y };
   };
 
+  const handleDotMouseEnter = (systemId: string, event: React.MouseEvent) => {
+    if (showTooltips) {
+      // Clear any existing timeout
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+      
+      // Show tooltip after a short delay
+      hoverTimeoutRef.current = setTimeout(() => {
+        setActiveTooltip(systemId);
+        setHoveredSystem(systemId);
+        if (event.currentTarget) {
+          const position = calculateTooltipPosition(event.currentTarget as HTMLElement);
+          setTooltipPosition(position);
+          
+          // Recalculate position after DOM update
+          setTimeout(() => {
+            if (tooltipRef.current && event.currentTarget) {
+              const newPosition = calculateTooltipPosition(event.currentTarget as HTMLElement, tooltipRef.current);
+              setTooltipPosition(newPosition);
+            }
+          }, 10);
+        }
+      }, 200); // 200ms delay to prevent accidental hovers
+    }
+  };
+
+  const handleDotMouseLeave = (systemId: string) => {
+    // Clear hover timeout
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+    
+    // Only hide tooltip if it's from hover (not click)
+    if (hoveredSystem === systemId && activeTooltip === systemId) {
+      setActiveTooltip(null);
+      setTooltipPosition(null);
+      setHoveredSystem(null);
+    }
+  };
+
   const handleDotClick = (systemId: string, event?: React.MouseEvent) => {
     if (showTooltips) {
+      // Clear hover state
+      setHoveredSystem(null);
+      
       if (activeTooltip === systemId) {
         setActiveTooltip(null);
         setTooltipPosition(null);
@@ -331,6 +375,14 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
         if (event?.currentTarget) {
           const position = calculateTooltipPosition(event.currentTarget as HTMLElement);
           setTooltipPosition(position);
+          
+          // Recalculate position after DOM update
+          setTimeout(() => {
+            if (tooltipRef.current && event.currentTarget) {
+              const newPosition = calculateTooltipPosition(event.currentTarget as HTMLElement, tooltipRef.current);
+              setTooltipPosition(newPosition);
+            }
+          }, 10);
         }
       }
     }
