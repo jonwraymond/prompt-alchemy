@@ -91,6 +91,10 @@ logs/
 *.log.*
 logs/
 
+# Semantic compliance reports
+reports/semantic-compliance/
+/tmp/semantic-compliance-*.log
+
 # Temporary files
 tmp/
 temp/
