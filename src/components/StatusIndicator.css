@@ -40,19 +40,19 @@
   left: 20px;
 }
 
-/* Minimal status dots - compact with vibrant glow */
+/* Minimal status dots - truly tiny with vibrant glow */
 .status-dot.system.minimal {
-  width: 10px;
-  height: 10px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   cursor: pointer;
   position: relative;
   transition: all 0.3s ease;
   border: none;
   pointer-events: auto; /* Still allow hover for tooltips */
-  /* Transparent padding for 44px touch target */
-  padding: 17px;
-  margin: -17px;
+  /* Large transparent padding for 44px touch target despite tiny dot */
+  padding: 19px;
+  margin: -19px;
   background-clip: content-box;
 }
 
@@ -150,9 +150,9 @@
 /* Ensure dots are easily tappable on touch devices */
 @media (pointer: coarse) {
   .status-dot.system.minimal {
-    /* Slightly larger on touch devices but still minimal */
-    width: 11px;
-    height: 11px;
+    /* Still tiny on touch devices */
+    width: 7px;
+    height: 7px;
   }
   
   /* Even more spacing on touch devices */
