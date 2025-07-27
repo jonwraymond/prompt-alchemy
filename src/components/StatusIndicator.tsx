@@ -248,12 +248,12 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
   }, [activeTooltip, tooltipPosition, hoveredSystem, showTooltips]);
 
   const getStatusColor = (status: StatusType): string => {
-    // Muted colors with 40% opacity for subdued appearance
+    // Full opacity colors for WCAG contrast compliance
     switch (status) {
-      case 'operational': return 'rgba(16, 185, 129, 0.4)'; // Green with 40% opacity
-      case 'degraded': return 'rgba(245, 158, 11, 0.4)';    // Amber with 40% opacity  
-      case 'down': return 'rgba(239, 68, 68, 0.4)';         // Red with 40% opacity
-      default: return 'rgba(107, 114, 128, 0.4)';           // Gray with 40% opacity
+      case 'operational': return 'rgba(16, 185, 129, 1.0)'; // Green with 100% opacity
+      case 'degraded': return 'rgba(245, 158, 11, 1.0)';    // Amber with 100% opacity  
+      case 'down': return 'rgba(239, 68, 68, 1.0)';         // Red with 100% opacity
+      default: return 'rgba(107, 114, 128, 1.0)';           // Gray with 100% opacity
     }
   };
 
