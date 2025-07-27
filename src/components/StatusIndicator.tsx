@@ -383,6 +383,53 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
     }
   };
 
+  const handleDotFocus = (systemId: string, event: React.FocusEvent) => {
+    console.log(`[StatusIndicator] Focus on ${systemId}`);
+    if (showTooltips) {
+      // Clear any existing timeout
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+      
+      const targetElement = event.currentTarget as HTMLElement;
+      
+      // Show tooltip immediately on focus
+      console.log(`[StatusIndicator] Showing tooltip for ${systemId} (focus)`);
+      setActiveTooltip(systemId);
+      setHoveredSystem(systemId);
+      if (targetElement) {
+        const position = calculateTooltipPosition(targetElement);
+        console.log(`[StatusIndicator] Tooltip position calculated (focus):`, position);
+        setTooltipPosition(position);
+        
+        // Recalculate position after DOM update
+        setTimeout(() => {
+          if (tooltipRef.current && targetElement) {
+            const newPosition = calculateTooltipPosition(targetElement, tooltipRef.current);
+            console.log(`[StatusIndicator] Tooltip position recalculated (focus):`, newPosition);
+            setTooltipPosition(newPosition);
+          }
+        }, 10);
+      }
+    }
+  };
+
+  const handleDotBlur = (systemId: string) => {
+    console.log(`[StatusIndicator] Blur on ${systemId}`);
+    // Clear hover timeout
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+    
+    // Hide tooltip on blur
+    if (activeTooltip === systemId) {
+      console.log(`[StatusIndicator] Hiding tooltip for ${systemId} (blur)`);
+      setActiveTooltip(null);
+      setTooltipPosition(null);
+      setHoveredSystem(null);
+    }
+  };
+
   // Removed click handler - dots are non-interactive
 
   // Removed overall click handler - dots are non-interactive
