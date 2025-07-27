@@ -191,6 +191,20 @@ func (h *V1Handler) HandleGeneratePrompts(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	// Validate ranges
+	if req.Count < 0 {
+		httputil.BadRequest(w, "Count must be non-negative")
+		return
+	}
+	if req.Temperature < 0 {
+		httputil.BadRequest(w, "Temperature must be non-negative")
+		return
+	}
+	if req.MaxTokens < 0 {
+		httputil.BadRequest(w, "MaxTokens must be non-negative")
+		return
+	}
+
 	// Set defaults
 	if req.Count == 0 {
 		req.Count = 3
