@@ -405,6 +405,7 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
             </div>
           ))}
         </div>
+      </div>
 
       {/* Portal-based tooltip for better positioning */}
       {activeTooltip && showTooltips && tooltipPosition && ReactDOM.createPortal(
