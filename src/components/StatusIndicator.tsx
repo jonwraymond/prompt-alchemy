@@ -390,8 +390,7 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
   return (
     <div className={`status-indicator ${position} minimal`}>
       {/* Individual System Dots - Always visible as minimal indicators */}
-      {
-        <div className="system-dots">
+      <div className="system-dots">
           {systems.map((system) => (
             <div key={system.id} className="system-dot-container">
               <div
