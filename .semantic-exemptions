@@ -1,0 +1,18 @@
+# Semantic Tool Compliance Exemptions
+# Add file patterns or specific violations that are approved exemptions
+# Format: <file_pattern> <reason>
+
+# Validation scripts need to use grep to check for violations
+scripts/semantic-search-hooks/*.sh "Validation scripts require grep to detect non-compliant patterns"
+
+# Setup script needs to check Makefile content
+scripts/setup-semantic-hooks.sh:133 "Checking Makefile content for existing targets is acceptable"
+
+# E2E test data creation
+scripts/run-e2e-tests.sh:616 "Creating test data files is not code analysis"
+
+# Debug helper for log analysis
+scripts/debug-helper.sh "Log analysis and debugging requires grep for error patterns"
+
+# Test script output parsing
+scripts/test-learning-to-rank.sh:374 "Parsing JSON output from tests requires grep"
