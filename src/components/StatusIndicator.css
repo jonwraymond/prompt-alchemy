@@ -175,7 +175,7 @@
 .status-indicator.top-left .status-tooltip::before {
   left: -12px;
   top: 15px;
-  border-right-color: rgba(5, 5, 5, 0.98);
+  border-right-color: rgba(15, 15, 15, 0.65);
 }
 
 /* Arrow positioning for right-side tooltips */
@@ -183,7 +183,7 @@
 .status-indicator.top-right .status-tooltip::before {
   right: -12px;
   top: 15px;
-  border-left-color: rgba(5, 5, 5, 0.98);
+  border-left-color: rgba(15, 15, 15, 0.65);
 }
 
 /* Arrow positioning for top tooltips */
