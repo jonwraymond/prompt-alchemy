@@ -236,7 +236,7 @@ func (h *V1Handler) HandleGeneratePrompts(w http.ResponseWriter, r *http.Request
 	// Build PhaseConfigs from providers map or use defaults
 	phaseConfigs := make([]models.PhaseConfig, len(phases))
 	for i, phase := range phases {
-		provider := "mock" // Default to mock for tests and API calls without provider config
+		provider := "openai" // Default to openai for tests and API calls without provider config
 		if providerName, exists := providers[phase]; exists && providerName != "" {
 			provider = providerName
 		}
