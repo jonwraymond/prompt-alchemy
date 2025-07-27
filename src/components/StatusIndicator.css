@@ -153,9 +153,9 @@
 /* Ensure dots are easily tappable on touch devices */
 @media (pointer: coarse) {
   .status-dot.system.minimal {
-    /* Slightly larger visual size on touch devices */
-    width: 16px;
-    height: 16px;
+    /* Keep small size but ensure good touch targets with padding */
+    width: 12px;
+    height: 12px;
   }
   
   /* Even more spacing on touch devices */
