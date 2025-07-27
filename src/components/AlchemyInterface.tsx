@@ -104,7 +104,7 @@ export const AlchemyInterface: React.FC<AlchemyInterfaceProps> = ({ className = 
       setIsGenerating(false);
       setTimeout(() => setCurrentPhase(''), 2000);
     }
-  }, []);
+  }, [showHexGrid]);
 
   return (
     <div className={`alchemy-interface ${className}`}>
