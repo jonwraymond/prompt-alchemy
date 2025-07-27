@@ -44,13 +44,15 @@
   border-radius: 50%;
   cursor: pointer;
   position: relative;
-  transition: all 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
+  animation: pulse-working 2s ease-in-out infinite;
 }
 
 .status-dot.overall:hover {
-  transform: scale(1.1);
+  transform: scale(1.15);
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
+  animation-play-state: paused;
 }
 
 /* Individual system dots container */
@@ -77,17 +79,24 @@
   height: 12px;
   border-radius: 50%;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
   position: relative;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  animation: pulse-working 2s ease-in-out infinite;
 }
 
 .status-dot.system:hover,
 .status-dot.system.active {
-  transform: scale(1.2);
+  transform: scale(1.25);
+  animation-play-state: paused;
+}
+
+.status-dot.system:focus {
+  transform: scale(1.25);
+  animation-play-state: paused;
 }
 
 /* Pulse animation for operational status */
@@ -122,6 +131,22 @@
   }
 }
 
+/* Working/active pulsation animation */
+@keyframes pulse-working {
+  0% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+}
+
 /* Tooltip */
 .status-tooltip {
   position: absolute;
@@ -140,6 +165,7 @@
   line-height: 1.4;
   backdrop-filter: blur(16px);
   animation: tooltip-fade-in 0.2s ease-out;
+  pointer-events: auto;
 }
 
 /* Tooltip fade-in animation */
@@ -330,10 +356,6 @@
   animation: tooltip-fade-in 0.2s ease-out;
   filter: drop-shadow(0 8px 32px rgba(0, 0, 0, 0.4));
   pointer-events: auto;
-  /* Temporary hot pink background for debugging */
-  background: hotpink !important;
-  border: 5px solid yellow !important;
-  color: black !important;
 }
 
 .status-tooltip.enhanced::before {

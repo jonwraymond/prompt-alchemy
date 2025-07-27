@@ -236,6 +236,17 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Debug tooltip state changes
+  useEffect(() => {
+    console.log(`[StatusIndicator] Tooltip state changed:`, {
+      activeTooltip,
+      tooltipPosition,
+      hoveredSystem,
+      showTooltips,
+      tooltipElement: tooltipRef.current
+    });
+  }, [activeTooltip, tooltipPosition, hoveredSystem, showTooltips]);
+
   const getStatusColor = (status: StatusType): string => {
     switch (status) {
       case 'operational': return '#10b981'; // Enhanced green for better visibility
