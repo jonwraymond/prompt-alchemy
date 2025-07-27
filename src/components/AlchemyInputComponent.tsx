@@ -11,7 +11,7 @@ interface AlchemyInputProps {
 
 export const AlchemyInputComponent: React.FC<AlchemyInputProps> = ({
   onSubmit,
-  placeholder = "Transmute your ideas into powerful prompts...",
+  placeholder = "Generate your ideas into powerful prompts...",
   isLoading = false,
   disabled = false,
   className = ''
@@ -177,13 +177,15 @@ export const AlchemyInputComponent: React.FC<AlchemyInputProps> = ({
             className="alchemy-btn generate-btn"
             onClick={handleSubmit}
             disabled={disabled || !value.trim() || isLoading}
-            title="Transmute (Cmd+Enter)"
+            title="Generate (Cmd+Enter)"
           >
-            <span className="btn-icon">⚗️</span>
+            <svg className="btn-icon" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2L15.5 8.5L22 12L15.5 15.5L12 22L8.5 15.5L2 12L8.5 8.5L12 2Z"/>
+              <path d="M12 6L10 10L6 12L10 14L12 18L14 14L18 12L14 10L12 6Z" fill="none" stroke="currentColor" strokeWidth="1"/>
+            </svg>
             <span className="btn-text">
-              {isLoading ? 'Transmuting...' : 'Transmute'}
+              {isLoading ? 'Transmuting...' : 'Generate'}
             </span>
-            <span className="btn-icon">🪄</span>
           </button>
         </div>
 

@@ -42,8 +42,8 @@
 
 /* Minimal status dots - truly tiny with vibrant glow */
 .status-dot.system.minimal {
-  width: 6px;
-  height: 6px;
+  width: 6px !important;
+  height: 6px !important;
   border-radius: 50%;
   cursor: pointer;
   position: relative;
@@ -54,6 +54,8 @@
   padding: 19px;
   margin: -19px;
   background-clip: content-box;
+  /* Ensure box-sizing doesn't affect size */
+  box-sizing: content-box !important;
 }
 
 /* Individual system dots container - horizontal for minimal mode */

@@ -385,7 +385,7 @@ const AlchemicalInput: React.FC<AlchemicalInputProps> = ({
                 <svg className="btn-icon" viewBox="0 0 24 24">
                   <path d="M2,21L23,12L2,3V10L17,12L2,14V21Z"/>
                 </svg>
-                {isLoading ? 'Transmuting...' : 'Transmute'}
+                {isLoading ? 'Transmuting...' : 'Generate'}
               </button>
               
               {/* Persona Dropdown */}
