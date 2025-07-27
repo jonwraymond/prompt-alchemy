@@ -200,6 +200,24 @@
   font-style: italic;
 }
 
+.tooltip-performance {
+  font-family: 'Courier New', monospace;
+  font-size: 0.75rem;
+  margin: 4px 0;
+}
+
+.tooltip-performance .fast {
+  color: #10b981;
+}
+
+.tooltip-performance .medium {
+  color: #f59e0b;
+}
+
+.tooltip-performance .slow {
+  color: #ef4444;
+}
+
 .tooltip-timestamp {
   font-size: 0.75rem;
   color: rgba(255, 255, 255, 0.6) !important;
