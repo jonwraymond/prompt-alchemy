@@ -201,7 +201,7 @@ export const AlchemyInputComponent: React.FC<AlchemyInputProps> = ({
         database: 'down'
       });
       setSystemDetails({
-        api: { details: 'System check failed' },
+        api: { details: 'System check failed', responseTime: 0 },
         engine: { details: 'System check failed' },
         providers: { details: 'System check failed' },
         database: { details: 'System check failed' }

@@ -121,6 +121,13 @@ export const AlchemyInterface: React.FC<AlchemyInterfaceProps> = ({ className = 
           <div className="ai-header-actions">
             <button
               className="test-flow-btn"
+              onClick={() => setShowHexGrid(!showHexGrid)}
+              title="View alchemical process visualization"
+            >
+              {showHexGrid ? 'Hide Grid' : '⬡ Hex Grid'}
+            </button>
+            <button
+              className="test-flow-btn"
               onClick={() => setShowUserFlowTests(!showUserFlowTests)}
               title="Run comprehensive user flow tests"
             >
