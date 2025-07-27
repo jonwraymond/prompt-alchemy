@@ -261,38 +261,62 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
     return `${Math.floor(diffSecs / 3600)}h ago`;
   };
 
-  const calculateTooltipPosition = (element: HTMLElement): { x: number; y: number } => {
+  const calculateTooltipPosition = (element: HTMLElement, tooltipEl?: HTMLElement | null): { x: number; y: number } => {
     const rect = element.getBoundingClientRect();
-    const tooltipWidth = 200; // Approximate tooltip width
-    const tooltipHeight = 120; // Approximate tooltip height
+    const tooltipWidth = tooltipEl?.offsetWidth || 250; // Use actual width if available
+    const tooltipHeight = tooltipEl?.offsetHeight || 150; // Use actual height if available
     const margin = 10;
+    const scrollX = window.scrollX || window.pageXOffset;
+    const scrollY = window.scrollY || window.pageYOffset;
 
     // Get viewport dimensions
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
 
+    // Calculate center of the element
+    const elementCenterX = rect.left + rect.width / 2;
+    const elementCenterY = rect.top + rect.height / 2;
+
+    // Default position: to the right of the element
     let x = rect.right + margin;
     let y = rect.top;
 
-    // Check if tooltip would go off the right edge
-    if (x + tooltipWidth > viewportWidth) {
+    // Try right side first
+    if (x + tooltipWidth + margin > viewportWidth) {
+      // Try left side
       x = rect.left - tooltipWidth - margin;
+      
+      if (x < margin) {
+        // If both sides don't fit, position based on available space
+        const spaceRight = viewportWidth - rect.right - margin;
+        const spaceLeft = rect.left - margin;
+        
+        if (spaceRight > spaceLeft) {
+          // More space on the right
+          x = rect.right + margin;
+          // But constrain to viewport
+          x = Math.min(x, viewportWidth - tooltipWidth - margin);
+        } else {
+          // More space on the left
+          x = Math.max(margin, rect.left - tooltipWidth - margin);
+        }
+      }
     }
 
-    // Check if tooltip would go off the bottom edge
-    if (y + tooltipHeight > viewportHeight) {
-      y = viewportHeight - tooltipHeight - margin;
+    // Vertical positioning
+    if (y + tooltipHeight > viewportHeight - margin) {
+      // Try to position above the element center
+      y = rect.bottom - tooltipHeight;
+      
+      if (y < margin) {
+        // Center vertically in viewport if it doesn't fit
+        y = Math.max(margin, Math.min(elementCenterY - tooltipHeight / 2, viewportHeight - tooltipHeight - margin));
+      }
     }
 
-    // Check if tooltip would go off the top edge
-    if (y < margin) {
-      y = margin;
-    }
-
-    // Check if tooltip would go off the left edge
-    if (x < margin) {
-      x = margin;
-    }
+    // Final boundary checks
+    x = Math.max(margin, Math.min(x, viewportWidth - tooltipWidth - margin));
+    y = Math.max(margin, Math.min(y, viewportHeight - tooltipHeight - margin));
 
     return { x, y };
   };
