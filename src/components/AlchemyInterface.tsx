@@ -40,6 +40,11 @@ export const AlchemyInterface: React.FC<AlchemyInterfaceProps> = ({ className = 
     setIsGenerating(true);
     setError('');
     
+    // Start hex grid animation if visible
+    if (showHexGrid && window.AlchemyHexGrid?.startProcessing) {
+      window.AlchemyHexGrid.startProcessing(`session-${Date.now()}`);
+    }
+    
     try {
       // Phase 1: Prima Materia
       setCurrentPhase('Prima Materia - Extracting essence...');
