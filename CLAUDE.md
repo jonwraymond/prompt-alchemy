@@ -18,23 +18,30 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **⚠️ CRITICAL: These rules are MANDATORY for all codebase operations. Non-compliance is unacceptable.**
 
+### GOLDEN RULE: SERENA MCP FIRST, ALWAYS
+
+**NO project domain or code context exploration, structure mapping, or memory usage is allowed except via Serena MCP tools, unless and until explicit Serena error is logged, and then fallback is documented.**
+
 ### Core Tool Requirements
 
-1. **ALWAYS use code2prompt CLI, Serena MCP, or ast-grep for ALL codebase analysis, navigation, and decision-making**
-   - **NEVER** navigate code manually without these tools
-   - **PRIORITIZE** Serena and code2prompt above other navigation/editing tools
-   - Use semantic tools as default for all code search flows; fallback to grep only when absolutely necessary
+1. **SERENA MCP IS MANDATORY FOR ALL OPERATIONS**
+   - **EVERY** session MUST start with: `serena activate_project`
+   - **ALL** code search MUST use: `serena search_for_pattern` or `serena find_symbol`
+   - **ALL** navigation MUST use: `serena get_symbols_overview`
+   - **ALL** memory MUST use: `serena write_memory` and `serena read_memory`
+   - **NEVER** use grep, cat, find, or any direct file operations without Serena failing first
 
-2. **MANDATORY Memory Operations via Serena**
-   - **ALL** memory operations (save, read, update, delete) MUST use Serena's memory APIs
-   - **ALWAYS** activate the relevant project in Serena during operations
-   - **REQUIRED**: Use Serena's project activation and memory CRUD tools for context retention
+2. **FALLBACK ONLY WITH EXPLICIT JUSTIFICATION**
+   - If Serena MCP fails, you MUST document: `# SERENA_FALLBACK: [error and reason]`
+   - Only after documented Serena failure may you use:
+     - ast-grep for structural patterns (with justification)
+     - code2prompt for context generation (with justification)
+     - grep/ripgrep as absolute last resort (with detailed justification)
 
-3. **Semantic Search Hierarchy** (in order of preference):
-   - **Primary**: Serena MCP tools (`find_symbol`, `get_symbols_overview`, `search_for_pattern`)
-   - **Secondary**: ast-grep for structural code analysis (`ast-grep run -p 'pattern'`)
-   - **Tertiary**: code2prompt CLI for codebase context generation
-   - **Last Resort**: grep/ripgrep for text-based search only (must document justification)
+3. **Enforcement Hierarchy**:
+   - **MANDATORY**: Serena MCP for ALL operations (search, navigate, memory, analysis)
+   - **CONDITIONAL**: Other tools ONLY after Serena failure with documentation
+   - **BLOCKED**: Direct file operations without Serena attempt and failure log
 
 ### Tool Definitions & Usage
 
