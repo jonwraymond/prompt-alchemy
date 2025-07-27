@@ -56,6 +56,14 @@ func (e *Engine) Generate(ctx context.Context, opts models.GenerateOptions) (*mo
 		Rankings: make([]models.PromptRanking, 0),
 	}
 
+	// Validate request parameters
+	if opts.Request.Count < 1 {
+		return nil, fmt.Errorf("count must be at least 1, got %d", opts.Request.Count)
+	}
+	if opts.Request.Count > 100 {
+		return nil, fmt.Errorf("count cannot exceed 100, got %d", opts.Request.Count)
+	}
+
 	// Start with the base input
 	basePrompts := make([]string, opts.Request.Count)
 	for i := 0; i < opts.Request.Count; i++ {
