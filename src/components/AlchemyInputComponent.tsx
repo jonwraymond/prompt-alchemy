@@ -46,11 +46,16 @@ export const AlchemyInputComponent: React.FC<AlchemyInputProps> = ({
   });
 
   // Additional system details for rich tooltips
-  const [systemDetails, setSystemDetails] = useState({
+  const [systemDetails, setSystemDetails] = useState<{
+    api: { details: string; responseTime: number };
+    engine: { details: string; responseTime?: number };
+    providers: { details: string; responseTime?: number };
+    database: { details: string; responseTime?: number };
+  }>({
     api: { details: '', responseTime: 0 },
-    engine: { details: '' },
-    providers: { details: '' },
-    database: { details: '' }
+    engine: { details: '', responseTime: undefined },
+    providers: { details: '', responseTime: undefined },
+    database: { details: '', responseTime: undefined }
   });
 
   // Tooltip state

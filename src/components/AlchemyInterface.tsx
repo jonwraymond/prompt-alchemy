@@ -29,6 +29,7 @@ export const AlchemyInterface: React.FC<AlchemyInterfaceProps> = ({ className = 
   const [error, setError] = useState<string>('');
   const [showApiTests, setShowApiTests] = useState(false);
   const [showUserFlowTests, setShowUserFlowTests] = useState(false);
+  const [showHexGrid, setShowHexGrid] = useState(false);
   const [apiHealthy, setApiHealthy] = useState<boolean | null>(null);
   const [testResults, setTestResults] = useState<{ passed: number; failed: number; total: number } | null>(null);
 
