@@ -373,3 +373,43 @@
     gap: 0.5rem;
   }
 }
+
+/* Alchemy Hex Grid Section */
+.alchemy-hex-grid-section {
+  margin: 2rem auto;
+  padding: 1rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(15, 15, 30, 0.5);
+  border-radius: 12px;
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  animation: fadeInSection 0.5s ease-out;
+  max-width: 900px;
+  overflow: hidden;
+}
+
+@keyframes fadeInSection {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive hex grid */
+@media (max-width: 768px) {
+  .alchemy-hex-grid-section {
+    padding: 0.5rem;
+    margin: 1rem auto;
+  }
+  
+  .alchemy-hex-grid-section > div {
+    transform: scale(0.8);
+    transform-origin: center;
+  }
+}
