@@ -261,17 +261,69 @@ coverage:
 	@$(GO) tool cover -html=coverage.out -o coverage.html
 	@echo "Coverage report generated: coverage.html"
 
-# Docker build
+# ==================== Docker Targets ====================
+# Build backend Docker image
 .PHONY: docker-build
 docker-build:
-	@echo "Building Docker image..."
-	@docker build -t prompt-alchemy .
+	@echo "Building backend Docker image..."
+	@docker build -t prompt-alchemy:latest .
+	@echo "Backend image built: prompt-alchemy:latest"
 
-# Docker test
+# Build frontend Docker image
+.PHONY: docker-build-frontend
+docker-build-frontend:
+	@echo "Building frontend Docker image..."
+	@docker build -f Dockerfile.frontend -t prompt-alchemy-frontend:latest .
+	@echo "Frontend image built: prompt-alchemy-frontend:latest"
+
+# Run tests in Docker
 .PHONY: docker-test
 docker-test: docker-build
 	@echo "Running tests in Docker..."
-	@docker run --rm prompt-alchemy make test
+	@docker run --rm prompt-alchemy:latest make test
+
+# Start Docker Compose stack (backend only)
+.PHONY: docker-up
+docker-up:
+	@echo "Starting Docker Compose stack..."
+	@docker-compose up -d prompt-alchemy-api
+	@echo "Backend API available at http://localhost:8080"
+
+# Start development stack with frontend
+.PHONY: docker-up-dev
+docker-up-dev:
+	@echo "Starting development stack with frontend..."
+	@docker-compose --profile development up -d
+	@echo "Backend API available at http://localhost:8080"
+	@echo "Frontend dev server available at http://localhost:5173"
+
+# Start production stack
+.PHONY: docker-up-prod
+docker-up-prod:
+	@echo "Starting production stack..."
+	@docker-compose --profile production up -d
+	@echo "Backend API available at http://localhost:8080"
+	@echo "Frontend production server available at http://localhost:3000"
+
+# Stop Docker Compose stack
+.PHONY: docker-down
+docker-down:
+	@echo "Stopping Docker Compose stack..."
+	@docker-compose down
+	@echo "Stack stopped."
+
+# View Docker Compose logs
+.PHONY: docker-logs
+docker-logs:
+	@docker-compose logs -f
+
+# Clean Docker artifacts
+.PHONY: docker-clean
+docker-clean:
+	@echo "Cleaning Docker artifacts..."
+	@docker-compose down -v --remove-orphans
+	@docker rmi prompt-alchemy:latest prompt-alchemy-frontend:latest || true
+	@echo "Docker artifacts cleaned"
 
 # Release build
 .PHONY: release
