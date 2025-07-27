@@ -485,7 +485,6 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
                 onClick={(e) => handleDotClick(system.id, e)}
                 onFocus={(e) => handleDotFocus(system.id, e)}
                 onBlur={() => handleDotBlur(system.id)}
-                style={{ backgroundColor: getStatusColor(system.status) }}
                 aria-label={`${system.name}: ${getStatusText(system.status)}`}
                 aria-describedby={activeTooltip === system.id ? `tooltip-${system.id}` : undefined}
                 role="button"
