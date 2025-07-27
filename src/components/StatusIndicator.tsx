@@ -37,9 +37,11 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null);
+  const [hoveredSystem, setHoveredSystem] = useState<string | null>(null);
   const intervalRef = useRef<NodeJS.Timeout>();
   const tooltipRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout>();
 
   const checkSystemHealth = async () => {
     const updatedSystems: SystemStatus[] = [...systems];
