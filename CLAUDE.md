@@ -171,6 +171,58 @@ For advanced usage, refer to:
 
 Prompt Alchemy is a sophisticated AI prompt generation system that transforms raw ideas into optimized prompts through a three-phase alchemical process (Prima Materia → Solutio → Coagulatio). It features both a Go backend API and a React frontend with TypeScript.
 
+## Practical Workflow Examples
+
+### Example 1: Feature Implementation with Semantic Tools
+```bash
+# 1. Activate project and generate context
+serena activate_project /path/to/prompt-alchemy
+code2prompt --include "internal/engine/**" --output engine-context.md
+
+# 2. Find related symbols
+serena find_symbol "GeneratePrompt"
+ast-grep run -p 'func Generate$_($$$) { $$$ }' --lang go
+
+# 3. Write implementation plan to memory
+serena write_memory "feature-plan" "Implementing batch prompt generation..."
+
+# 4. Implement with checkpoint commits
+git commit -m "checkpoint: before adding batch processing"
+# ... implement feature ...
+git commit -m "feat: add batch prompt generation with parallel processing"
+```
+
+### Example 2: Automated Code Review Workflow
+```bash
+# 1. Pre-review analysis with semantic tools
+serena search_for_pattern "TODO|FIXME|HACK"
+ast-grep scan --rule security-rules.yml
+
+# 2. Generate review summary
+code2prompt --git-diff --output pr-review-context.md
+serena write_memory "pr-123-review" "Security concerns found in auth module..."
+
+# 3. Address review comments
+serena read_memory "pr-123-review"
+# ... make fixes based on review ...
+```
+
+### Example 3: Parallel Development with Sub-Agents
+```bash
+# 1. Break down complex task
+serena write_memory "epic-breakdown" "1. API service 2. Frontend UI 3. Documentation"
+
+# 2. Spawn specialized agents with semantic context
+code2prompt --include "pkg/providers/**" | claude-code spawn api-developer
+code2prompt --include "src/components/**" | claude-code spawn ui-developer
+code2prompt --include "docs/**" | claude-code spawn doc-writer
+
+# 3. Coordinate results
+serena read_memory "api-developer-results"
+serena read_memory "ui-developer-results"
+serena read_memory "doc-writer-results"
+```
+
 ## Build and Development Commands
 
 ### Go Backend
