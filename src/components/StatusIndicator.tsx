@@ -218,6 +218,9 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
     };
   }, [autoRefresh, refreshInterval]);
 
