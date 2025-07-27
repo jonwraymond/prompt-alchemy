@@ -110,10 +110,10 @@ func TestOpenRouterProvider_GetEmbedding(t *testing.T) {
 	ctx := context.Background()
 	embedding, err := provider.GetEmbedding(ctx, "test text", nil)
 
-	// Since OpenRouter is using placeholder implementation, it returns success
-	assert.NoError(t, err)
-	assert.NotNil(t, embedding)
-	assert.Equal(t, []float32{0.4, 0.5, 0.6}, embedding)
+	// Since OpenRouter delegates to standardized embedding and registry is nil, it should fail
+	assert.Error(t, err)
+	assert.Nil(t, embedding)
+	assert.Contains(t, err.Error(), "registry is nil", "Error should mention nil registry")
 }
 
 func TestOpenRouterProvider_SupportsStreaming(t *testing.T) {
