@@ -9,6 +9,15 @@ import { UserFlowTester } from './UserFlowTester';
 import { api } from '../utils/api';
 import './AlchemyInterface.css';
 
+// Extend window for hex grid access
+declare global {
+  interface Window {
+    AlchemyHexGrid?: {
+      startProcessing?: (sessionId: string) => void;
+    };
+  }
+}
+
 interface AlchemyResult {
   id: string;
   input: string;
