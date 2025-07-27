@@ -325,9 +325,12 @@ const AlchemyHexGrid: React.FC<AlchemyHexGridProps> = ({
 
       {/* Demo controls - Remove in production */}
       <div className="demo-controls">
-        <button onClick={() => simulatePhaseProgression('prima-materia')}>Start Prima Materia</button>
-        <button onClick={() => simulatePhaseProgression('solutio')}>Start Solutio</button>
-        <button onClick={() => simulatePhaseProgression('coagulatio')}>Start Coagulatio</button>
+        <button 
+          onClick={() => startPhaseProcessing('demo-session')}
+          disabled={isProcessing}
+        >
+          {isProcessing ? 'Processing...' : 'Start Demo'}
+        </button>
       </div>
     </div>
   );
