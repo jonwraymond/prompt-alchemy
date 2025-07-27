@@ -221,52 +221,20 @@ const AlchemyHexGrid: React.FC<AlchemyHexGridProps> = ({
     }
   }, [onNodeHover]);
 
-  // Simulate phase progression (replace with actual API integration)
-  const simulatePhaseProgression = useCallback((phase: Phase) => {
-    // Update node status
-    setState(prev => {
-      const newNodes = prev.nodes.map(node => {
-        if (node.phase === phase) {
-          return { ...node, status: 'active' as const };
-        } else if (node.id === 'hub' && phase === 'prima-materia') {
-          return { ...node, status: 'active' as const };
-        } else if (node.id === 'input' && phase === 'prima-materia') {
-          return { ...node, status: 'complete' as const };
-        }
-        return node;
-      });
-
-      // Update connections
-      const newConnections = prev.connections.map(conn => {
-        if (
-          (phase === 'prima-materia' && (conn.id === 'input-hub' || conn.id === 'hub-prima')) ||
-          (phase === 'solutio' && conn.id === 'prima-solutio') ||
-          (phase === 'coagulatio' && conn.id === 'solutio-coagulatio')
-        ) {
-          return { ...conn, active: true, animated: true };
-        }
-        return conn;
-      });
-
-      return {
-        ...prev,
-        nodes: newNodes,
-        connections: newConnections,
-        activePhase: phase,
-        focusedNode: phase
-      };
-    });
-
-    // Complete phase after delay
-    setTimeout(() => {
-      setState(prev => ({
-        ...prev,
-        nodes: prev.nodes.map(node => 
-          node.phase === phase ? { ...node, status: 'complete' as const } : node
-        )
-      }));
-    }, 3000 * animationSpeed);
-  }, [animationSpeed]);
+  // Expose the startPhaseProcessing to parent component
+  useEffect(() => {
+    if (window.AlchemyHexGrid) {
+      window.AlchemyHexGrid.startProcessing = startPhaseProcessing;
+    } else {
+      window.AlchemyHexGrid = { startProcessing: startPhaseProcessing };
+    }
+    
+    return () => {
+      if (window.AlchemyHexGrid) {
+        delete window.AlchemyHexGrid.startProcessing;
+      }
+    };
+  }, [startPhaseProcessing]);
 
   // Transform for zoom and pan
   const transform = `translate(${state.panOffset.x}, ${state.panOffset.y}) scale(${state.zoomLevel})`;
