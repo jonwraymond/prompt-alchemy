@@ -5,7 +5,6 @@ import { HexagonGrid } from './HexagonGrid';
 import { ApiTestRunner } from './ApiTestRunner';
 import { StatusIndicator } from './StatusIndicator';
 import { UserFlowTester } from './UserFlowTester';
-import { TooltipDebug } from './TooltipDebug';
 import { api } from '../utils/api';
 import './AlchemyInterface.css';
 
@@ -228,8 +227,6 @@ export const AlchemyInterface: React.FC<AlchemyInterfaceProps> = ({ className = 
         showTooltips={true}
       />
       
-      {/* Temporary Debug Component */}
-      <TooltipDebug />
     </div>
   );
 };
