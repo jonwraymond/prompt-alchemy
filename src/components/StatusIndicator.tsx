@@ -39,6 +39,7 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null);
   const [hoveredSystem, setHoveredSystem] = useState<string | null>(null);
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout>();
   const tooltipRef = useRef<HTMLDivElement>(null);
   const hoverTimeoutRef = useRef<NodeJS.Timeout>();
@@ -206,6 +207,9 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
   };
 
   useEffect(() => {
+    // Detect touch device
+    setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
+    
     // Initial check
     checkSystemHealth();
 
@@ -430,9 +434,42 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
     }
   };
 
-  // Removed click handler - dots are non-interactive
-
-  // Removed overall click handler - dots are non-interactive
+  const handleDotClick = (systemId: string, event: React.MouseEvent) => {
+    console.log(`[StatusIndicator] Click on ${systemId}`);
+    
+    // Only handle clicks on touch devices
+    if (isTouchDevice && showTooltips) {
+      event.stopPropagation();
+      
+      // Toggle tooltip on tap
+      if (activeTooltip === systemId) {
+        console.log(`[StatusIndicator] Hiding tooltip for ${systemId} (tap)`);
+        setActiveTooltip(null);
+        setTooltipPosition(null);
+        setHoveredSystem(null);
+      } else {
+        console.log(`[StatusIndicator] Showing tooltip for ${systemId} (tap)`);
+        const targetElement = event.currentTarget as HTMLElement;
+        setActiveTooltip(systemId);
+        setHoveredSystem(systemId);
+        
+        if (targetElement) {
+          const position = calculateTooltipPosition(targetElement);
+          console.log(`[StatusIndicator] Tooltip position calculated (tap):`, position);
+          setTooltipPosition(position);
+          
+          // Recalculate position after DOM update
+          setTimeout(() => {
+            if (tooltipRef.current && targetElement) {
+              const newPosition = calculateTooltipPosition(targetElement, tooltipRef.current);
+              console.log(`[StatusIndicator] Tooltip position recalculated (tap):`, newPosition);
+              setTooltipPosition(newPosition);
+            }
+          }, 10);
+        }
+      }
+    }
+  };
 
   return (
     <div className={`status-indicator ${position} minimal`}>
@@ -441,15 +478,18 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
           {systems.map((system) => (
             <div key={system.id} className="system-dot-container">
               <div
-                className="status-dot system minimal"
+                className={`status-dot system minimal ${system.status === 'operational' ? 'operational' : ''}`}
                 tabIndex={0}
-                onMouseEnter={(e) => handleDotMouseEnter(system.id, e)}
-                onMouseLeave={() => handleDotMouseLeave(system.id)}
+                onMouseEnter={(e) => !isTouchDevice && handleDotMouseEnter(system.id, e)}
+                onMouseLeave={() => !isTouchDevice && handleDotMouseLeave(system.id)}
+                onClick={(e) => handleDotClick(system.id, e)}
                 onFocus={(e) => handleDotFocus(system.id, e)}
                 onBlur={() => handleDotBlur(system.id)}
                 style={{ backgroundColor: getStatusColor(system.status) }}
                 aria-label={`${system.name}: ${getStatusText(system.status)}`}
                 aria-describedby={activeTooltip === system.id ? `tooltip-${system.id}` : undefined}
+                role="button"
+                aria-pressed={activeTooltip === system.id}
               />
             </div>
           ))}
