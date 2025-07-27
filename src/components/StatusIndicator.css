@@ -42,18 +42,17 @@
 
 /* Minimal status dots - subdued and non-interactive */
 .status-dot.system.minimal {
-  width: 14px;
-  height: 14px;
+  width: 11px;
+  height: 11px;
   border-radius: 50%;
   cursor: pointer;
   position: relative;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
   border: none;
   pointer-events: auto; /* Still allow hover for tooltips */
   /* Add padding for touch target - creates 44x44px hit area */
-  padding: 15px;
-  margin: -15px;
+  padding: 16px;
+  margin: -16px;
   background-clip: content-box;
 }
 
