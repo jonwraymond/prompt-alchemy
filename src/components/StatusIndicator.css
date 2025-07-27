@@ -153,8 +153,8 @@
 @media (pointer: coarse) {
   .status-dot.system.minimal {
     /* Still tiny on touch devices */
-    width: 7px;
-    height: 7px;
+    width: 7px !important;
+    height: 7px !important;
   }
   
   /* Even more spacing on touch devices */
