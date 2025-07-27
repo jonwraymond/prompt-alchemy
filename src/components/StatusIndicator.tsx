@@ -478,7 +478,7 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
           {systems.map((system) => (
             <div key={system.id} className="system-dot-container">
               <div
-                className={`status-dot system minimal ${system.status === 'operational' ? 'operational' : ''}`}
+                className={`status-dot system minimal ${system.status}`}
                 tabIndex={0}
                 onMouseEnter={(e) => !isTouchDevice && handleDotMouseEnter(system.id, e)}
                 onMouseLeave={() => !isTouchDevice && handleDotMouseLeave(system.id)}
