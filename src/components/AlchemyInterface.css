@@ -28,11 +28,77 @@
   background: var(--bg-primary);
   color: var(--text-primary);
   overflow-x: hidden;
+  
+  /* Mythical Dark Space Backdrop */
+  background: 
+    /* Deep space gradient */
+    linear-gradient(135deg, #0a0a0a 0%, #1a0a1a 25%, #0a0a2a 50%, #1a0a1a 75%, #0a0a0a 100%),
+    /* Subtle electrical arcs */
+    radial-gradient(ellipse 800px 400px at 20% 30%, rgba(59, 130, 246, 0.03) 0%, transparent 50%),
+    radial-gradient(ellipse 600px 300px at 80% 70%, rgba(139, 92, 246, 0.02) 0%, transparent 50%),
+    radial-gradient(ellipse 400px 200px at 50% 20%, rgba(16, 185, 129, 0.02) 0%, transparent 50%),
+    /* Muted stars */
+    radial-gradient(2px 2px at 10% 15%, rgba(255, 255, 255, 0.4) 50%, transparent 50%),
+    radial-gradient(1px 1px at 25% 35%, rgba(255, 255, 255, 0.3) 50%, transparent 50%),
+    radial-gradient(1.5px 1.5px at 40% 25%, rgba(255, 255, 255, 0.25) 50%, transparent 50%),
+    radial-gradient(1px 1px at 60% 45%, rgba(255, 255, 255, 0.2) 50%, transparent 50%),
+    radial-gradient(2px 2px at 75% 30%, rgba(255, 255, 255, 0.35) 50%, transparent 50%),
+    radial-gradient(1px 1px at 85% 60%, rgba(255, 255, 255, 0.15) 50%, transparent 50%),
+    radial-gradient(1.5px 1.5px at 15% 75%, rgba(255, 255, 255, 0.2) 50%, transparent 50%),
+    radial-gradient(1px 1px at 35% 85%, rgba(255, 255, 255, 0.25) 50%, transparent 50%),
+    radial-gradient(2px 2px at 55% 80%, rgba(255, 255, 255, 0.3) 50%, transparent 50%),
+    radial-gradient(1px 1px at 70% 90%, rgba(255, 255, 255, 0.15) 50%, transparent 50%),
+    radial-gradient(1.5px 1.5px at 90% 85%, rgba(255, 255, 255, 0.2) 50%, transparent 50%),
+    /* Additional scattered stars */
+    radial-gradient(1px 1px at 5% 50%, rgba(255, 255, 255, 0.1) 50%, transparent 50%),
+    radial-gradient(1px 1px at 95% 40%, rgba(255, 255, 255, 0.1) 50%, transparent 50%),
+    radial-gradient(1px 1px at 45% 5%, rgba(255, 255, 255, 0.1) 50%, transparent 50%),
+    radial-gradient(1px 1px at 65% 95%, rgba(255, 255, 255, 0.1) 50%, transparent 50%);
+  
+  /* Apply heavy blur to create the muted effect */
+  filter: blur(0.5px);
+}
+
+/* Add subtle electrical animation */
+.alchemy-interface::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    /* Wispy electrical streaks */
+    linear-gradient(45deg, transparent 40%, rgba(59, 130, 246, 0.02) 45%, transparent 50%),
+    linear-gradient(-45deg, transparent 60%, rgba(139, 92, 246, 0.015) 65%, transparent 70%),
+    linear-gradient(90deg, transparent 30%, rgba(16, 185, 129, 0.01) 35%, transparent 40%);
+  pointer-events: none;
+  animation: electricalFlicker 8s ease-in-out infinite;
+  z-index: 1;
+}
+
+@keyframes electricalFlicker {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  25% {
+    opacity: 0.5;
+    transform: scale(1.02);
+  }
+  50% {
+    opacity: 0.2;
+    transform: scale(0.98);
+  }
+  75% {
+    opacity: 0.4;
+    transform: scale(1.01);
+  }
 }
 
 .alchemy-container {
   position: relative;
-  z-index: 2;
+  z-index: 10;
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
