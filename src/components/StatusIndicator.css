@@ -244,7 +244,8 @@
 
 /* Disable animation for reduced motion preference */
 @media (prefers-reduced-motion: reduce) {
-  .status-dot.system.minimal.operational {
+  .status-dot.system.minimal.operational,
+  .status-dot.system.minimal.degraded {
     animation: none;
   }
 }
