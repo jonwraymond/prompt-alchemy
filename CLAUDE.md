@@ -349,3 +349,168 @@ When adding new providers:
 - Structured logging with logrus
 - Health checks on `/health` endpoint
 - Request tracing and performance monitoring
+
+## Anthropic Team Practices & Power Tips
+
+*Based on insights from [How Anthropic Teams Use Claude Code](https://www.anthropic.com/news/how-anthropic-teams-use-claude-code)*
+
+### Autonomous Development Workflows
+
+**1. Auto-Accept Mode for Rapid Prototyping**
+```bash
+# Enable auto-accept for trusted operations
+claude-code --auto-accept --task "implement user authentication"
+
+# Set up self-verifying loops
+claude-code --verify-loop "make test && make lint && make build"
+```
+
+**Key Practice**: Anthropic teams distinguish between tasks suitable for autonomous work (boilerplate, tests, documentation) vs. those requiring supervision (core business logic, security-critical code).
+
+**2. Checkpoint-Based Development**
+- Commit early and often to enable easy rollbacks
+- Use descriptive commit messages for AI context
+- Create "checkpoint" commits before major changes
+```bash
+git commit -m "checkpoint: before refactoring auth system"
+```
+
+### Collaborative Coding Strategies
+
+**1. Detailed, Specific Prompting**
+Instead of: "Fix the bug in authentication"
+Use: "Fix the JWT token validation in internal/auth/validator.go that's causing 401 errors for valid tokens with custom claims"
+
+**2. Synchronous Core Logic Development**
+- Work alongside Claude Code for critical business logic
+- Use periodic check-ins: "Show me what you've implemented so far"
+- Guide when stuck: "Try using the Strategy pattern here instead"
+
+**3. Initial Implementation + Manual Refinement**
+```bash
+# Phase 1: AI generates initial implementation
+claude-code "implement REST API for user management with CRUD operations"
+
+# Phase 2: Human refines edge cases and optimization
+# Focus on: error handling, performance, security hardening
+```
+
+### Quality Assurance Workflows
+
+**1. Automated Test Generation**
+```bash
+# Generate comprehensive unit tests
+claude-code "generate unit tests for internal/engine/* with >90% coverage"
+
+# Create integration test suites
+claude-code "create integration tests for the three-phase engine workflow"
+```
+
+**2. GitHub Actions for PR Management**
+```yaml
+# .github/workflows/claude-pr-review.yml
+on:
+  issue_comment:
+    types: [created]
+jobs:
+  address-pr-comments:
+    if: contains(github.event.comment.body, '@claude-code')
+    steps:
+      - run: claude-code address-pr-comment "${{ github.event.comment.body }}"
+```
+
+### Documentation & Knowledge Management
+
+**1. Living Documentation**
+- Generate runbooks: `claude-code "create troubleshooting runbook for common API errors"`
+- Update docs automatically: `claude-code "update API docs based on OpenAPI spec changes"`
+- Synthesize knowledge: `claude-code "analyze support tickets and create FAQ"`
+
+**2. CLAUDE.md as Team Contract**
+- Document team-specific workflows
+- Define quality standards and expectations
+- Create custom slash commands for repetitive tasks
+
+### Advanced Patterns from Anthropic Teams
+
+**1. Parallel Task Management**
+```bash
+# Run multiple Claude Code instances for parallel work
+claude-code --parallel "implement user service" "implement auth service" "implement notification service"
+```
+
+**2. Specialized Sub-Agent Architecture**
+```bash
+# Break complex tasks into specialized agents
+claude-code spawn security-reviewer "review PR #123 for vulnerabilities"
+claude-code spawn performance-optimizer "optimize database queries in reports module"
+claude-code spawn doc-writer "generate user guide from API endpoints"
+```
+
+**3. Screenshot-Based Problem Solving**
+- Paste UI screenshots for frontend debugging
+- Share error screenshots for faster resolution
+- Use visual feedback for design implementation
+
+### Security & Compliance Practices
+
+**1. MCP Servers for Sensitive Data**
+```bash
+# Use MCP for handling sensitive operations
+prompt-alchemy serve-mcp --secure-mode --audit-log
+```
+
+**2. Security Review Workflows**
+- Pre-commit security analysis
+- Automated vulnerability scanning
+- Custom access control implementation
+
+### Team Collaboration Rituals
+
+**1. Morning Standup with Claude Code**
+```bash
+# Generate daily summary
+claude-code "summarize yesterday's commits and open PRs"
+```
+
+**2. Code Review Enhancement**
+```bash
+# Pre-review preparation
+claude-code "analyze PR #456 and highlight potential issues"
+```
+
+**3. Cross-Functional Enablement**
+- Enable non-technical staff to execute complex workflows
+- Create guided experiences for routine tasks
+- Document tribal knowledge in executable form
+
+### Productivity Multipliers
+
+**1. Custom Slash Commands**
+```bash
+# Define in CLAUDE.md or .claude/commands/
+/cleanup-imports   # Remove unused imports across codebase
+/add-telemetry    # Add observability to all API endpoints
+/security-scan    # Run comprehensive security analysis
+```
+
+**2. Context Preservation**
+- Use Serena memory for long-running tasks
+- Maintain project context across sessions
+- Create knowledge bases for specific domains
+
+### Getting Started Recommendations
+
+1. **Start Minimal**: Begin with simple, well-defined tasks
+2. **Iterate Rapidly**: Treat Claude Code as an iterative partner
+3. **Build Intuition**: Learn which tasks work best autonomously
+4. **Refine Continuously**: Improve prompts based on outcomes
+
+### Integration with Existing Policies
+
+These Anthropic practices complement our semantic tool requirements:
+- Use `code2prompt` to generate context for complex refactoring
+- Leverage `ast-grep` for code review automation patterns
+- Employ `Serena MCP` for maintaining context across parallel tasks
+
+**Note**: All Anthropic practices must still comply with our AI Navigation & Memory Policy. When implementing these workflows, ensure semantic tools are used for code analysis and navigation.
