@@ -386,6 +386,47 @@
   box-shadow: 0 2px 8px rgba(251, 191, 36, 0.3);
 }
 
+.option-description {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  opacity: 0.7;
+  margin-top: 0.25rem;
+}
+
+.phase-select {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.phase-option {
+  padding: 0.5rem 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.phase-option:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--liquid-gold);
+}
+
+.phase-option.selected {
+  background: var(--liquid-gold);
+  color: var(--bg-primary);
+  border-color: var(--liquid-gold);
+  font-weight: 500;
+}
+
+.phase-option:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .alchemy-input-wrapper {

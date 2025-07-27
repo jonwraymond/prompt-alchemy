@@ -56,6 +56,8 @@
   background-clip: content-box;
   /* Ensure box-sizing doesn't affect size */
   box-sizing: content-box !important;
+  /* Default background */
+  background-color: #6b7280;
 }
 
 /* Individual system dots container - horizontal for minimal mode */
