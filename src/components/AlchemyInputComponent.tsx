@@ -719,16 +719,43 @@ export const AlchemyInputComponent: React.FC<AlchemyInputProps> = ({
             </div>
             <div className="tooltip-details">
               <p className="tooltip-primary">
-                {activeTooltip === 'api' && 'Backend API server status'}
-                {activeTooltip === 'engine' && 'Core alchemy processing engine'}
-                {activeTooltip === 'providers' && 'Language model providers'}
-                {activeTooltip === 'database' && 'Data storage system'}
+                {activeTooltip === 'api' && systemDetails.api.details}
+                {activeTooltip === 'engine' && systemDetails.engine.details}
+                {activeTooltip === 'providers' && systemDetails.providers.details}
+                {activeTooltip === 'database' && systemDetails.database.details}
               </p>
+              
+              {/* Performance metrics for API */}
+              {activeTooltip === 'api' && systemDetails.api.responseTime > 0 && (
+                <p className="tooltip-performance">
+                  Response time: <span className={systemDetails.api.responseTime > 1000 ? 'slow' : systemDetails.api.responseTime > 500 ? 'medium' : 'fast'}>
+                    {systemDetails.api.responseTime}ms
+                  </span>
+                </p>
+              )}
+              
+              {/* Contextual help messages */}
+              {systemStatus[activeTooltip as keyof typeof systemStatus] === 'degraded' && activeTooltip === 'providers' && (
+                <p className="tooltip-help">
+                  💡 Configure API keys in settings to enable providers
+                </p>
+              )}
               {systemStatus[activeTooltip as keyof typeof systemStatus] === 'down' && activeTooltip === 'api' && (
                 <p className="tooltip-help">
                   ⚠️ Check if the backend server is running on port 8080
                 </p>
               )}
+              {systemStatus[activeTooltip as keyof typeof systemStatus] === 'down' && activeTooltip === 'engine' && (
+                <p className="tooltip-help">
+                  🔧 Engine unavailable - check backend configuration
+                </p>
+              )}
+              {systemStatus[activeTooltip as keyof typeof systemStatus] === 'down' && activeTooltip === 'database' && (
+                <p className="tooltip-help">
+                  🗄️ Database connection failed - verify storage configuration
+                </p>
+              )}
+              
               <p className="tooltip-timestamp">
                 Last checked: {formatLastCheck(new Date())}
               </p>

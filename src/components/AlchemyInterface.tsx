@@ -161,6 +161,21 @@ export const AlchemyInterface: React.FC<AlchemyInterfaceProps> = ({ className = 
           )}
         </div>
 
+        {/* Alchemy Hex Grid Visualization */}
+        {showHexGrid && (
+          <div className="alchemy-hex-grid-section">
+            <AlchemyHexGrid 
+              width={800}
+              height={600}
+              onNodeClick={(node) => console.log('Node clicked:', node)}
+              animationSpeed={1}
+              initialZoom={1}
+              enableZoomControls={true}
+              enablePan={true}
+            />
+          </div>
+        )}
+
         {/* Results Section */}
         {results.length > 0 && (
           <div className="alchemy-results">
