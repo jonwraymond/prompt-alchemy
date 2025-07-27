@@ -291,9 +291,20 @@
   display: none; /* Remove arrows for portal tooltips as positioning is dynamic */
 }
 
-/* No focus styles for non-interactive minimal dots */
-.status-dot.minimal:focus,
-.status-dot.minimal:focus-visible {
+/* Focus styles for keyboard navigation - WCAG compliant */
+.status-dot.system.minimal:focus {
+  outline: 2px solid rgba(255, 255, 255, 0.8);
+  outline-offset: 2px;
+}
+
+/* Use focus-visible for better UX when available */
+.status-dot.system.minimal:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.8);
+  outline-offset: 2px;
+}
+
+/* Remove default outline for mouse users (when focus-visible is supported) */
+.status-dot.system.minimal:focus:not(:focus-visible) {
   outline: none;
 }
 
