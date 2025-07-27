@@ -31,16 +31,16 @@
 }
 
 .alchemy-input-wrapper.loading {
-  border-color: var(--liquid-purple);
+  border-color: var(--liquid-blue);
   animation: loading-pulse 2s infinite;
 }
 
 @keyframes loading-pulse {
   0%, 100% {
-    box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
   }
   50% {
-    box-shadow: 0 0 60px rgba(139, 92, 246, 0.6);
+    box-shadow: 0 0 60px rgba(59, 130, 246, 0.6);
   }
 }
 
@@ -71,7 +71,7 @@
 }
 
 .crystal-icon:hover {
-  filter: drop-shadow(0 0 8px var(--liquid-purple));
+  filter: drop-shadow(0 0 8px var(--liquid-blue));
 }
 
 .sparkle-icon:hover {
@@ -149,7 +149,7 @@
 }
 
 .drop.purple {
-  background: var(--liquid-purple);
+  background: var(--liquid-blue);
   animation-delay: 0.4s;
 }
 

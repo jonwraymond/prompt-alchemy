@@ -85,8 +85,7 @@
 .status-dot.system.minimal.operational {
   background-color: #10b981 !important;
   box-shadow: 
-    0 0 0 1px rgba(16, 185, 129, 0.3),
-    0 0 8px 1px rgba(16, 185, 129, 0.5),
+    0 0 8px 2px rgba(16, 185, 129, 0.5),
     0 0 20px 4px rgba(16, 185, 129, 0.25),
     inset 0 0 2px rgba(255, 255, 255, 0.4);
   animation: radiantGlow 3s ease-in-out infinite;

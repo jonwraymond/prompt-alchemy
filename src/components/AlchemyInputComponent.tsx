@@ -1,8 +1,17 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import './AlchemyInputComponent.css';
 
+interface GenerateOptions {
+  persona: string;
+  temperature: number;
+  maxTokens: number;
+  count: number;
+  phases: string[];
+  attachedFiles?: File[];
+}
+
 interface AlchemyInputProps {
-  onSubmit?: (value: string, options?: any) => void;
+  onSubmit?: (value: string, options?: GenerateOptions) => void;
   placeholder?: string;
   isLoading?: boolean;
   disabled?: boolean;
@@ -91,12 +100,7 @@ export const AlchemyInputComponent: React.FC<AlchemyInputProps> = ({
     <div className={`alchemy-input-container ${className}`} ref={containerRef}>
       <div className={`alchemy-input-wrapper ${isExpanded ? 'expanded' : ''} ${isLoading ? 'loading' : ''}`}>
         
-        {/* Alchemy Icons */}
-        <div className="alchemy-icons">
-          <div className="alchemy-icon science-icon" title="Science">🧪</div>
-          <div className="alchemy-icon crystal-icon" title="Crystal">💎</div>
-          <div className="alchemy-icon sparkle-icon" title="Magic">✨</div>
-        </div>
+
 
         {/* Main Input Area */}
         <div className="alchemy-input-main">
@@ -183,14 +187,16 @@ export const AlchemyInputComponent: React.FC<AlchemyInputProps> = ({
             className="alchemy-btn generate-btn"
             onClick={handleSubmit}
             disabled={disabled || !value.trim() || isLoading}
-            title="Generate (Cmd+Enter)"
+            title="Transmute (Cmd+Enter)"
           >
             <svg className="btn-icon" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2L15.5 8.5L22 12L15.5 15.5L12 22L8.5 15.5L2 12L8.5 8.5L12 2Z"/>
-              <path d="M12 6L10 10L6 12L10 14L12 18L14 14L18 12L14 10L12 6Z" fill="none" stroke="currentColor" strokeWidth="1"/>
+              <path d="M12 2L2 7L12 12L22 7L12 2Z" opacity="0.3"/>
+              <path d="M12 12L2 17L12 22L22 17L12 12Z" opacity="0.6"/>
+              <path d="M12 7L2 12L12 17L22 12L12 7Z"/>
+              <path d="M8 10L12 12L16 10" stroke="currentColor" strokeWidth="1.5" fill="none"/>
             </svg>
             <span className="btn-text">
-              {isLoading ? 'Transmuting...' : 'Generate'}
+              {isLoading ? 'Transmuting' : 'Generate'}
             </span>
           </button>
         </div>
