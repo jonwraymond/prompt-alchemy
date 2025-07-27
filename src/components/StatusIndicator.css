@@ -1,21 +1,22 @@
-/* Status Indicator - Non-distracting overlay positioned in corner */
+/* Status Indicator - Minimal non-interactive dots */
 .status-indicator {
   position: fixed;
   z-index: 1000;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 8px;
-  padding: 12px;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(10px);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  transition: all 0.3s ease;
-  max-width: 280px;
+  gap: 4px;
   /* Ensure tooltips aren't clipped */
   overflow: visible !important;
+}
+
+/* Minimal mode - no background or borders */
+.status-indicator.minimal {
+  background: none;
+  backdrop-filter: none;
+  border: none;
+  box-shadow: none;
+  padding: 8px;
 }
 
 /* Position variants */
@@ -39,83 +40,45 @@
   left: 20px;
 }
 
-/* Overall status dot - always visible */
-.status-dot.overall {
-  width: 14px;
-  height: 14px;
+/* Minimal status dots - subdued and non-interactive */
+.status-dot.system.minimal {
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  cursor: pointer;
+  cursor: default;
   position: relative;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
-  animation: pulse-working 2s ease-in-out infinite;
+  transition: none;
+  box-shadow: none;
+  border: none;
+  pointer-events: auto; /* Still allow hover for tooltips */
 }
 
-.status-dot.overall:hover {
-  transform: scale(1.15);
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
-  animation-play-state: paused;
-}
-
-/* Individual system dots container */
+/* Individual system dots container - horizontal for minimal mode */
 .system-dots {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  width: 100%;
+  flex-direction: row;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  width: auto;
 }
 
 .system-dot-container {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 8px;
 }
 
-/* Individual system status dots */
-.status-dot.system {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  position: relative;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: pulse-working 2s ease-in-out infinite;
+/* Remove hover state changes for minimal dots */
+.status-dot.system.minimal:hover {
+  transform: none;
+  box-shadow: none;
 }
 
-.status-dot.system:hover,
-.status-dot.system.active {
-  transform: scale(1.25);
-  animation-play-state: paused;
-}
-
-.status-dot.system:focus {
-  transform: scale(1.25);
-  animation-play-state: paused;
-}
-
-/* Pulse animation for operational status */
-.status-pulse {
-  position: absolute;
-  top: -4px;
-  left: -4px;
-  right: -4px;
-  bottom: -4px;
-  border-radius: 50%;
-  opacity: 0;
-  animation: pulse 2s infinite;
-  pointer-events: none;
-}
-
-.status-dot:hover .status-pulse {
-  animation-duration: 1s;
+/* No pulse animation for minimal dots */
+.status-dot.minimal .status-pulse {
+  display: none;
 }
 
 @keyframes pulse {
@@ -133,20 +96,9 @@
   }
 }
 
-/* Working/active pulsation animation */
-@keyframes pulse-working {
-  0% {
-    transform: scale(1);
-    opacity: 0.9;
-  }
-  50% {
-    transform: scale(1.15);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 0.9;
-  }
+/* No animation for minimal dots */
+.status-dot.minimal {
+  animation: none !important;
 }
 
 /* Tooltip */
@@ -300,46 +252,9 @@
   font-style: italic;
 }
 
-.tooltip-refresh {
-  background: var(--liquid-gold, #fbbf24);
-  color: #000;
-  border: none;
-  border-radius: 4px;
-  padding: 4px 8px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  width: 100%;
-}
+/* Remove refresh button styles - not needed for minimal mode */
 
-.tooltip-refresh:hover {
-  background: #f59e0b;
-  transform: translateY(-1px);
-}
-
-/* Collapse button */
-.collapse-btn {
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
-  border: none;
-  border-radius: 50%;
-  width: 20px;
-  height: 20px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  margin-top: 4px;
-}
-
-.collapse-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  transform: scale(1.1);
-}
+/* Remove collapse button styles - not needed for minimal mode */
 
 /* Enhanced portal-based tooltip */
 .status-tooltip-portal {
@@ -358,34 +273,27 @@
   right: auto;
   bottom: auto;
   animation: tooltip-fade-in 0.3s ease-out;
-  filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.8));
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.6));
   pointer-events: auto;
-  /* Dark theme styling */
-  background: rgba(18, 24, 38, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 16px;
-  min-width: 250px;
-  backdrop-filter: blur(20px);
+  /* Simplified dark theme styling */
+  background: rgba(18, 24, 38, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 12px;
+  min-width: 200px;
+  max-width: 250px;
+  backdrop-filter: blur(10px);
   color: #e5e7eb;
+  font-size: 0.8rem;
 }
 
 .status-tooltip.enhanced::before {
   display: none; /* Remove arrows for portal tooltips as positioning is dynamic */
 }
 
-/* Focus styles for accessibility */
-.status-dot:focus {
-  outline: 2px solid var(--liquid-gold, #fbbf24);
-  outline-offset: 2px;
-}
-
-.status-dot:focus-visible {
-  outline: 2px solid var(--liquid-gold, #fbbf24);
-  outline-offset: 2px;
-}
-
-.status-dot:focus:not(:focus-visible) {
+/* No focus styles for non-interactive minimal dots */
+.status-dot.minimal:focus,
+.status-dot.minimal:focus-visible {
   outline: none;
 }
 
