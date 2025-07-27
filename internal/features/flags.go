@@ -327,7 +327,7 @@ func (f *FeatureFlags) ShouldStartService(serviceName string) bool {
 
 	// In microservice mode, only start the specified service type
 	if f.IsMicroserviceDeployment() {
-		return strings.ToLower(f.ServiceType) == strings.ToLower(serviceName)
+		return strings.EqualFold(f.ServiceType, serviceName)
 	}
 
 	// Default to starting the service if enabled
