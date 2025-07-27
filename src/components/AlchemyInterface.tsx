@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { AlchemyInputComponent } from './AlchemyInputComponent';
 import { SimpleHeader } from './SimpleHeader';
 import { HexagonGrid } from './HexagonGrid';
@@ -72,10 +72,10 @@ export const AlchemyInterface: React.FC<AlchemyInterfaceProps> = ({ className = 
       const newResult: AlchemyResult = {
         id: Date.now().toString(),
         input,
-        output: data.prompts?.[0]?.content || 'Generation completed',
+        output: data?.prompts?.[0]?.content || 'Generation completed',
         phase: 'Complete',
         timestamp: new Date().toISOString(),
-        score: data.prompts?.[0]?.score || 0
+        score: data?.prompts?.[0]?.score || 0
       };
 
       setResults(prev => [newResult, ...prev]);

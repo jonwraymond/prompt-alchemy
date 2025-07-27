@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { testApiConnectivity, testSpecificFeature, api, logApiResponse } from '../utils/api';
 import './ApiTestRunner.css';
 

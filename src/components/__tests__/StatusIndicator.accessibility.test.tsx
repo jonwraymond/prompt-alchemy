@@ -1,8 +1,6 @@
-import React from 'react';
 import { render } from '@testing-library/react';
 import { axe, toHaveNoViolations } from 'jest-axe';
 import { StatusIndicator } from '../StatusIndicator';
-import { api } from '../../utils/api';
 
 // Extend Jest matchers
 expect.extend(toHaveNoViolations);
@@ -80,14 +78,8 @@ describe('StatusIndicator Accessibility', () => {
     const computedStyle = window.getComputedStyle(statusDot!);
     const backgroundColor = computedStyle.backgroundColor;
     
-    // Our defined colors should provide good contrast
-    const validColors = [
-      'rgb(16, 185, 129)', // operational green
-      'rgb(245, 158, 11)',  // degraded amber
-      'rgb(239, 68, 68)',   // down red
-    ];
-    
     // The background color should be one of our defined accessible colors
+    // Valid colors: operational green, degraded amber, down red
     // (This is a simplified test - in practice you'd use a contrast ratio calculator)
     expect(backgroundColor).toBeTruthy();
   });

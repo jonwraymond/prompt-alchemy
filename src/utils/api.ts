@@ -389,7 +389,7 @@ export async function testApiConnectivity(): Promise<{
   const healthResult = await api.health();
   const healthTest = {
     name: 'Health Check',
-    success: healthResult.success,
+    success: healthResult.success || false,
     error: healthResult.error,
     duration: Date.now() - healthStart,
     details: healthResult.data,
@@ -407,7 +407,7 @@ export async function testApiConnectivity(): Promise<{
   const statusResult = await api.status();
   const statusTest = {
     name: 'Status Endpoint',
-    success: statusResult.success,
+    success: statusResult.success || false,
     error: statusResult.error,
     duration: Date.now() - statusStart,
     details: statusResult.data,
@@ -425,7 +425,7 @@ export async function testApiConnectivity(): Promise<{
   const infoResult = await api.info();
   const infoTest = {
     name: 'Info Endpoint',
-    success: infoResult.success,
+    success: infoResult.success || false,
     error: infoResult.error,
     duration: Date.now() - infoStart,
     details: infoResult.data,
@@ -440,7 +440,7 @@ export async function testApiConnectivity(): Promise<{
   const providersResult = await api.getProviders();
   const providersTest = {
     name: 'Providers Endpoint',
-    success: providersResult.success,
+    success: providersResult.success || false,
     error: providersResult.error,
     duration: Date.now() - providersStart,
     details: providersResult.data,
@@ -461,7 +461,7 @@ export async function testApiConnectivity(): Promise<{
   });
   const generateTest = {
     name: 'Generation Validation',
-    success: !generateResult.success && generateResult.error?.includes('required'), // Should fail with validation error
+    success: (!generateResult.success && generateResult.error?.includes('required')) || false, // Should fail with validation error
     error: generateResult.success ? 'Validation should have failed' : undefined,
     duration: Date.now() - generateStart,
     details: { validation_working: !generateResult.success },
@@ -499,7 +499,7 @@ export async function testSpecificFeature(feature: 'generation' | 'providers' | 
     
     case 'providers':
       const providersResult = await api.getProviders();
-      if (providersResult.success && providersResult.data?.providers?.length > 0) {
+      if (providersResult.success && providersResult.data?.providers && providersResult.data.providers.length > 0) {
         // Test the first available provider
         const firstProvider = providersResult.data.providers.find(p => p.available);
         if (firstProvider) {

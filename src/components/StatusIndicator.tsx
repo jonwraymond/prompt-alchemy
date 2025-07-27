@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import ReactDOM from 'react-dom';
 import { api } from '../utils/api';
 import './StatusIndicator.css';
 
@@ -40,7 +41,6 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
   const [hoveredSystem, setHoveredSystem] = useState<string | null>(null);
   const intervalRef = useRef<NodeJS.Timeout>();
   const tooltipRef = useRef<HTMLDivElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
   const hoverTimeoutRef = useRef<NodeJS.Timeout>();
 
   const checkSystemHealth = async () => {
@@ -280,15 +280,12 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
     const tooltipWidth = tooltipEl?.offsetWidth || 250; // Use actual width if available
     const tooltipHeight = tooltipEl?.offsetHeight || 150; // Use actual height if available
     const margin = 10;
-    const scrollX = window.scrollX || window.pageXOffset;
-    const scrollY = window.scrollY || window.pageYOffset;
 
     // Get viewport dimensions
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
 
     // Calculate center of the element
-    const elementCenterX = rect.left + rect.width / 2;
     const elementCenterY = rect.top + rect.height / 2;
 
     // Default position: to the right of the element
@@ -365,7 +362,7 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
             }
           }, 10);
         }
-      }, 0); // Temporarily removed delay for debugging
+      }, 200); // 200ms delay to prevent accidental hovers
     }
   };
 
@@ -492,7 +489,7 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
       )}
 
       {/* Portal-based tooltip for better positioning */}
-      {activeTooltip && showTooltips && tooltipPosition && (
+      {activeTooltip && showTooltips && tooltipPosition && ReactDOM.createPortal(
         <div 
           className="status-tooltip-portal"
           ref={tooltipRef}
@@ -500,8 +497,12 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
             position: 'fixed',
             left: tooltipPosition.x,
             top: tooltipPosition.y,
-            zIndex: 9999,
-            pointerEvents: 'auto'
+            zIndex: 99999,
+            pointerEvents: 'auto',
+            // Force visibility with inline styles
+            opacity: 1,
+            visibility: 'visible',
+            display: 'block'
           }}
           role="tooltip"
           id={`tooltip-${activeTooltip}`}
@@ -514,9 +515,6 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
             
             return (
               <div className="status-tooltip enhanced">
-                <div style={{ fontSize: '10px', color: '#888', marginBottom: '4px' }}>
-                  REAL PROVIDER TOOLTIP
-                </div>
                 <div className="tooltip-header">
                   <span className="tooltip-title">{system.name}</span>
                   <span 
@@ -563,7 +561,8 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
               </div>
             );
           })()}
-        </div>
+        </div>,
+        document.body // Render to document.body
       )}
     </div>
   );

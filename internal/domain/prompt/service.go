@@ -133,7 +133,7 @@ func (s *Service) Generate(ctx context.Context, req GenerateRequest) (*GenerateR
 	phaseConfigs := make([]models.PhaseConfig, len(phases))
 	for i, phase := range phases {
 		provider := "openai" // default provider
-		if req.Providers != nil && len(req.Providers) > 0 {
+		if len(req.Providers) > 0 {
 			// Use first available provider from the map
 			for _, p := range req.Providers {
 				provider = p

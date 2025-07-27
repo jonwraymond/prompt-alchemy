@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { TwentyFirstToolbar } from '@21st-extension/toolbar-react';
 import { ReactPlugin } from '@21st-extension/react';
 import AlchemyInterface from './components/AlchemyInterface';
@@ -17,7 +16,7 @@ function App() {
               console.log('✅ 21st Toolbar Initialized Successfully');
               console.log('🔧 ReactPlugin loaded:', ReactPlugin);
             },
-            onError: (error) => {
+            onError: (error: Error) => {
               console.error('❌ 21st Toolbar Error:', error);
             },
             onConnect: () => {
@@ -26,7 +25,7 @@ function App() {
             onDisconnect: () => {
               console.log('🔌 21st Toolbar Disconnected from VSCode');
             }
-          }}
+          } as any}
         />
       )}
 

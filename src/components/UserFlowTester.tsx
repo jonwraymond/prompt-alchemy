@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import { api } from '../utils/api';
 import './UserFlowTester.css';
 
@@ -87,7 +87,7 @@ export const UserFlowTester: React.FC<UserFlowTesterProps> = ({ onTestResults })
           temperature: 0.8
         });
         return {
-          success: response.success && (response.data?.prompts?.length >= 1),
+          success: response.success && ((response.data?.prompts?.length || 0) >= 1),
           duration: Date.now() - start,
           error: response.error,
           details: { 
@@ -127,7 +127,7 @@ export const UserFlowTester: React.FC<UserFlowTesterProps> = ({ onTestResults })
       category: 'search',
       testFn: async () => {
         const start = Date.now();
-        const response = await api.searchPrompts('test', 5);
+        const response = await api.searchPrompts('test', { limit: 5 });
         return {
           success: response.success,
           duration: Date.now() - start,
@@ -143,7 +143,7 @@ export const UserFlowTester: React.FC<UserFlowTesterProps> = ({ onTestResults })
       category: 'search',
       testFn: async () => {
         const start = Date.now();
-        const response = await api.listPrompts(1, 10);
+        const response = await api.listPrompts({ page: 1, limit: 10 });
         return {
           success: response.success,
           duration: Date.now() - start,
@@ -166,7 +166,7 @@ export const UserFlowTester: React.FC<UserFlowTesterProps> = ({ onTestResults })
           count: 1
         });
         return {
-          success: !response.success, // Should fail gracefully
+          success: !response.success || false, // Should fail gracefully
           duration: Date.now() - start,
           error: response.error,
           details: response.data
@@ -187,7 +187,7 @@ export const UserFlowTester: React.FC<UserFlowTesterProps> = ({ onTestResults })
           persona: 'creative'
         });
         return {
-          success: response.success || (response.error?.includes('too long') || response.error?.includes('limit')),
+          success: response.success || (response.error?.includes('too long') || response.error?.includes('limit')) || false,
           duration: Date.now() - start,
           error: response.error,
           details: { inputLength: longInput.length }
@@ -207,7 +207,7 @@ export const UserFlowTester: React.FC<UserFlowTesterProps> = ({ onTestResults })
           count: 1
         });
         return {
-          success: response.success || response.error?.includes('temperature'),
+          success: response.success || response.error?.includes('temperature') || false,
           duration: Date.now() - start,
           error: response.error,
           details: response.data

@@ -1,4 +1,3 @@
-import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { StatusIndicator } from '../StatusIndicator';
@@ -22,13 +21,14 @@ describe('StatusIndicator', () => {
     // Default mock responses
     mockApi.health.mockResolvedValue({
       success: true,
-      data: { status: 'healthy' },
+      data: { status: 'healthy', timestamp: new Date().toISOString(), version: 'v1.0.0' },
     });
     
     mockApi.status.mockResolvedValue({
       success: true,
       data: { 
         server: 'running',
+        protocol: 'http',
         version: 'v1',
         learning_mode: true,
         uptime: '5m'
@@ -145,7 +145,7 @@ describe('StatusIndicator', () => {
       new Promise(resolve => 
         setTimeout(() => resolve({
           success: true,
-          data: { status: 'healthy' }
+          data: { status: 'healthy', timestamp: new Date().toISOString(), version: 'v1.0.0' }
         }), 600) // Simulate 600ms response
       )
     );
