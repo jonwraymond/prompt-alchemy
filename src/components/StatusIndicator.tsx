@@ -429,7 +429,7 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
                 }}
               >
                 <div className="status-pulse" style={{ backgroundColor: getStatusColor(system.status) }} />
-
+              </div>
             </div>
           ))}
         </div>
