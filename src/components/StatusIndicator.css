@@ -16,7 +16,7 @@
   backdrop-filter: none;
   border: none;
   box-shadow: none;
-  padding: 8px;
+  padding: 0; /* Remove padding since dots container has its own padding */
 }
 
 /* Position variants */
@@ -42,24 +42,28 @@
 
 /* Minimal status dots - subdued and non-interactive */
 .status-dot.system.minimal {
-  width: 6px;
-  height: 6px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
-  cursor: default;
+  cursor: pointer;
   position: relative;
-  transition: none;
-  box-shadow: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   border: none;
   pointer-events: auto; /* Still allow hover for tooltips */
+  /* Add padding for touch target - creates 44x44px hit area */
+  padding: 15px;
+  margin: -15px;
+  background-clip: content-box;
 }
 
 /* Individual system dots container - horizontal for minimal mode */
 .system-dots {
   display: flex;
   flex-direction: row;
-  gap: 4px;
+  gap: 12px;
   margin: 0;
-  padding: 0;
+  padding: 15px; /* Add padding to ensure touch targets don't get clipped */
   border: none;
   width: auto;
 }
@@ -68,12 +72,21 @@
   position: relative;
   display: flex;
   align-items: center;
+  /* Ensure touch targets have enough space */
+  min-width: 44px;
+  min-height: 44px;
+  justify-content: center;
 }
 
-/* Remove hover state changes for minimal dots */
+/* Hover state for minimal dots */
 .status-dot.system.minimal:hover {
-  transform: none;
-  box-shadow: none;
+  transform: scale(1.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Touch feedback */
+.status-dot.system.minimal:active {
+  transform: scale(0.95);
 }
 
 /* No pulse animation for minimal dots */
@@ -96,9 +109,32 @@
   }
 }
 
-/* No animation for minimal dots */
-.status-dot.minimal {
-  animation: none !important;
+/* Pulsating animation for operational status */
+@keyframes pulsate {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), 0 0 0 0 rgba(16, 185, 129, 0.4);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), 0 0 0 8px rgba(16, 185, 129, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+/* Apply pulsating animation to operational dots */
+.status-dot.system.minimal.operational {
+  animation: pulsate 2s ease-in-out infinite;
+}
+
+/* Disable animation for reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .status-dot.system.minimal.operational {
+    animation: none;
+  }
 }
 
 /* Tooltip - Glass morphism effect */
