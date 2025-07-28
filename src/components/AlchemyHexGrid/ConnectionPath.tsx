@@ -132,36 +132,37 @@ const ConnectionPath: React.FC<ConnectionPathProps> = ({
             </linearGradient>
           </defs>
           
-          {/* Flow particles */}
+          {/* Flow particles - using animateMotion instead of offsetDistance */}
           {[0, 0.33, 0.66].map((delay, i) => (
-            <motion.circle
-              key={i}
-              r="4"
-              fill="#8b5cf6"
-              filter="url(#glow)"
-              initial={{ offsetDistance: "0%", opacity: 0 }}
-              animate={{
-                offsetDistance: ["0%", "100%"],
-                opacity: [0, 1, 1, 0]
-              }}
-              transition={{
-                duration: 3 * animationSpeed,
-                repeat: Infinity,
-                delay: delay * 3 * animationSpeed,
-                ease: "linear"
-              }}
-              style={{
-                offsetPath: `path('${pathData}')`,
-                offsetRotate: "auto"
-              }}
-            >
-              <animate
-                attributeName="r"
-                values="3;6;3"
-                dur={`${2 * animationSpeed}s`}
-                repeatCount="indefinite"
-              />
-            </motion.circle>
+            <g key={i}>
+              <motion.circle
+                r="4"
+                fill="#8b5cf6"
+                filter="url(#glow)"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: [0, 1, 1, 0] }}
+                transition={{
+                  duration: 3 * animationSpeed,
+                  repeat: Infinity,
+                  delay: delay * 3 * animationSpeed,
+                  ease: "linear"
+                }}
+              >
+                <animateMotion
+                  dur={`${3 * animationSpeed}s`}
+                  repeatCount="indefinite"
+                  begin={`${delay * 3 * animationSpeed}s`}
+                >
+                  <mpath href={`#path-${connection.id}`} />
+                </animateMotion>
+                <animate
+                  attributeName="r"
+                  values="3;6;3"
+                  dur={`${2 * animationSpeed}s`}
+                  repeatCount="indefinite"
+                />
+              </motion.circle>
+            </g>
           ))}
 
           {/* Energy trail */}
