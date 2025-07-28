@@ -157,6 +157,28 @@ export const api = {
     }
   },
 
+  // Node status for hexagonal visualization
+  async getNodesStatus(): Promise<ApiResponse<Array<{
+    id: string;
+    name: string;
+    status: 'ready' | 'active' | 'complete' | 'error';
+    phase?: string;
+    active: boolean;
+    processingTime?: number;
+    promptCount?: number;
+    currentPrompt?: string;
+    progress?: number;
+  }>>> {
+    try {
+      return await apiRequest('/nodes-status');
+    } catch (error) {
+      return {
+        success: false,
+        error: 'Failed to get nodes status',
+      };
+    }
+  },
+
   async status(): Promise<ApiResponse<{ server: string; protocol: string; version: string; learning_mode?: boolean; uptime?: string }>> {
     try {
       return await apiRequest('/status');
