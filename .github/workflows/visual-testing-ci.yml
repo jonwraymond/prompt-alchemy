@@ -372,7 +372,7 @@ jobs:
           "
 
       - name: Comment on PR with Visual Diff Summary
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         if: github.event_name == 'pull_request'
         with:
           script: |
@@ -541,7 +541,7 @@ jobs:
     
     steps:
       - name: Cleanup Old Artifacts
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
           script: |
             // Clean up artifacts older than 30 days
