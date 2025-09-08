@@ -44,7 +44,7 @@ jobs:
     
     - name: Comment PR with Serena violations
       if: github.event_name == 'pull_request' && env.SERENA_FAILED == 'true'
-      uses: actions/github-script@v6
+      uses: actions/github-script@v8
       with:
         script: |
           const fs = require('fs');
