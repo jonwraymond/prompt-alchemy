@@ -23,7 +23,7 @@ require (
 	github.com/stretchr/testify v1.10.0
 	github.com/subosito/gotenv v1.6.0
 	golang.org/x/text v0.27.0
-	google.golang.org/genai v1.16.0
+	google.golang.org/genai v1.30.0
 )
 
 require (
