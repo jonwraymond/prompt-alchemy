@@ -22,7 +22,7 @@ require (
 	github.com/spf13/viper v1.20.1
 	github.com/stretchr/testify v1.10.0
 	github.com/subosito/gotenv v1.6.0
-	golang.org/x/text v0.27.0
+	golang.org/x/text v0.30.0
 	google.golang.org/genai v1.16.0
 )
 
