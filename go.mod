@@ -13,7 +13,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.3
 	github.com/ncruces/go-sqlite3 v0.27.1
-	github.com/ollama/ollama v0.9.6
+	github.com/ollama/ollama v0.12.6
 	github.com/openai/openai-go v1.11.1
 	github.com/philippgille/chromem-go v0.7.0
 	github.com/prometheus/client_golang v1.22.0
