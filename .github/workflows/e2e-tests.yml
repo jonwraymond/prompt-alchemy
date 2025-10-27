@@ -152,14 +152,14 @@ jobs:
         echo "test-config=${{ env.TEST_CONFIG_DIR }}/config.yaml" >> $GITHUB_OUTPUT
 
     - name: Upload binary artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: prompt-alchemy-binary
         path: ${{ env.BINARY_NAME }}
         retention-days: 1
 
     - name: Upload test config
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: test-config
         path: ${{ env.TEST_CONFIG_DIR }}/config.yaml
@@ -351,7 +351,7 @@ jobs:
           validate --verbose
 
     - name: Upload test results
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       if: always()
       with:
         name: core-test-results-${{ matrix.command-group }}
@@ -594,7 +594,7 @@ jobs:
         ./${{ env.BINARY_NAME }} optimize --help
 
     - name: Upload flow test results
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       if: always()
       with:
         name: flow-test-results-${{ matrix.flow }}
@@ -950,7 +950,7 @@ jobs:
         fi
 
     - name: Upload final test report
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       if: always()
       with:
         name: e2e-test-report
