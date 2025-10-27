@@ -169,7 +169,7 @@ jobs:
         fi
     
     - name: Upload test results
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       if: always()
       with:
         name: test-results-${{ matrix.os }}-${{ matrix.test-suite }}
@@ -177,7 +177,7 @@ jobs:
         retention-days: 30
     
     - name: Upload test logs
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       if: failure()
       with:
         name: test-logs-${{ matrix.os }}-${{ matrix.test-suite }}
@@ -221,7 +221,7 @@ jobs:
       run: make test-report
     
     - name: Upload comprehensive test results
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       if: always()
       with:
         name: full-test-results
@@ -251,7 +251,7 @@ jobs:
       run: make bench > benchmark_results.txt
     
     - name: Upload benchmark results
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: benchmark-results
         path: benchmark_results.txt
@@ -279,7 +279,7 @@ jobs:
       run: make release
     
     - name: Upload release artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: release-binaries
         path: bin/
@@ -336,7 +336,7 @@ jobs:
         ls -la . >> test_summary.md
     
     - name: Upload summary
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: test-summary
         path: test_summary.md
