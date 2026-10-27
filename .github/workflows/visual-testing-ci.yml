@@ -51,7 +51,7 @@ jobs:
           chmod +x ./bin/prompt-alchemy
 
       - name: Upload Backend Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: backend-build
           path: |
@@ -84,7 +84,7 @@ jobs:
         run: npm run build
 
       - name: Upload Frontend Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: frontend-build
           path: |
@@ -112,13 +112,13 @@ jobs:
           cache: 'npm'
 
       - name: Download Backend Build
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: backend-build
           path: ./bin/
 
       - name: Download Frontend Build
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: frontend-build
           path: ./
@@ -140,7 +140,7 @@ jobs:
       - name: Start Application Server
         run: |
           chmod +x ./bin/prompt-alchemy
-          ./bin/prompt-alchemy server --port 8080 &
+          ./bin/prompt-alchemy serve --api --port 8080 &
           sleep 10
           curl -f http://localhost:8080/health || exit 1
         env:
@@ -168,7 +168,7 @@ jobs:
           CI: true
 
       - name: Upload Test Results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: test-results-${{ matrix.browser }}-${{ matrix.test-suite }}
@@ -178,10 +178,10 @@ jobs:
           retention-days: 30
 
       - name: Upload Visual Baseline Screenshots
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: github.ref == 'refs/heads/main'
         with:
-          name: visual-baselines-${{ matrix.browser }}
+          name: visual-baselines-${{ matrix.browser }}-${{ matrix.test-suite }}
           path: test-results/visual-baselines/
           retention-days: 90
 
@@ -201,7 +201,7 @@ jobs:
           cache: 'npm'
 
       - name: Download Backend Build
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: backend-build
           path: ./bin/
@@ -215,7 +215,7 @@ jobs:
       - name: Start Application
         run: |
           chmod +x ./bin/prompt-alchemy
-          ./bin/prompt-alchemy server --port 8080 &
+          ./bin/prompt-alchemy serve --api --port 8080 &
           sleep 10
 
       - name: Run Integration Tests
@@ -231,7 +231,7 @@ jobs:
           curl -o integration-report.html http://localhost:9323 || echo "Report generation failed"
 
       - name: Upload Integration Results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: integration-test-results
@@ -256,7 +256,7 @@ jobs:
           cache: 'npm'
 
       - name: Download Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: backend-build
           path: ./bin/
@@ -270,7 +270,7 @@ jobs:
       - name: Start Application
         run: |
           chmod +x ./bin/prompt-alchemy
-          ./bin/prompt-alchemy server --port 8080 &
+          ./bin/prompt-alchemy serve --api --port 8080 &
           sleep 10
 
       - name: Run Performance Benchmarks
@@ -300,7 +300,7 @@ jobs:
           " || echo "Metrics extraction failed"
 
       - name: Upload Performance Results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: performance-benchmarks
           path: |
@@ -318,7 +318,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Download All Visual Test Results
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: all-test-results/
 
@@ -415,7 +415,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Download All Test Results
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: all-results/
 
@@ -517,7 +517,7 @@ jobs:
           "
 
       - name: Upload Comprehensive Report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: comprehensive-test-report
           path: |
