@@ -4,7 +4,11 @@
 BINARY_NAME=prompt-alchemy
 MONOLITHIC_BINARY=prompt-alchemy-mono
 BUILD_DIR=bin
-MAIN_PATH=cmd/prompt-alchemy/main.go
+# Build the primary CLI from the package directory so all files in the command
+# package participate. The old path pointed at a single file that was never
+# tracked, and a bare package path resolves against GOROOT instead of this
+# module. This matches the path the Dockerfile already builds.
+MAIN_PATH=./cmd/prompt-alchemy
 MONOLITHIC_PATH=cmd/monolithic/main.go
 TEST_DIR=tests
 RESULTS_DIR=test-results
