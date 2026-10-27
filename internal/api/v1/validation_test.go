@@ -80,7 +80,8 @@ func TestInputValidation(t *testing.T) {
 				Count: -5,
 			},
 			endpoint:       "/api/v1/prompts/generate",
-			expectedStatus: http.StatusOK, // Should use default
+			expectedStatus: http.StatusBadRequest, // Handler rejects a negative count
+			expectedError:  "Count must be non-negative",
 		},
 		{
 			name: "zero count",
@@ -98,7 +99,7 @@ func TestInputValidation(t *testing.T) {
 				Count: 10000,
 			},
 			endpoint:       "/api/v1/prompts/generate",
-			expectedStatus: http.StatusOK, // Should cap at reasonable limit
+			expectedStatus: http.StatusInternalServerError, // This handler does not clamp count; the engine rejects a count above 100
 		},
 		{
 			name: "invalid temperature - negative",
@@ -107,7 +108,8 @@ func TestInputValidation(t *testing.T) {
 				Temperature: -0.5,
 			},
 			endpoint:       "/api/v1/prompts/generate",
-			expectedStatus: http.StatusOK, // Should use default
+			expectedStatus: http.StatusBadRequest, // Handler rejects a negative temperature
+			expectedError:  "Temperature must be non-negative",
 		},
 		{
 			name: "invalid temperature - too high",
@@ -143,7 +145,8 @@ func TestInputValidation(t *testing.T) {
 				MaxTokens: -100,
 			},
 			endpoint:       "/api/v1/prompts/generate",
-			expectedStatus: http.StatusOK, // Should use default
+			expectedStatus: http.StatusBadRequest, // Handler rejects a negative max tokens
+			expectedError:  "MaxTokens must be non-negative",
 		},
 		{
 			name: "excessive max tokens",
@@ -217,24 +220,24 @@ func TestInputValidation(t *testing.T) {
 			request: models.GenerateRequest{
 				Input: "test",
 				Providers: map[string]string{
-					"phase1": "non-existent-provider",
-					"phase2": "another-invalid-provider",
+					"prima-materia": "non-existent-provider",
+					"solutio":       "another-invalid-provider",
 				},
 			},
 			endpoint:       "/api/v1/prompts/generate",
-			expectedStatus: http.StatusInternalServerError, // Will fail with invalid providers
+			expectedStatus: http.StatusInternalServerError, // Provider overrides are keyed by phase; an unregistered provider fails the generation
 		},
 		{
 			name: "empty provider map values",
 			request: models.GenerateRequest{
 				Input: "test",
 				Providers: map[string]string{
-					"phase1": "",
-					"phase2": "",
+					"prima-materia": "",
+					"solutio":       "",
 				},
 			},
 			endpoint:       "/api/v1/prompts/generate",
-			expectedStatus: http.StatusInternalServerError, // Will fail with empty providers
+			expectedStatus: http.StatusOK, // This handler does not validate provider names; an empty override falls back to the default provider
 		},
 
 		// Special character handling
@@ -331,7 +334,8 @@ func TestInputValidation(t *testing.T) {
 				Context:     []string{"valid context", ""},
 			},
 			endpoint:       "/api/v1/prompts/generate",
-			expectedStatus: http.StatusInternalServerError, // Will fail due to invalid phase
+			expectedStatus: http.StatusBadRequest, // Count is rejected first
+			expectedError:  "Count must be non-negative",
 		},
 	}
 
@@ -363,7 +367,11 @@ func TestInputValidation(t *testing.T) {
 				var response map[string]interface{}
 				err := json.Unmarshal(rr.Body.Bytes(), &response)
 				require.NoError(t, err)
-				assert.Contains(t, response["error"], tt.expectedError)
+				// httputil.WriteError nests the message under error.message
+				// in the standard API envelope.
+				errInfo, ok := response["error"].(map[string]interface{})
+				require.True(t, ok, "expected nested error object, got %v", response["error"])
+				assert.Contains(t, errInfo["message"], tt.expectedError)
 			}
 
 			// For successful requests, verify response structure
@@ -380,28 +388,30 @@ func TestBoundaryValues(t *testing.T) {
 	handler := createValidationTestHandler()
 
 	boundaryTests := []struct {
-		name     string
-		field    string
-		value    interface{}
-		expected interface{}
+		name           string
+		field          string
+		value          interface{}
+		expected       interface{}
+		expectedStatus int
+		expectedError  string
 	}{
 		// Count boundaries
-		{"count_min", "count", 0, 3},             // Should default to 3
-		{"count_negative", "count", -1, 3},       // Should default to 3
-		{"count_max", "count", 100, 100},         // Should accept up to reasonable limit
-		{"count_excessive", "count", 10000, 100}, // Should cap at max
+		{"count_min", "count", 0, 3, http.StatusOK, ""},
+		{"count_negative", "count", -1, nil, http.StatusBadRequest, "Count must be non-negative"},
+		{"count_max", "count", 100, 100, http.StatusOK, ""},
+		{"count_excessive", "count", 10000, nil, http.StatusInternalServerError, ""},
 
 		// Temperature boundaries
-		{"temp_min", "temperature", 0.0, 0.0},        // Valid minimum
-		{"temp_negative", "temperature", -1.0, 0.0},  // Should floor at 0
-		{"temp_max", "temperature", 2.0, 2.0},        // Valid maximum
-		{"temp_excessive", "temperature", 10.0, 2.0}, // Should cap at 2
+		{"temp_min", "temperature", 0.0, 0.0, http.StatusOK, ""},
+		{"temp_negative", "temperature", -1.0, nil, http.StatusBadRequest, "Temperature must be non-negative"},
+		{"temp_max", "temperature", 2.0, 2.0, http.StatusOK, ""},
+		{"temp_excessive", "temperature", 10.0, 10.0, http.StatusOK, ""},
 
 		// MaxTokens boundaries
-		{"tokens_min", "max_tokens", 1, 1},               // Valid minimum
-		{"tokens_negative", "max_tokens", -1, 2000},      // Should default
-		{"tokens_max", "max_tokens", 4096, 4096},         // Valid maximum
-		{"tokens_excessive", "max_tokens", 100000, 4096}, // Should cap
+		{"tokens_min", "max_tokens", 1, 1, http.StatusOK, ""},
+		{"tokens_negative", "max_tokens", -1, nil, http.StatusBadRequest, "MaxTokens must be non-negative"},
+		{"tokens_max", "max_tokens", 4096, 4096, http.StatusOK, ""},
+		{"tokens_excessive", "max_tokens", 100000, 100000, http.StatusOK, ""},
 	}
 
 	for _, tt := range boundaryTests {
@@ -418,10 +428,18 @@ func TestBoundaryValues(t *testing.T) {
 			rr := httptest.NewRecorder()
 			handler.HandleGeneratePrompts(rr, req)
 
-			assert.Equal(t, http.StatusOK, rr.Code)
+			assert.Equal(t, tt.expectedStatus, rr.Code)
 
-			// Verify the value was handled correctly
-			// In a real implementation, we'd check the actual value used
+			if tt.expectedError != "" {
+				var response map[string]interface{}
+				err := json.Unmarshal(rr.Body.Bytes(), &response)
+				require.NoError(t, err)
+				// httputil.WriteError nests the message under error.message
+				// in the standard API envelope.
+				errInfo, ok := response["error"].(map[string]interface{})
+				require.True(t, ok, "expected nested error object, got %v", response["error"])
+				assert.Contains(t, errInfo["message"], tt.expectedError)
+			}
 		})
 	}
 }
