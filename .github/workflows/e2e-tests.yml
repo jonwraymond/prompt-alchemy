@@ -269,23 +269,17 @@ jobs:
           --data-dir ${{ env.TEST_DATA_DIR }} \
           search "authentication" --limit 5 --output json
         
-        # Test search with filters
-        echo "Testing search with filters..."
+        # Test search with filters (search has --tags/--limit/--semantic/--output/--server; no --phase/--provider)
+        echo "Testing search with tags filter..."
         ./${{ env.BINARY_NAME }} --config ${{ env.TEST_CONFIG_DIR }}/config.yaml \
           --data-dir ${{ env.TEST_DATA_DIR }} \
-          search --tags "auth" --phase idea --limit 5
-        
-        # Test search by provider
-        echo "Testing search by provider..."
-        ./${{ env.BINARY_NAME }} --config ${{ env.TEST_CONFIG_DIR }}/config.yaml \
-          --data-dir ${{ env.TEST_DATA_DIR }} \
-          search --provider openai --limit 5
+          search --tags "auth" --limit 5
         
         # Test semantic search (if embeddings are available)
         echo "Testing semantic search..."
         ./${{ env.BINARY_NAME }} --config ${{ env.TEST_CONFIG_DIR }}/config.yaml \
           --data-dir ${{ env.TEST_DATA_DIR }} \
-          search "user login" --semantic --similarity 0.7 --limit 3 || echo "Semantic search requires embeddings"
+          search "user login" --semantic --limit 3 || echo "Semantic search requires embeddings"
 
     - name: Test Management Commands
       if: matrix.command-group == 'management-commands'
@@ -306,25 +300,29 @@ jobs:
         ./${{ env.BINARY_NAME }} update --help
         ./${{ env.BINARY_NAME }} metrics --help
         
-        # Test metrics with filters
+        # Test metrics with filters (metrics has --phase with values prima-materia/solutio/coagulatio)
         echo "Testing metrics with filters..."
         ./${{ env.BINARY_NAME }} --config ${{ env.TEST_CONFIG_DIR }}/config.yaml \
           --data-dir ${{ env.TEST_DATA_DIR }} \
-          metrics --phase idea --provider openai --limit 5
+          metrics --phase prima-materia --provider openai --limit 5
         
-        # Test optimize command
+        # Test optimize command (requires a real provider key; skip when absent)
         echo "Testing optimize command..."
-        ./${{ env.BINARY_NAME }} --config ${{ env.TEST_CONFIG_DIR }}/config.yaml \
-          --data-dir ${{ env.TEST_DATA_DIR }} \
-          optimize --prompt "Write a function to sort an array" \
-          --task "Create efficient sorting algorithm" \
-          --max-iterations 2 --target-score 7.0 || echo "Optimize requires real providers"
+        if [ -n "${OPENAI_API_KEY:-}" ]; then
+          ./${{ env.BINARY_NAME }} --config ${{ env.TEST_CONFIG_DIR }}/config.yaml \
+            --data-dir ${{ env.TEST_DATA_DIR }} \
+            optimize --prompt "Write a function to sort an array" \
+            --task "Create efficient sorting algorithm" \
+            --max-iterations 2 --target-score 7.0 || echo "Optimize requires real providers"
+        else
+          echo "skipped: no OPENAI_API_KEY (optimize requires a real provider)"
+        fi
         
-        # Test migrate command
+        # Test migrate command (migrate has no flags; bare command prints "currently disabled")
         echo "Testing migrate command..."
         ./${{ env.BINARY_NAME }} --config ${{ env.TEST_CONFIG_DIR }}/config.yaml \
           --data-dir ${{ env.TEST_DATA_DIR }} \
-          migrate --dry-run --batch-size 5
+          migrate
 
     - name: Test System Commands  
       if: matrix.command-group == 'system-commands'
@@ -392,7 +390,7 @@ jobs:
         echo "Starting MCP server..."
         ./${{ env.BINARY_NAME }} --config ${{ env.TEST_CONFIG_DIR }}/config.yaml \
           --data-dir ${{ env.TEST_DATA_DIR }} \
-          serve --host localhost --port 8080 &
+          serve --api --host localhost --port 8080 &
         MCP_PID=$!
         
         # Wait for server to start
@@ -418,7 +416,7 @@ jobs:
         # Start server for tool testing
         ./${{ env.BINARY_NAME }} --config ${{ env.TEST_CONFIG_DIR }}/config.yaml \
           --data-dir ${{ env.TEST_DATA_DIR }} \
-          serve --host localhost --port 8081 &
+          serve --api --host localhost --port 8081 &
         MCP_PID=$!
         sleep 3
         
@@ -642,7 +640,7 @@ jobs:
         # Test missing required arguments
         echo "Testing missing arguments..."
         ./${{ env.BINARY_NAME }} update || echo "Expected failure: missing prompt ID"
-        ./${{ env.BINARY_NAME }} delete || echo "Expected failure: missing prompt ID"
+        ./${{ env.BINARY_NAME }} delete || echo "Expected failure: delete is not a registered command (error path test)"
         
         # Test invalid UUID format
         echo "Testing invalid UUID..."
