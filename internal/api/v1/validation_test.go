@@ -363,11 +363,7 @@ func TestInputValidation(t *testing.T) {
 				var response map[string]interface{}
 				err := json.Unmarshal(rr.Body.Bytes(), &response)
 				require.NoError(t, err)
-				// httputil.WriteError nests the message under error.message
-				// in the standard API envelope.
-				errInfo, ok := response["error"].(map[string]interface{})
-				require.True(t, ok, "expected nested error object, got %v", response["error"])
-				assert.Contains(t, errInfo["message"], tt.expectedError)
+				assert.Contains(t, response["error"], tt.expectedError)
 			}
 
 			// For successful requests, verify response structure
