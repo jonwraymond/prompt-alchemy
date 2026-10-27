@@ -27,9 +27,27 @@ var ddl string
 // - SQLite (WASM) for structured data, metadata, and relationships
 // - chromem-go for vector operations and similarity search
 // This eliminates atomic operations issues while maintaining performance
+
+// StorageInterface defines the storage operations used by engine services.
+// Keep this interface limited to the operations shared by the optimizer,
+// learning worker, ranker, and CLI so lightweight test doubles can implement it.
+type StorageInterface interface {
+	Close() error
+	SetEmbeddingConfig(provider, model string, dims int)
+	GetEmbeddingConfig() (provider, model string, dims int)
+
+	SavePrompt(ctx context.Context, prompt *models.Prompt) error
+	GetPromptByID(ctx context.Context, id uuid.UUID) (*models.Prompt, error)
+	GetPromptsWithoutEmbeddings(ctx context.Context, limit int) ([]*models.Prompt, error)
+	UpdatePromptRelevanceScore(ctx context.Context, promptID uuid.UUID, newScore float64) error
+	SearchSimilarPrompts(ctx context.Context, embedding []float32, limit int) ([]*models.Prompt, error)
+	GetHighQualityHistoricalPrompts(ctx context.Context, limit int) ([]*models.Prompt, error)
+	SearchSimilarHighQualityPrompts(ctx context.Context, embedding []float32, minScore float64, limit int) ([]*models.Prompt, error)
+	SaveInteraction(ctx context.Context, interaction *models.UserInteraction) error
+}
 type Storage struct {
 	db      *sqlite3.Conn // SQLite for structured data (no vector extension)
-	vectors *chromem.DB   // chromem-go for vector operations
+	vectors *chromem.DB   // chromem-go for vector operations and similarity search
 	logger  *logrus.Logger
 
 	// New fields for tracking current embedding config
@@ -37,6 +55,10 @@ type Storage struct {
 	currentEmbeddingProvider string
 	currentEmbeddingDims     int
 }
+
+// Compile-time assertion that the concrete storage implementation satisfies
+// the interface consumed by the engine services.
+var _ StorageInterface = (*Storage)(nil)
 
 // NewStorage creates a new Storage instance with hybrid architecture
 func NewStorage(dsn string, logger *logrus.Logger) (*Storage, error) {

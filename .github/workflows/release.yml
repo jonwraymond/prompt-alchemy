@@ -305,7 +305,7 @@ jobs:
           -X 'prompt-alchemy/internal/cmd.GitTag=${VERSION}' \
           -X 'prompt-alchemy/internal/cmd.BuildDate=${BUILD_DATE}' \
           -w -s
-        " -o ${BINARY_NAME} ./cmd/main.go
+        " -o ${BINARY_NAME} ./cmd/api
         
         # Create archive
         ARCHIVE_NAME="prompt-alchemy-${VERSION}-${{ matrix.goos }}-${{ matrix.goarch }}"
