@@ -88,8 +88,8 @@ jobs:
           -X 'github.com/jonwraymond/prompt-alchemy/internal/cmd.GitCommit=${GIT_COMMIT}' \
           -X 'github.com/jonwraymond/prompt-alchemy/internal/cmd.GitTag=${GIT_TAG}' \
           -X 'github.com/jonwraymond/prompt-alchemy/internal/cmd.BuildDate=${BUILD_DATE}'" \
-          -o ${{ env.BINARY_NAME }} ./cmd/api
-
+          -o ${{ env.BINARY_NAME }} cmd/main.go
+        
         chmod +x ${{ env.BINARY_NAME }}
         echo "binary-path=$PWD/${{ env.BINARY_NAME }}" >> $GITHUB_OUTPUT
         # Verify binary works

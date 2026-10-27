@@ -191,29 +191,37 @@ func (h *V1Handler) HandleGeneratePrompts(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// Validate ranges
+	// Validate ranges and normalize user-supplied values. These fields are
+	// intentionally clamped to their documented bounds so malformed optional
+	// numeric input does not reject an otherwise valid generation request.
 	if req.Count < 0 {
-		httputil.BadRequest(w, "Count must be non-negative")
-		return
+		req.Count = 0
 	}
 	if req.Temperature < 0 {
-		httputil.BadRequest(w, "Temperature must be non-negative")
-		return
+		req.Temperature = 0
 	}
 	if req.MaxTokens < 0 {
-		httputil.BadRequest(w, "MaxTokens must be non-negative")
-		return
+		req.MaxTokens = 0
 	}
 
 	// Set defaults
 	if req.Count == 0 {
 		req.Count = 3
 	}
+	if req.Count > 100 {
+		req.Count = 100
+	}
 	if req.Temperature == 0 {
 		req.Temperature = 0.7
 	}
+	if req.Temperature > 2 {
+		req.Temperature = 2
+	}
 	if req.MaxTokens == 0 {
 		req.MaxTokens = 1000
+	}
+	if req.MaxTokens > 4096 {
+		req.MaxTokens = 4096
 	}
 
 	// Auto-infer target use case from persona if not provided
@@ -245,6 +253,26 @@ func (h *V1Handler) HandleGeneratePrompts(w http.ResponseWriter, r *http.Request
 	providers := make(map[models.Phase]string)
 	for phaseStr, provider := range req.Providers {
 		providers[models.Phase(phaseStr)] = provider
+	}
+
+	// Reject provider overrides that the registry cannot serve: an empty
+	// name or one that was never registered would otherwise silently fall
+	// back to the default phase provider and generate with the wrong model.
+	if len(providers) > 0 {
+		for _, name := range req.Providers {
+			if name == "" {
+				h.logger.Error("Empty provider name in request")
+				httputil.InternalServerError(w, "Provider name cannot be empty")
+				return
+			}
+			if h.registry != nil {
+				if _, err := h.registry.Get(name); err != nil {
+					h.logger.WithField("provider", name).Error("Unknown provider in request")
+					httputil.InternalServerError(w, "Unknown provider: "+name)
+					return
+				}
+			}
+		}
 	}
 
 	// Build PhaseConfigs from providers map or use defaults

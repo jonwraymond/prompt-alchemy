@@ -112,8 +112,8 @@ jobs:
           -X 'github.com/jonwraymond/prompt-alchemy/internal/cmd.GitCommit=${GIT_COMMIT}' \
           -X 'github.com/jonwraymond/prompt-alchemy/internal/cmd.GitTag=${GIT_TAG}' \
           -X 'github.com/jonwraymond/prompt-alchemy/internal/cmd.BuildDate=${BUILD_DATE}'" \
-          -o "${BINARY_NAME}" ./cmd/api
-
+          -o "${BINARY_NAME}" cmd/main.go
+        
         # Create archive
         ARCHIVE_NAME="prompt-alchemy-${VERSION}-${{ matrix.os }}-${{ matrix.arch }}"
         if [ "${{ matrix.goos }}" = "windows" ]; then
