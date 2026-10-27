@@ -97,7 +97,7 @@ analyze_serena_usage() {
     for pattern in "${SERENA_PATTERNS[@]}"; do
         if grep -F "$pattern" "$file" > /dev/null 2>&1; then
             has_serena=true
-            GOOD_PRACTICES=$((GOOD_PRACTICES + 1))
+            ((GOOD_PRACTICES++))
             echo -e "- Found \`$pattern\` usage in \`$file\` ✅" >> "$REPORT_FILE"
         fi
     done
@@ -114,13 +114,13 @@ analyze_serena_usage() {
                 for marker in "${FALLBACK_MARKERS[@]}"; do
                     if echo "$context" | grep -F "$marker" > /dev/null 2>&1; then
                         has_fallback=true
-                        FALLBACK_COUNT=$((FALLBACK_COUNT + 1))
+                        ((FALLBACK_COUNT++))
                         break
                     fi
                 done
                 
                 if ! $has_fallback && ! $has_serena; then
-                    IMPROVEMENT_OPPORTUNITIES=$((IMPROVEMENT_OPPORTUNITIES + 1))
+                    ((IMPROVEMENT_OPPORTUNITIES++))
                     suggestions="${suggestions}\n- Line $line_num: Consider using Serena instead of \`$pattern\`"
                 fi
             fi
@@ -143,7 +143,7 @@ validate_file() {
         return
     fi
     
-    SCANNED_FILES=$((SCANNED_FILES + 1))
+    ((SCANNED_FILES++))
     
     # Analyze Serena usage
     analyze_serena_usage "$file"
