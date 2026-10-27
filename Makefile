@@ -7,7 +7,7 @@ BUILD_DIR=bin
 # Build the primary CLI from the package directory so all files in cmd/
 # participate in the command package. The old path pointed at a non-existent
 # single-file entrypoint and made every fresh CI build fail before compilation.
-MAIN_PATH=cmd/prompt-alchemy
+MAIN_PATH=cmd/monolithic
 MONOLITHIC_PATH=cmd/monolithic/main.go
 TEST_DIR=tests
 RESULTS_DIR=test-results
