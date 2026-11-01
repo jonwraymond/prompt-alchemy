@@ -1,4 +1,4 @@
-import { chromium, FullConfig } from '@playwright/test';
+import { chromium, type FullConfig, type Page } from '@playwright/test';
 
 /**
  * Global setup for Prompt Alchemy Playwright tests
@@ -52,7 +52,7 @@ async function globalSetup(config: FullConfig) {
 /**
  * Wait for a server to respond
  */
-async function waitForServer(page: any, url: string, timeout: number) {
+async function waitForServer(page: Page, url: string, timeout: number) {
   const startTime = Date.now();
   
   while (Date.now() - startTime < timeout) {
@@ -74,7 +74,7 @@ async function waitForServer(page: any, url: string, timeout: number) {
 /**
  * Verify that critical API endpoints are working
  */
-async function verifyAPIEndpoints(page: any, apiBaseURL: string) {
+async function verifyAPIEndpoints(page: Page, apiBaseURL: string) {
   console.log('🔍 Verifying API endpoints...');
 
   const endpoints = [
@@ -101,7 +101,7 @@ async function verifyAPIEndpoints(page: any, apiBaseURL: string) {
 /**
  * Set up test data
  */
-async function setupTestData(page: any, apiBaseURL: string) {
+async function setupTestData(page: Page, apiBaseURL: string) {
   console.log('📝 Setting up test data...');
   
   // Create test prompts if needed

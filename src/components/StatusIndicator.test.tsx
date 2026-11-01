@@ -1,7 +1,7 @@
-import React from 'react';
+import * as ReactDOM from 'react-dom';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { StatusIndicator, SystemStatus, StatusType } from './StatusIndicator';
+import { StatusIndicator } from './StatusIndicator';
 import { api } from '../utils/api';
 
 // Mock the API
@@ -15,8 +15,8 @@ jest.mock('../utils/api', () => ({
 
 // Mock ReactDOM.createPortal
 beforeAll(() => {
-  const originalCreatePortal = jest.requireActual('react-dom').createPortal;
-  jest.spyOn(require('react-dom'), 'createPortal').mockImplementation((element, container) => {
+  const originalCreatePortal = jest.requireActual<typeof import('react-dom')>('react-dom').createPortal;
+  jest.spyOn(ReactDOM, 'createPortal').mockImplementation((element, container) => {
     return originalCreatePortal(element, container || document.body);
   });
 });
@@ -110,7 +110,7 @@ describe('StatusIndicator', () => {
         const tooltipContent = tooltip.querySelector('.status-tooltip.enhanced');
         expect(tooltipContent).toBeInTheDocument();
         
-        const styles = window.getComputedStyle(tooltipContent!);
+        const styles = window.getComputedStyle(tooltipContent!) as CSSStyleDeclaration & { webkitBackdropFilter?: string };
         expect(styles.backdropFilter || styles.webkitBackdropFilter).toContain('blur');
       }, { timeout: 1000 });
     });

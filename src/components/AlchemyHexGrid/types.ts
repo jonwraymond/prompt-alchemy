@@ -111,7 +111,7 @@ export interface HexMetrics {
 
 // Tooltip data
 export interface TooltipData {
-  node: PhaseNode;
+  node: PhaseNode | null;
   position: { x: number; y: number };
   visible: boolean;
 }

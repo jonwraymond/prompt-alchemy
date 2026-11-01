@@ -438,7 +438,7 @@ test.describe('API Endpoints', () => {
   test.describe('Rate Limiting', () => {
     test('should handle rate limiting if enabled', async ({ page }) => {
       // Make multiple rapid requests
-      const requests = Array.from({ length: 10 }, (_, i) => 
+      const requests = Array.from({ length: 10 }, () => 
         makeAPIRequest(page, 'GET', '/api/v1/status')
       );
       

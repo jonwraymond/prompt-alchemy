@@ -39,7 +39,9 @@ export async function waitForElements(page: Page, selectors: string[], timeout: 
 export async function waitForLoadingComplete(page: Page): Promise<void> {
   // Wait for HTMX requests to complete
   await page.waitForFunction(() => {
-    return (window as any).htmx?.trigger('htmx:afterRequest') || true;
+    const w = window as Window & { htmx?: { trigger: (event: string) => void } };
+    w.htmx?.trigger('htmx:afterRequest');
+    return true;
   }, { timeout: 30000 });
 
   // Wait for any spinners or loading indicators to disappear
@@ -49,7 +51,8 @@ export async function waitForLoadingComplete(page: Page): Promise<void> {
 
   // Wait for hex grid to initialize if present
   await page.waitForFunction(() => {
-    return !(window as any).hexFlowBoard?.isInitializing;
+    const w = window as Window & { hexFlowBoard?: { isInitializing?: boolean } };
+    return !w.hexFlowBoard?.isInitializing;
   }, { timeout: 10000 }).catch(() => {
     // Hex grid might not be present, which is fine
   });
@@ -146,7 +149,8 @@ export async function waitForHexGridLoaded(page: Page): Promise<void> {
   
   // Wait for initialization to complete
   await page.waitForFunction(() => {
-    return (window as any).unifiedHexFlow?.isInitialized === true;
+    const w = window as Window & { unifiedHexFlow?: { isInitialized?: boolean } };
+    return w.unifiedHexFlow?.isInitialized === true;
   }, { timeout: 15000 });
 }
 
@@ -210,15 +214,20 @@ export async function fillAndSubmitForm(page: Page, input: string, options: {
 /**
  * Make an API request and return the response
  */
-export async function makeAPIRequest(page: Page, method: string, endpoint: string, data?: any) {
+export async function makeAPIRequest(
+  page: Page,
+  method: string,
+  endpoint: string,
+  data?: string | Record<string, unknown>
+) {
   const apiBase = 'http://localhost:8080';
-  const options: any = {
+  const options: Parameters<typeof page.request.post>[1] = {
     headers: {
       'Content-Type': 'application/json'
     }
   };
 
-  if (data) {
+  if (data !== undefined) {
     options.data = data;
   }
 
@@ -307,7 +316,11 @@ export async function expectVisibleAndEnabled(page: Page, selector: string): Pro
 /**
  * Assert API response structure
  */
-export function expectAPIResponse(response: any, expectedStatus: number, requiredFields: string[] = []) {
+export function expectAPIResponse(
+  response: { status: number; data?: unknown },
+  expectedStatus: number,
+  requiredFields: string[] = []
+) {
   expect(response.status).toBe(expectedStatus);
   if (response.data) {
     for (const field of requiredFields) {

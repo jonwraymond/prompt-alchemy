@@ -7,7 +7,6 @@ import {
   testHexGridVisualState,
   testHexGridAnimations,
   testTooltipPositioning,
-  testCrossBrowserConsistency,
   generateVisualTestReport
 } from '../helpers/visual-regression-utils';
 import { waitForHexGridLoaded } from '../helpers/test-utils';
@@ -29,7 +28,7 @@ import { waitForHexGridLoaded } from '../helpers/test-utils';
  */
 
 test.describe('Hex Grid Visual Regression', () => {
-  let testResults: Array<{ name: string; passed: boolean; diffPixels?: number }> = [];
+  const testResults: Array<{ name: string; passed: boolean; diffPixels?: number }> = [];
 
   test.beforeEach(async ({ hexGridPage }) => {
     await hexGridPage.goto();
@@ -242,13 +241,13 @@ test.describe('Hex Grid Visual Regression', () => {
           await page.locator(selector).focus();
           await page.waitForTimeout(200);
 
-          await compareVisualState(page, selector, `focus-indicator-${selector.replace(/[\[\]"=\s]/g, '-')}`, {
+          await compareVisualState(page, selector, `focus-indicator-${selector.replace(/[[\]"=\s]/g, '-')}`, {
             threshold: 0.2
           });
           
-          testResults.push({ name: `focus-indicator-${selector.replace(/[\[\]"=\s]/g, '-')}`, passed: true });
+          testResults.push({ name: `focus-indicator-${selector.replace(/[[\]"=\s]/g, '-')}`, passed: true });
         } catch (error) {
-          testResults.push({ name: `focus-indicator-${selector.replace(/[\[\]"=\s]/g, '-')}`, passed: false });
+          testResults.push({ name: `focus-indicator-${selector.replace(/[[\]"=\s]/g, '-')}`, passed: false });
           console.error(`Focus indicator test failed for ${selector}:`, error);
         }
       }
@@ -303,7 +302,7 @@ test.describe('Hex Grid Visual Regression', () => {
   });
 
   test.describe('Cross-Browser Visual Consistency', () => {
-    test('should maintain visual consistency across browsers', async ({ page, context }) => {
+    test('should maintain visual consistency across browsers', async ({ page }) => {
       // This test would typically run across multiple browser contexts
       // For now, test within current browser but document the framework
       

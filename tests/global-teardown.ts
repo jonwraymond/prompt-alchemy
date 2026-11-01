@@ -1,4 +1,4 @@
-import { chromium, FullConfig } from '@playwright/test';
+import { chromium, type FullConfig, type Page } from '@playwright/test';
 
 /**
  * Global teardown for Prompt Alchemy Playwright tests
@@ -8,7 +8,7 @@ import { chromium, FullConfig } from '@playwright/test';
  * - Shuts down servers if needed
  * - Performs final cleanup
  */
-async function globalTeardown(config: FullConfig) {
+async function globalTeardown(_config: FullConfig) {
   console.log('🧹 Global Teardown: Cleaning up test environment...');
 
   const apiBaseURL = 'http://localhost:8080';
@@ -35,7 +35,7 @@ async function globalTeardown(config: FullConfig) {
 /**
  * Clean up test data created during testing
  */
-async function cleanupTestData(page: any, apiBaseURL: string) {
+async function cleanupTestData(page: Page, apiBaseURL: string) {
   console.log('🗑️ Cleaning up test data...');
   
   try {

@@ -2,9 +2,7 @@ import { test, expect } from '../fixtures/base-fixtures';
 import { 
   fillAndSubmitForm,
   waitForLoadingComplete,
-  waitForNetworkIdle,
-  expectToContainText,
-  screenshotElement
+  expectToContainText
 } from '../helpers/test-utils';
 
 /**
@@ -131,9 +129,10 @@ test.describe('Form Submission and HTMX Integration', () => {
       await page.evaluate(() => {
         const events = ['htmx:beforeRequest', 'htmx:afterRequest', 'htmx:responseError'];
         events.forEach(event => {
-          document.addEventListener(event, (e) => {
-            (window as any).htmxEvents = (window as any).htmxEvents || [];
-            (window as any).htmxEvents.push(event);
+          document.addEventListener(event, () => {
+            const w = window as unknown as { htmxEvents?: string[] };
+            w.htmxEvents = w.htmxEvents || [];
+            w.htmxEvents.push(event);
           });
         });
       });
@@ -150,7 +149,9 @@ test.describe('Form Submission and HTMX Integration', () => {
       await waitForLoadingComplete(page);
 
       // Check events were fired
-      htmxEvents = await page.evaluate(() => (window as any).htmxEvents || []);
+      htmxEvents = await page.evaluate(
+        () => (window as unknown as { htmxEvents?: string[] }).htmxEvents || []
+      );
       expect(htmxEvents).toContain('htmx:beforeRequest');
       expect(htmxEvents).toContain('htmx:afterRequest');
     });
@@ -580,8 +581,9 @@ test.describe('Form Submission and HTMX Integration', () => {
 
       // Check JavaScript heap (if available)
       const memory = await page.evaluate(() => {
-        return (performance as any).memory ? {
-          usedJSHeapSize: (performance as any).memory.usedJSHeapSize
+        const perf = performance as Performance & { memory?: { usedJSHeapSize: number } };
+        return perf.memory ? {
+          usedJSHeapSize: perf.memory.usedJSHeapSize
         } : null;
       });
 

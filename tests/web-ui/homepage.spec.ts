@@ -1,5 +1,5 @@
 import { test, expect } from '../fixtures/base-fixtures';
-import { waitForLoadingComplete, expectVisibleAndEnabled } from '../helpers/test-utils';
+import { waitForLoadingComplete } from '../helpers/test-utils';
 
 /**
  * Homepage Tests

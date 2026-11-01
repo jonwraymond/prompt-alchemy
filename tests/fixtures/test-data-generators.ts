@@ -54,7 +54,7 @@ export interface TestUserData {
 
 export interface TestAPIResponse {
   success: boolean;
-  data?: any;
+  data?: unknown;
   error?: string;
   metadata: {
     request_id: string;
@@ -203,7 +203,7 @@ export function generatePhaseContent(phase: 'prima_materia' | 'solutio' | 'coagu
 /**
  * Generate realistic API responses for different scenarios
  */
-export function generateAPIResponse(type: 'success' | 'error' | 'timeout' | 'partial', data?: any): TestAPIResponse {
+export function generateAPIResponse(type: 'success' | 'error' | 'timeout' | 'partial', data?: unknown): TestAPIResponse {
   const baseResponse = {
     metadata: {
       request_id: faker.datatype.uuid(),
@@ -442,7 +442,12 @@ export class TestDataFactory {
     }));
   }
 
-  static createUserSession(actions: number = 5): any[] {
+  static createUserSession(actions: number = 5): Array<{
+    timestamp: string;
+    action: string;
+    data: TestGenerationRequest;
+    user_id: string;
+  }> {
     const user = generateUserData();
     const session = [];
 
@@ -467,7 +472,7 @@ export class TestDataFactory {
       validRequests: Array.from({ length: 5 }, () => generateGenerationRequest()),
       invalidRequests: [
         generateGenerationRequest({ input: '' }),
-        generateGenerationRequest({ provider: 'invalid' as any }),
+        generateGenerationRequest({ provider: 'invalid' }),
         generateGenerationRequest({ count: -1 })
       ]
     };
