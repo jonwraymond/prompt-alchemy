@@ -18,7 +18,7 @@ on:
 
 env:
   NODE_VERSION: '18'
-  GO_VERSION: '1.24'
+  GO_VERSION: '1.26'
   PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/playwright-browsers
 
 # Workflow-level default is read-only for every job (a job with no
