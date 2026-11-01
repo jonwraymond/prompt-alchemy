@@ -1,8 +1,6 @@
 module github.com/jonwraymond/prompt-alchemy
 
-go 1.24.0
-
-toolchain go1.24.5
+go 1.26.0
 
 require (
 	github.com/anthropics/anthropic-sdk-go v1.6.2
@@ -22,7 +20,7 @@ require (
 	github.com/spf13/viper v1.20.1
 	github.com/stretchr/testify v1.10.0
 	github.com/subosito/gotenv v1.6.0
-	golang.org/x/text v0.27.0
+	golang.org/x/text v0.43.0
 	google.golang.org/genai v1.16.0
 )
 
