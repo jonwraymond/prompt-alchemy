@@ -400,7 +400,7 @@ test.describe('StatusIndicator E2E Tests', () => {
       expect(focusStyles.outlineOffset).toBe('2px');
     });
 
-    test('should pass axe accessibility scan', async ({ page }) => {
+    test('should pass axe accessibility scan', async () => {
       // This requires @axe-core/playwright to be installed
       // Uncomment when available:
       // const accessibilityScanResults = await new AxeBuilder({ page }).analyze();

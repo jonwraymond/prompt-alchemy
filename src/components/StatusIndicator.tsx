@@ -34,8 +34,7 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
     { id: 'database', name: 'Database', status: 'down', lastCheck: new Date() }
   ]);
   
-  const [overallStatus, setOverallStatus] = useState<StatusType>('down');
-  const [isExpanded, setIsExpanded] = useState(true); // Always expanded for minimal dots
+  const [, setOverallStatus] = useState<StatusType>('down');
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null);
   const [hoveredSystem, setHoveredSystem] = useState<string | null>(null);
@@ -206,16 +205,23 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
     }
   };
 
+  // Keep a stable reference to the latest health check so the polling effect
+  // does not have to re-subscribe whenever the system state changes.
+  const checkSystemHealthRef = useRef(checkSystemHealth);
+  useEffect(() => {
+    checkSystemHealthRef.current = checkSystemHealth;
+  });
+
   useEffect(() => {
     // Detect touch device
     setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
     
     // Initial check
-    checkSystemHealth();
+    checkSystemHealthRef.current();
 
     // Set up auto-refresh
     if (autoRefresh) {
-      intervalRef.current = setInterval(checkSystemHealth, refreshInterval);
+      intervalRef.current = setInterval(() => checkSystemHealthRef.current(), refreshInterval);
     }
 
     return () => {

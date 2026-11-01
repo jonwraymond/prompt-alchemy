@@ -104,9 +104,20 @@ func (l *Logger) WithPhase(phase string) *logrus.Entry {
 	return l.WithField("phase", phase)
 }
 
+// contextKey is the dedicated type used for context keys stored by this
+// package. Using a package-private type (instead of a built-in string) avoids
+// collisions with keys defined by other packages.
+type contextKey string
+
+// loggerContextKey is the key under which the logger entry is stored in a
+// context. The underlying string value stays "logger" so the stored value
+// remains recognizable, but the key no longer collides with plain-string keys
+// used elsewhere.
+const loggerContextKey contextKey = "logger"
+
 // FromContext extracts a logger from context or returns the default logger
 func (l *Logger) FromContext(ctx context.Context) *logrus.Entry {
-	if entry, ok := ctx.Value("logger").(*logrus.Entry); ok {
+	if entry, ok := ctx.Value(loggerContextKey).(*logrus.Entry); ok {
 		return entry
 	}
 	return logrus.NewEntry(l.Logger)
@@ -114,7 +125,7 @@ func (l *Logger) FromContext(ctx context.Context) *logrus.Entry {
 
 // ToContext adds the logger to context
 func (l *Logger) ToContext(ctx context.Context) context.Context {
-	return context.WithValue(ctx, "logger", logrus.NewEntry(l.Logger))
+	return context.WithValue(ctx, loggerContextKey, logrus.NewEntry(l.Logger))
 }
 
 // Structured logging helpers

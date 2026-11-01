@@ -36,9 +36,15 @@ func TestDatabaseTransactionIntegrity(t *testing.T) {
 	}
 
 	// Register the mock provider
-	registry.Register("openai", mockProvider)
-	registry.Register("anthropic", mockProvider)
-	registry.Register("google", mockProvider)
+	if err := registry.Register("openai", mockProvider); err != nil {
+		t.Fatalf("failed to register provider: %v", err)
+	}
+	if err := registry.Register("anthropic", mockProvider); err != nil {
+		t.Fatalf("failed to register provider: %v", err)
+	}
+	if err := registry.Register("google", mockProvider); err != nil {
+		t.Fatalf("failed to register provider: %v", err)
+	}
 
 	// Create engine with the registry
 	eng := engine.NewEngine(registry, logger)
@@ -155,9 +161,15 @@ func TestConcurrentDatabaseAccess(t *testing.T) {
 		NameFunc:        func() string { return "mock" },
 	}
 
-	registry.Register("openai", mockProvider)
-	registry.Register("anthropic", mockProvider)
-	registry.Register("google", mockProvider)
+	if err := registry.Register("openai", mockProvider); err != nil {
+		t.Fatalf("failed to register provider: %v", err)
+	}
+	if err := registry.Register("anthropic", mockProvider); err != nil {
+		t.Fatalf("failed to register provider: %v", err)
+	}
+	if err := registry.Register("google", mockProvider); err != nil {
+		t.Fatalf("failed to register provider: %v", err)
+	}
 
 	eng := engine.NewEngine(registry, logger)
 
@@ -248,9 +260,15 @@ func TestDatabaseConnectionPooling(t *testing.T) {
 		NameFunc:        func() string { return "mock" },
 	}
 
-	registry.Register("openai", mockProvider)
-	registry.Register("anthropic", mockProvider)
-	registry.Register("google", mockProvider)
+	if err := registry.Register("openai", mockProvider); err != nil {
+		t.Fatalf("failed to register provider: %v", err)
+	}
+	if err := registry.Register("anthropic", mockProvider); err != nil {
+		t.Fatalf("failed to register provider: %v", err)
+	}
+	if err := registry.Register("google", mockProvider); err != nil {
+		t.Fatalf("failed to register provider: %v", err)
+	}
 
 	eng := engine.NewEngine(registry, logger)
 	handler := NewV1Handler(nil, registry, eng, nil, nil, logger)
@@ -329,27 +347,8 @@ func TestDatabaseMigrations(t *testing.T) {
 // Mock counter to simulate database row count for testing
 var mockPromptCount int
 
-func countPromptsInDB(t *testing.T, db interface{}) int {
-	// In a real implementation, this would query SELECT COUNT(*) FROM prompts
-	// For testing purposes, we return a mock counter
-	// The tests themselves will verify the logic by checking if the count increases
-	return mockPromptCount
-}
-
-func incrementMockPromptCount() {
-	mockPromptCount++
-}
-
 func resetMockPromptCount() {
 	mockPromptCount = 0
-}
-
-func generateLongString(length int) string {
-	result := make([]byte, length)
-	for i := 0; i < length; i++ {
-		result[i] = byte('a' + (i % 26))
-	}
-	return string(result)
 }
 
 // BenchmarkDatabaseOperations benchmarks database operations

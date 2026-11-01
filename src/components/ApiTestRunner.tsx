@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { testApiConnectivity, testSpecificFeature, api, logApiResponse } from '../utils/api';
 import './ApiTestRunner.css';
 
@@ -7,7 +7,7 @@ interface TestResult {
   success: boolean;
   error?: string;
   duration: number;
-  details?: any;
+  details?: unknown;
   critical: boolean;
 }
 
@@ -34,7 +34,7 @@ export const ApiTestRunner: React.FC<ApiTestRunnerProps> = ({ onConnectionStatus
   const [testSummary, setTestSummary] = useState<ConnectivityResult['summary'] | null>(null);
   const [autoTestEnabled, setAutoTestEnabled] = useState(false);
 
-  const runTests = async () => {
+  const runTests = useCallback(async () => {
     setIsRunning(true);
     setResults([]);
     setTestSummary(null);
@@ -59,7 +59,7 @@ export const ApiTestRunner: React.FC<ApiTestRunnerProps> = ({ onConnectionStatus
     } finally {
       setIsRunning(false);
     }
-  };
+  }, [onConnectionStatus]);
 
   const testPromptGeneration = async () => {
     setIsRunning(true);
@@ -147,7 +147,7 @@ export const ApiTestRunner: React.FC<ApiTestRunnerProps> = ({ onConnectionStatus
     if (autoTestEnabled) {
       runTests();
     }
-  }, [autoTestEnabled]);
+  }, [autoTestEnabled, runTests]);
 
   const getStatusIcon = (success: boolean, critical?: boolean) => {
     if (success) return '✅';
@@ -278,7 +278,7 @@ export const ApiTestRunner: React.FC<ApiTestRunnerProps> = ({ onConnectionStatus
                   </div>
                 )}
                 
-                {result.details && (
+                {result.details !== undefined && (
                   <div className="result-details">
                     <strong>Response:</strong>
                     <pre>{JSON.stringify(result.details, null, 2)}</pre>

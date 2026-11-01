@@ -282,7 +282,9 @@ func (m *Metrics) Handler() http.Handler {
 	if !m.config.Enabled {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNotFound)
-			w.Write([]byte("Metrics disabled"))
+			if _, err := w.Write([]byte("Metrics disabled")); err != nil {
+				m.logger.WithError(err).Warn("Failed to write metrics-disabled response")
+			}
 		})
 	}
 	return promhttp.HandlerFor(m.registry, promhttp.HandlerOpts{})

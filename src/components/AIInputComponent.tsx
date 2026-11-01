@@ -17,7 +17,7 @@ export interface AIInputComponentProps {
   enableThinking?: boolean;
   isLoading?: boolean;
   disabled?: boolean;
-  onSubmit?: (value: string, options?: any) => void;
+  onSubmit?: (value: string) => void;
   onValueChange?: (value: string) => void;
   className?: string;
 }
@@ -117,28 +117,6 @@ const AIInputComponent: React.FC<AIInputComponentProps> = ({
     }, 100);
   }, []);
 
-  // Handle key down
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-      e.preventDefault();
-      handleSubmit();
-    } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-      if (showProfilesMenu) {
-        e.preventDefault();
-        const direction = e.key === 'ArrowDown' ? 1 : -1;
-        const newIndex = Math.max(-1, Math.min(suggestions.length - 1, selectedSuggestionIndex + direction));
-        setSelectedSuggestionIndex(newIndex);
-      }
-    } else if (e.key === 'Enter' && showProfilesMenu && selectedSuggestionIndex >= 0) {
-      e.preventDefault();
-      handleSuggestionAction(suggestions[selectedSuggestionIndex].action);
-    } else if (e.key === 'Escape') {
-      setShowProfilesMenu(false);
-      setShowPresetMenu(false);
-      setShowConfigPanel(false);
-    }
-  }, [showProfilesMenu, selectedSuggestionIndex]);
-
   // Handle submit
   const handleSubmit = useCallback((e?: React.FormEvent) => {
     e?.preventDefault();
@@ -182,6 +160,28 @@ const AIInputComponent: React.FC<AIInputComponentProps> = ({
     setShowThinking(true);
     setTimeout(() => setShowThinking(false), 1500);
   }, []);
+
+  // Handle key down
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      handleSubmit();
+    } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      if (showProfilesMenu) {
+        e.preventDefault();
+        const direction = e.key === 'ArrowDown' ? 1 : -1;
+        const newIndex = Math.max(-1, Math.min(suggestions.length - 1, selectedSuggestionIndex + direction));
+        setSelectedSuggestionIndex(newIndex);
+      }
+    } else if (e.key === 'Enter' && showProfilesMenu && selectedSuggestionIndex >= 0) {
+      e.preventDefault();
+      handleSuggestionAction(suggestions[selectedSuggestionIndex].action);
+    } else if (e.key === 'Escape') {
+      setShowProfilesMenu(false);
+      setShowPresetMenu(false);
+      setShowConfigPanel(false);
+    }
+  }, [showProfilesMenu, selectedSuggestionIndex, handleSubmit, handleSuggestionAction]);
 
   // Handle file attachment
   const handleAttachmentClick = useCallback(() => {

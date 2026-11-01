@@ -187,7 +187,7 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
   },
 
   // Test data fixture
-  testData: async ({}, use) => {
+  testData: async (_, use) => {
     const testData = generateTestData();
     await use(testData);
   }

@@ -126,7 +126,7 @@ func TestGoogleProvider_GetEmbedding(t *testing.T) {
 		name           string
 		config         Config
 		text           string
-		registrySetup  func() RegistryInterface
+		registrySetup  func(t *testing.T) RegistryInterface
 		wantErr        bool
 		wantErrMessage string
 	}{
@@ -134,7 +134,7 @@ func TestGoogleProvider_GetEmbedding(t *testing.T) {
 			name:   "no client initialized",
 			config: Config{APIKey: ""},
 			text:   "test",
-			registrySetup: func() RegistryInterface {
+			registrySetup: func(t *testing.T) RegistryInterface {
 				return NewRegistry()
 			},
 			wantErr:        true,
@@ -144,7 +144,7 @@ func TestGoogleProvider_GetEmbedding(t *testing.T) {
 			name:   "no fallback provider",
 			config: Config{APIKey: "test-key"},
 			text:   "test",
-			registrySetup: func() RegistryInterface {
+			registrySetup: func(t *testing.T) RegistryInterface {
 				return NewRegistry()
 			},
 			wantErr:        true,
@@ -154,7 +154,7 @@ func TestGoogleProvider_GetEmbedding(t *testing.T) {
 			name:   "fallback provider success",
 			config: Config{APIKey: "test-key"},
 			text:   "test",
-			registrySetup: func() RegistryInterface {
+			registrySetup: func(t *testing.T) RegistryInterface {
 				registry := NewRegistry()
 				mockProvider := &MockProvider{
 					GetEmbeddingFunc: func(ctx context.Context, text string, registry RegistryInterface) ([]float32, error) {
@@ -163,7 +163,9 @@ func TestGoogleProvider_GetEmbedding(t *testing.T) {
 					SupportsEmbeddingsFunc: func() bool { return true },
 					IsAvailableFunc:        func() bool { return true },
 				}
-				registry.Register("mock-embedding-provider", mockProvider)
+				if err := registry.Register("mock-embedding-provider", mockProvider); err != nil {
+					t.Fatalf("failed to register provider: %v", err)
+				}
 				return registry
 			},
 			wantErr: false,
@@ -173,7 +175,7 @@ func TestGoogleProvider_GetEmbedding(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			provider := NewGoogleProvider(tt.config)
-			registry := tt.registrySetup()
+			registry := tt.registrySetup(t)
 
 			// Manually set a fallback since config doesn't handle it in tests
 			if tt.name == "fallback provider success" {

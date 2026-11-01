@@ -2,7 +2,7 @@ name: Release
 
 on:
   push:
-    branches: [main]
+    tags: ['v*']
   workflow_dispatch:
     inputs:
       version_type:
@@ -21,7 +21,7 @@ on:
         type: boolean
 
 env:
-  GO_VERSION: '1.21'
+  GO_VERSION: '1.24'
 
 permissions:
   contents: write
@@ -68,6 +68,22 @@ jobs:
             }
           ')
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          exit 0
+        fi
+        
+        # A maintainer tag push (refs/tags/v*) is an explicit release request.
+        # The checkout IS the tag, so the "commits since last tag" comparison
+        # below would always be 0 and silently skip every job — release the
+        # pushed tag instead of running the comparison.
+        if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+          TAG_NAME="${GITHUB_REF_NAME}"
+          echo "Tag push detected: $TAG_NAME"
+          # Changelog covers commits since the previous tag (if any).
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "$TAG_NAME")
+          echo "Previous tag: $PREV_TAG"
+          echo "should_release=true" >> $GITHUB_OUTPUT
+          echo "current_version=$PREV_TAG" >> $GITHUB_OUTPUT
+          echo "new_version=$TAG_NAME" >> $GITHUB_OUTPUT
           exit 0
         fi
         
@@ -344,6 +360,10 @@ jobs:
         path: ./artifacts
 
     - name: Create Git tag
+      # A tag push already carries its tag; only workflow_dispatch creates
+      # one. Skipping this on tag runs also means the tag run never pushes
+      # the tag again, so it cannot re-trigger itself (no loop, no duplicate).
+      if: ${{ !startsWith(github.ref, 'refs/tags/') }}
       run: |
         NEW_VERSION="${{ needs.check-release.outputs.new_version }}"
         git config user.name "github-actions[bot]"
@@ -351,7 +371,35 @@ jobs:
         git tag -a $NEW_VERSION -m "Release $NEW_VERSION"
         git push origin $NEW_VERSION
 
+    - name: Check for an existing GitHub Release
+      # A workflow_dispatch release pushes its tag, which re-triggers this
+      # workflow as a tag run. If a release already exists for the tag
+      # (created by that dispatch run), skip release creation and asset
+      # upload so a tag push never double-publishes.
+      id: existing_release
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const tag = '${{ needs.check-release.outputs.new_version }}';
+          try {
+            const { data } = await github.rest.repos.getReleaseByTag({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag
+            });
+            core.setOutput('exists', 'true');
+            core.setOutput('release_id', data.id);
+            console.log(`Release for ${tag} already exists (id ${data.id}); skipping.`);
+          } catch (error) {
+            if (error.status === 404) {
+              core.setOutput('exists', 'false');
+            } else {
+              throw error;
+            }
+          }
+
     - name: Create GitHub Release
+      if: steps.existing_release.outputs.exists != 'true'
       uses: actions/create-release@v1
       id: create_release
       env:
@@ -364,6 +412,7 @@ jobs:
         prerelease: ${{ github.event.inputs.pre_release == 'true' }}
 
     - name: Upload Release Assets
+      if: steps.existing_release.outputs.exists != 'true'
       run: |
         RELEASE_ID="${{ steps.create_release.outputs.id }}"
         

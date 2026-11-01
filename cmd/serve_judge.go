@@ -109,8 +109,8 @@ func (j *PromptJudge) buildEvaluationPrompt(prompts []models.Prompt, criteria Ju
 	var sb strings.Builder
 
 	sb.WriteString("You are an expert prompt evaluator. Evaluate the following prompts based on these criteria:\n\n")
-	sb.WriteString(fmt.Sprintf("Task: %s\n", criteria.TaskDescription))
-	sb.WriteString(fmt.Sprintf("Persona: %s\n", criteria.Persona))
+	fmt.Fprintf(&sb, "Task: %s\n", criteria.TaskDescription)
+	fmt.Fprintf(&sb, "Persona: %s\n", criteria.Persona)
 
 	if len(criteria.DesiredQualities) > 0 {
 		sb.WriteString("Desired qualities: " + strings.Join(criteria.DesiredQualities, ", ") + "\n")
@@ -119,7 +119,7 @@ func (j *PromptJudge) buildEvaluationPrompt(prompts []models.Prompt, criteria Ju
 	sb.WriteString("\nPrompts to evaluate:\n\n")
 
 	for i, prompt := range prompts {
-		sb.WriteString(fmt.Sprintf("PROMPT %d:\n%s\n\n", i+1, prompt.Content))
+		fmt.Fprintf(&sb, "PROMPT %d:\n%s\n\n", i+1, prompt.Content)
 	}
 
 	sb.WriteString("For each prompt, provide:\n")

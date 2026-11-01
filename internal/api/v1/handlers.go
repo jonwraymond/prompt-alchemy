@@ -696,15 +696,6 @@ func (h *V1Handler) writeJSON(w http.ResponseWriter, status int, data interface{
 	}
 }
 
-func (h *V1Handler) writeError(w http.ResponseWriter, status int, message string) {
-	response := map[string]interface{}{
-		"error":     message,
-		"timestamp": time.Now(),
-		"status":    status,
-	}
-	h.writeJSON(w, status, response)
-}
-
 // Node activation endpoint
 func (h *V1Handler) ActivateNode(w http.ResponseWriter, r *http.Request) {
 	response := map[string]string{"message": "Endpoint connected"}

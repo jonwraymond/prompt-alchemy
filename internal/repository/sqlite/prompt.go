@@ -2,9 +2,7 @@ package sqlite
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -173,85 +171,4 @@ func (r *PromptRepository) GetRecentPrompts(ctx context.Context, limit int) ([]m
 
 	// TODO: Implement with ORDER BY created_at DESC
 	return []models.Prompt{}, fmt.Errorf("GetRecentPrompts not implemented")
-}
-
-// Helper functions for future implementation
-
-// convertPromptToModel converts database row to models.Prompt
-func convertPromptToModel(row map[string]interface{}) (*models.Prompt, error) {
-	prompt := &models.Prompt{}
-
-	// Convert UUID
-	if id, ok := row["id"].(string); ok {
-		if parsed, err := uuid.Parse(id); err == nil {
-			prompt.ID = parsed
-		}
-	}
-
-	// Convert basic fields
-	if content, ok := row["content"].(string); ok {
-		prompt.Content = content
-	}
-
-	if phase, ok := row["phase"].(string); ok {
-		prompt.Phase = models.Phase(phase)
-	}
-
-	if provider, ok := row["provider"].(string); ok {
-		prompt.Provider = provider
-	}
-
-	if model, ok := row["model"].(string); ok {
-		prompt.Model = model
-	}
-
-	// Convert numeric fields
-	if temp, ok := row["temperature"].(float64); ok {
-		prompt.Temperature = temp
-	}
-
-	if maxTokens, ok := row["max_tokens"].(int64); ok {
-		prompt.MaxTokens = int(maxTokens)
-	}
-
-	if actualTokens, ok := row["actual_tokens"].(int64); ok {
-		prompt.ActualTokens = int(actualTokens)
-	}
-
-	// Convert JSON fields
-	if tagsJSON, ok := row["tags"].(string); ok && tagsJSON != "" {
-		var tags []string
-		if err := json.Unmarshal([]byte(tagsJSON), &tags); err == nil {
-			prompt.Tags = tags
-		}
-	}
-
-	// Convert timestamps
-	if createdAt, ok := row["created_at"].(time.Time); ok {
-		prompt.CreatedAt = createdAt
-	}
-
-	if updatedAt, ok := row["updated_at"].(time.Time); ok {
-		prompt.UpdatedAt = updatedAt
-	}
-
-	return prompt, nil
-}
-
-// buildTagsFilter creates SQL WHERE clause for tag filtering
-func buildTagsFilter(tags []string) (string, []interface{}) {
-	if len(tags) == 0 {
-		return "", nil
-	}
-
-	placeholders := make([]string, len(tags))
-	args := make([]interface{}, len(tags))
-
-	for i, tag := range tags {
-		placeholders[i] = "?"
-		args[i] = "%" + tag + "%"
-	}
-
-	whereClause := "tags LIKE " + strings.Join(placeholders, " OR tags LIKE ")
-	return whereClause, args
 }

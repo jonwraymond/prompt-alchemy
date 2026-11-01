@@ -693,10 +693,14 @@ func (s *MCPServer) handleGeneratePrompts(ctx context.Context, id interface{}, a
 				if progressToken != nil {
 					tracker := NewProgressTracker(s.encoder)
 					if i == 0 {
-						tracker.Start(progressToken, "Generating prompts")
+						if err := tracker.Start(progressToken, "Generating prompts"); err != nil {
+							s.logger.WithError(err).Warn("Failed to start progress")
+						}
 					}
 					percentage := float64(i) / float64(len(modelPhases)) * 100
-					tracker.Update(progressToken, fmt.Sprintf("Processing %s phase", phase), percentage)
+					if err := tracker.Update(progressToken, fmt.Sprintf("Processing %s phase", phase), percentage); err != nil {
+						s.logger.WithError(err).Warn("Failed to update progress")
+					}
 				}
 
 				s.logger.WithField("phase", phase).Info("MCP: Generating variants for phase")
@@ -733,10 +737,14 @@ func (s *MCPServer) handleGeneratePrompts(ctx context.Context, id interface{}, a
 				if progressToken != nil {
 					tracker := NewProgressTracker(s.encoder)
 					if i == 0 {
-						tracker.Start(progressToken, "Cascade prompt generation")
+						if err := tracker.Start(progressToken, "Cascade prompt generation"); err != nil {
+							s.logger.WithError(err).Warn("Failed to start progress")
+						}
 					}
 					percentage := float64(i) / float64(len(modelPhases)) * 100
-					tracker.Update(progressToken, fmt.Sprintf("Refining through %s phase", phase), percentage)
+					if err := tracker.Update(progressToken, fmt.Sprintf("Refining through %s phase", phase), percentage); err != nil {
+						s.logger.WithError(err).Warn("Failed to update progress")
+					}
 				}
 
 				s.logger.WithField("phase", phase).Info("MCP: Cascade generation for phase")
@@ -760,7 +768,9 @@ func (s *MCPServer) handleGeneratePrompts(ctx context.Context, id interface{}, a
 			// Return all generated prompts (current behavior)
 			if progressToken != nil {
 				tracker := NewProgressTracker(s.encoder)
-				tracker.Start(progressToken, "Generating all prompts")
+				if err := tracker.Start(progressToken, "Generating all prompts"); err != nil {
+					s.logger.WithError(err).Warn("Failed to start progress")
+				}
 			}
 
 			result, err := s.engine.Generate(ctx, opts)
@@ -776,7 +786,9 @@ func (s *MCPServer) handleGeneratePrompts(ctx context.Context, id interface{}, a
 		// Complete progress
 		if progressToken != nil {
 			tracker := NewProgressTracker(s.encoder)
-			tracker.End(progressToken, fmt.Sprintf("Generated %d prompts", len(finalPrompts)))
+			if err := tracker.End(progressToken, fmt.Sprintf("Generated %d prompts", len(finalPrompts))); err != nil {
+				s.logger.WithError(err).Warn("Failed to end progress")
+			}
 		}
 
 		return nil
@@ -1221,7 +1233,9 @@ func (s *MCPServer) handleBatchGenerate(ctx context.Context, id interface{}, arg
 	var tracker *ProgressTracker
 	if progressToken != nil {
 		tracker = NewProgressTracker(s.encoder)
-		tracker.Start(progressToken, fmt.Sprintf("Processing %d prompts", len(batchInputs)))
+		if err := tracker.Start(progressToken, fmt.Sprintf("Processing %d prompts", len(batchInputs))); err != nil {
+			s.logger.WithError(err).Warn("Failed to start progress")
+		}
 	}
 
 	// Track completed items for progress
@@ -1306,7 +1320,9 @@ func (s *MCPServer) handleBatchGenerate(ctx context.Context, id interface{}, arg
 					completedMutex.Lock()
 					completedCount++
 					percentage := float64(completedCount) / float64(len(batchInputs)) * 100
-					tracker.Update(progressToken, fmt.Sprintf("Completed %d/%d prompts", completedCount, len(batchInputs)), percentage)
+					if err := tracker.Update(progressToken, fmt.Sprintf("Completed %d/%d prompts", completedCount, len(batchInputs)), percentage); err != nil {
+						s.logger.WithError(err).Warn("Failed to update progress")
+					}
 					completedMutex.Unlock()
 				}
 			}
@@ -1347,7 +1363,9 @@ func (s *MCPServer) handleBatchGenerate(ctx context.Context, id interface{}, arg
 
 	// Complete progress tracking
 	if tracker != nil {
-		tracker.End(progressToken, fmt.Sprintf("Processed %d prompts with %d errors", len(results), len(errors)))
+		if err := tracker.End(progressToken, fmt.Sprintf("Processed %d prompts with %d errors", len(results), len(errors))); err != nil {
+			s.logger.WithError(err).Warn("Failed to end progress")
+		}
 	}
 
 	content := MCPContent{
@@ -1437,7 +1455,7 @@ func (s *MCPServer) sendResponse(resp MCPResponse) {
 func formatPrompts(prompts []map[string]interface{}) string {
 	var result strings.Builder
 	for i, p := range prompts {
-		result.WriteString(fmt.Sprintf("%d. [%s] %s\n", i+1, p["phase"], p["id"]))
+		fmt.Fprintf(&result, "%d. [%s] %s\n", i+1, p["phase"], p["id"])
 	}
 	return result.String()
 }

@@ -92,21 +92,21 @@ func (m *MetaJudge) buildSelectionPrompt(request *SelectionRequest) string {
 	var sb strings.Builder
 
 	sb.WriteString("# Prompt Selection Task\n\n")
-	sb.WriteString(fmt.Sprintf("User Request: %s\n", request.UserInput))
-	sb.WriteString(fmt.Sprintf("Task Context: %s\n", request.TaskContext))
-	sb.WriteString(fmt.Sprintf("User Intent: %s\n\n", request.UserIntent))
+	fmt.Fprintf(&sb, "User Request: %s\n", request.UserInput)
+	fmt.Fprintf(&sb, "Task Context: %s\n", request.TaskContext)
+	fmt.Fprintf(&sb, "User Intent: %s\n\n", request.UserIntent)
 
 	sb.WriteString("## Candidates\n\n")
 	for i, candidate := range request.Candidates {
-		sb.WriteString(fmt.Sprintf("### Candidate %d (ID: %s)\n", i+1, candidate.ID))
-		sb.WriteString(fmt.Sprintf("- Source: %s (Cycle %d, Phase: %s)\n",
-			candidate.Source, candidate.CycleNumber, candidate.Phase))
-		sb.WriteString(fmt.Sprintf("- Provider: %s\n", candidate.Provider))
-		sb.WriteString(fmt.Sprintf("- Judge Score: %.2f\n", candidate.JudgeScore))
-		sb.WriteString(fmt.Sprintf("- Historical Score: %.2f\n", candidate.HistoricalScore))
-		sb.WriteString(fmt.Sprintf("- Semantic Match: %.2f\n", candidate.SemanticMatch))
-		sb.WriteString(fmt.Sprintf("- Generation Reasoning: %s\n", candidate.Reasoning))
-		sb.WriteString(fmt.Sprintf("\nPrompt:\n```\n%s\n```\n\n", candidate.Prompt))
+		fmt.Fprintf(&sb, "### Candidate %d (ID: %s)\n", i+1, candidate.ID)
+		fmt.Fprintf(&sb, "- Source: %s (Cycle %d, Phase: %s)\n",
+			candidate.Source, candidate.CycleNumber, candidate.Phase)
+		fmt.Fprintf(&sb, "- Provider: %s\n", candidate.Provider)
+		fmt.Fprintf(&sb, "- Judge Score: %.2f\n", candidate.JudgeScore)
+		fmt.Fprintf(&sb, "- Historical Score: %.2f\n", candidate.HistoricalScore)
+		fmt.Fprintf(&sb, "- Semantic Match: %.2f\n", candidate.SemanticMatch)
+		fmt.Fprintf(&sb, "- Generation Reasoning: %s\n", candidate.Reasoning)
+		fmt.Fprintf(&sb, "\nPrompt:\n```\n%s\n```\n\n", candidate.Prompt)
 	}
 
 	sb.WriteString("## Selection Criteria\n\n")

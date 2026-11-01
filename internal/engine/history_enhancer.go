@@ -213,14 +213,14 @@ func (h *HistoryEnhancer) generateInsights(similar []*models.Prompt, similaritie
 	var insights strings.Builder
 
 	if len(similar) > 0 {
-		insights.WriteString(fmt.Sprintf("Found %d similar historical prompts ", len(similar)))
+		fmt.Fprintf(&insights, "Found %d similar historical prompts ", len(similar))
 		if len(similarities) > 0 {
-			insights.WriteString(fmt.Sprintf("(best match: %.2f%% similarity). ", similarities[0]*100))
+			fmt.Fprintf(&insights, "(best match: %.2f%% similarity). ", similarities[0]*100)
 		}
 	}
 
 	if len(highQuality) > 0 {
-		insights.WriteString(fmt.Sprintf("Identified %d high-performing prompts in this phase. ", len(highQuality)))
+		fmt.Fprintf(&insights, "Identified %d high-performing prompts in this phase. ", len(highQuality))
 
 		// Analyze common characteristics
 		var avgLength int
@@ -229,7 +229,7 @@ func (h *HistoryEnhancer) generateInsights(similar []*models.Prompt, similaritie
 		}
 		avgLength /= len(highQuality)
 
-		insights.WriteString(fmt.Sprintf("Successful prompts average %d characters. ", avgLength))
+		fmt.Fprintf(&insights, "Successful prompts average %d characters. ", avgLength)
 	}
 
 	// Provider distribution insights
@@ -241,7 +241,7 @@ func (h *HistoryEnhancer) generateInsights(similar []*models.Prompt, similaritie
 	if len(providerCounts) > 0 {
 		insights.WriteString("Historical providers used: ")
 		for provider, count := range providerCounts {
-			insights.WriteString(fmt.Sprintf("%s (%d), ", provider, count))
+			fmt.Fprintf(&insights, "%s (%d), ", provider, count)
 		}
 	}
 

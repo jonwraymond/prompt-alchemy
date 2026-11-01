@@ -1,6 +1,5 @@
-import { Page, expect, Locator, BrowserContext } from '@playwright/test';
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
-import { join } from 'path';
+import { Page, expect, BrowserContext } from '@playwright/test';
+import { writeFileSync, existsSync, mkdirSync } from 'fs';
 
 /**
  * Advanced Visual Regression Testing Utilities for Prompt Alchemy

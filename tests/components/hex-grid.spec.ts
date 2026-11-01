@@ -121,7 +121,7 @@ test.describe('Hex Grid Visualization', () => {
   });
 
   test.describe('Node Interactions', () => {
-    test('should show tooltip on node hover', async ({ page, hexGridPage }) => {
+    test('should show tooltip on node hover', async ({ page }) => {
       await hoverHexNode(page, 'hub');
 
       const tooltip = page.locator('#hex-tooltip');
@@ -129,7 +129,7 @@ test.describe('Hex Grid Visualization', () => {
       await expect(tooltip).toContainText('Transmutation Core');
     });
 
-    test('should handle node clicks', async ({ page, hexGridPage }) => {
+    test('should handle node clicks', async ({ page }) => {
       // Set up click event monitoring
       let nodeClicked = false;
       await page.exposeFunction('nodeClickCallback', () => {
@@ -141,7 +141,7 @@ test.describe('Hex Grid Visualization', () => {
         document.addEventListener('click', (e) => {
           const target = e.target as Element;
           if (target.closest('.hex-node')) {
-            (window as any).nodeClickCallback();
+            (window as unknown as { nodeClickCallback: () => void }).nodeClickCallback();
           }
         });
       });
@@ -275,8 +275,8 @@ test.describe('Hex Grid Visualization', () => {
     test('should support mouse wheel zoom', async ({ page }) => {
       const svg = page.locator('#hex-flow-board');
       
-      // Get initial transform
-      const initialTransform = await svg.getAttribute('transform') || '';
+      // Get initial transform (also asserts the board is rendered)
+      await svg.getAttribute('transform');
       
       // Simulate wheel zoom
       await svg.hover();
@@ -285,7 +285,7 @@ test.describe('Hex Grid Visualization', () => {
       await page.waitForTimeout(500);
       
       // Check if transform changed (zoom implemented)
-      const finalTransform = await svg.getAttribute('transform') || '';
+      await svg.getAttribute('transform');
       
       // Transform should change if zoom is implemented
       // This test may pass even if zoom isn't implemented, which is fine
@@ -369,9 +369,12 @@ test.describe('Hex Grid Visualization', () => {
       
       // Check JavaScript heap size
       const metrics = await page.evaluate(() => {
-        return (performance as any).memory ? {
-          usedJSHeapSize: (performance as any).memory.usedJSHeapSize,
-          totalJSHeapSize: (performance as any).memory.totalJSHeapSize
+        const perf = performance as Performance & {
+          memory?: { usedJSHeapSize: number; totalJSHeapSize: number };
+        };
+        return perf.memory ? {
+          usedJSHeapSize: perf.memory.usedJSHeapSize,
+          totalJSHeapSize: perf.memory.totalJSHeapSize
         } : null;
       });
       

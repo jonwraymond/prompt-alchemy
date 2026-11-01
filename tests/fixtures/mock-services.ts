@@ -13,9 +13,7 @@
 import { Page, Route } from '@playwright/test';
 import { 
   generateAPIResponse, 
-  generatePromptOutputs, 
-  generateGenerationRequest,
-  TestAPIResponse 
+  generatePromptOutputs 
 } from './test-data-generators';
 
 // ============================================================================
@@ -27,7 +25,7 @@ export interface MockConfig {
   delay?: number;
   errorRate?: number;
   responseType?: 'success' | 'error' | 'timeout' | 'partial';
-  customResponse?: any;
+  customResponse?: unknown;
 }
 
 export interface MockScenario {
@@ -624,16 +622,14 @@ export class RealtimeMocks {
   async mockWebSocketEvents(): Promise<void> {
     await this.page.addInitScript(() => {
       // Mock WebSocket for real-time generation progress
-      const originalWebSocket = window.WebSocket;
-      
-      (window as any).WebSocket = class MockWebSocket {
+      (window as unknown as { WebSocket: unknown }).WebSocket = class MockWebSocket {
         public readyState = 1; // OPEN
         public onopen: ((event: Event) => void) | null = null;
         public onmessage: ((event: MessageEvent) => void) | null = null;
         public onerror: ((event: Event) => void) | null = null;
         public onclose: ((event: CloseEvent) => void) | null = null;
 
-        constructor(url: string, protocols?: string | string[]) {
+        constructor(_url: string, _protocols?: string | string[]) {
           setTimeout(() => {
             if (this.onopen) {
               this.onopen(new Event('open'));
@@ -646,7 +642,7 @@ export class RealtimeMocks {
           }, 500);
         }
 
-        send(data: string | ArrayBufferLike | Blob | ArrayBufferView): void {
+        send(_data: string | ArrayBufferLike | Blob | ArrayBufferView): void {
           // Mock send implementation
         }
 
@@ -718,7 +714,7 @@ export const mockScenarios: Record<string, MockScenario> = {
     setup: async (page: Page) => {
       const mockManager = new MockServiceManager(page);
       const apiMocks = new APIEndpointMocks(mockManager);
-      const providerMocks = new ProviderMocks(mockManager);
+      new ProviderMocks(mockManager);
       
       await apiMocks.mockGenerateEndpoint({ provider: 'openai', delay: 1200 });
       await apiMocks.mockProvidersEndpoint();

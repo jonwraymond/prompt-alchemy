@@ -6,6 +6,10 @@ on:
   push:
     branches: [main, develop]
 
+permissions:
+  contents: read
+  issues: write
+
 jobs:
   serena-compliance:
     name: Validate Serena MCP-First Usage

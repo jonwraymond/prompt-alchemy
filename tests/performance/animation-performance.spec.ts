@@ -19,6 +19,34 @@ import {
 import { waitForHexGridLoaded } from '../helpers/test-utils';
 
 /**
+ * Chrome exposes non-standard performance/GC APIs that are not part of the
+ * standard TypeScript DOM library, so they are declared explicitly here.
+ */
+interface PerformanceWithMemory {
+  memory?: {
+    usedJSHeapSize: number;
+    totalJSHeapSize: number;
+    jsHeapSizeLimit: number;
+  };
+}
+
+interface PerformanceWindow extends Window {
+  performanceData?: {
+    frames: number[];
+    startTime: number;
+    animationFrames: number;
+  };
+  currentNodePerf?: {
+    nodeId: string;
+    startTime: number;
+    frames: number[];
+  };
+  gc?: () => void;
+  performanceReport?: unknown;
+  performanceRecommendations?: unknown[];
+}
+
+/**
  * Performance metrics interface for structured monitoring
  */
 interface AnimationMetrics {
@@ -53,7 +81,7 @@ test.describe('Animation Performance Monitoring', () => {
     test('should maintain 60fps during hex node hover animations', async ({ page }) => {
       // Start performance monitoring
       await page.evaluate(() => {
-        (window as any).performanceData = {
+        (window as PerformanceWindow).performanceData = {
           frames: [],
           startTime: performance.now(),
           animationFrames: 0
@@ -62,10 +90,10 @@ test.describe('Animation Performance Monitoring', () => {
         // Monitor animation frames
         function measureFrame() {
           const now = performance.now();
-          (window as any).performanceData.frames.push(now);
-          (window as any).performanceData.animationFrames++;
+          (window as PerformanceWindow).performanceData!.frames.push(now);
+          (window as PerformanceWindow).performanceData!.animationFrames++;
           
-          if ((window as any).performanceData.animationFrames < 120) { // Monitor for 2 seconds at 60fps
+          if ((window as PerformanceWindow).performanceData!.animationFrames < 120) { // Monitor for 2 seconds at 60fps
             requestAnimationFrame(measureFrame);
           }
         }
@@ -82,7 +110,7 @@ test.describe('Animation Performance Monitoring', () => {
       
       // Collect performance metrics
       const metrics = await page.evaluate((): AnimationMetrics => {
-        const data = (window as any).performanceData;
+        const data = (window as PerformanceWindow).performanceData!;
         const frames = data.frames;
         const totalTime = frames[frames.length - 1] - frames[0];
         const frameCount = frames.length;
@@ -132,15 +160,15 @@ test.describe('Animation Performance Monitoring', () => {
       for (const nodeId of nodes) {
         // Start performance monitoring for this node
         await page.evaluate((id) => {
-          (window as any).currentNodePerf = {
+          (window as PerformanceWindow).currentNodePerf = {
             nodeId: id,
             startTime: performance.now(),
             frames: []
           };
           
           function trackFrames() {
-            (window as any).currentNodePerf.frames.push(performance.now());
-            if ((window as any).currentNodePerf.frames.length < 30) { // Track 30 frames
+            (window as PerformanceWindow).currentNodePerf!.frames.push(performance.now());
+            if ((window as PerformanceWindow).currentNodePerf!.frames.length < 30) { // Track 30 frames
               requestAnimationFrame(trackFrames);
             }
           }
@@ -155,7 +183,7 @@ test.describe('Animation Performance Monitoring', () => {
 
         // Collect metrics for this node
         const nodeMetrics = await page.evaluate(() => {
-          const data = (window as any).currentNodePerf;
+          const data = (window as PerformanceWindow).currentNodePerf!;
           const frames = data.frames;
           
           if (frames.length < 2) return { frameRate: 0, duration: 0 };
@@ -293,7 +321,7 @@ test.describe('Animation Performance Monitoring', () => {
         
         measureCPU();
         
-        return new Promise((resolve) => {
+        return new Promise<{ averageTaskTime: number; cpuUsagePercent: number; sampleCount: number }>((resolve) => {
           setTimeout(() => {
             const averageTaskTime = measurements.reduce((sum, m) => sum + m.taskTime, 0) / measurements.length;
             const cpuUsagePercent = Math.min((averageTaskTime / 16.67) * 100, 100); // Estimate based on 60fps budget
@@ -320,14 +348,15 @@ test.describe('Animation Performance Monitoring', () => {
       const finalCPUMetrics = await cpuMetrics;
       console.log('CPU Usage Metrics:', finalCPUMetrics);
 
-      expect((finalCPUMetrics as any).cpuUsagePercent).toBeLessThan(PERFORMANCE_THRESHOLDS.MAX_CPU_USAGE);
+      expect(finalCPUMetrics.cpuUsagePercent).toBeLessThan(PERFORMANCE_THRESHOLDS.MAX_CPU_USAGE);
     });
 
     test('should detect memory leaks in animation cycles', async ({ page }) => {
       // Get baseline memory usage
       const baselineMemory = await page.evaluate(() => {
-        if ('memory' in performance) {
-          return (performance as any).memory.usedJSHeapSize;
+        const perf = performance as PerformanceWithMemory;
+        if (perf.memory) {
+          return perf.memory.usedJSHeapSize;
         }
         return 0; // Fallback if memory API not available
       });
@@ -351,15 +380,14 @@ test.describe('Animation Performance Monitoring', () => {
 
       // Force garbage collection if possible
       await page.evaluate(() => {
-        if ('gc' in window) {
-          (window as any).gc();
-        }
+        (window as PerformanceWindow).gc?.();
       });
 
       // Measure final memory usage
       const finalMemory = await page.evaluate(() => {
-        if ('memory' in performance) {
-          return (performance as any).memory.usedJSHeapSize;
+        const perf = performance as PerformanceWithMemory;
+        if (perf.memory) {
+          return perf.memory.usedJSHeapSize;
         }
         return 0;
       });
@@ -578,7 +606,7 @@ test.describe('Animation Performance Monitoring', () => {
         timestamp: new Date().toISOString(),
         browser: await page.evaluate(() => navigator.userAgent),
         viewport: await page.viewportSize(),
-        metrics: {} as Record<string, any>
+        metrics: {} as Record<string, unknown>
       };
 
       // Collect various performance metrics
@@ -625,8 +653,9 @@ test.describe('Animation Performance Monitoring', () => {
 
       // 4. Memory usage snapshot
       const memoryUsage = await page.evaluate(() => {
-        if ('memory' in performance) {
-          const memory = (performance as any).memory;
+        const perf = performance as PerformanceWithMemory;
+        if (perf.memory) {
+          const memory = perf.memory;
           return {
             usedJSHeapSize: Math.round(memory.usedJSHeapSize / 1024 / 1024), // MB
             totalJSHeapSize: Math.round(memory.totalJSHeapSize / 1024 / 1024), // MB
@@ -651,7 +680,7 @@ test.describe('Animation Performance Monitoring', () => {
       // Save report to file for CI integration
       await page.evaluate((report) => {
         // Store report in a global variable for potential extraction
-        (window as any).performanceReport = report;
+        (window as PerformanceWindow).performanceReport = report;
       }, performanceReport);
 
       // Validate key performance metrics
@@ -752,7 +781,7 @@ test.describe('Animation Performance Monitoring', () => {
 
       // Save recommendations for reporting
       await page.evaluate((recs) => {
-        (window as any).performanceRecommendations = recs;
+        (window as PerformanceWindow).performanceRecommendations = recs;
       }, recommendations);
 
       // Should have some recommendations to validate the analysis worked

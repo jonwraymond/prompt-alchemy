@@ -1,7 +1,7 @@
 // API utilities for frontend-backend communication
 
 // Enhanced API response interface
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
@@ -22,6 +22,16 @@ export interface PromptGenerateRequest {
   context?: string[];
   persona?: string;
   target_model?: string;
+}
+
+// Pagination metadata returned by the backend list endpoints
+export interface PaginationInfo {
+  page: number;
+  limit: number;
+  total: number;
+  total_pages: number;
+  has_next: boolean;
+  has_prev: boolean;
 }
 
 // Enhanced response interfaces based on actual backend API
@@ -361,7 +371,7 @@ export const api = {
     limit?: number;
     sort_by?: string;
     order?: 'asc' | 'desc';
-  } = {}): Promise<ApiResponse<{ prompts: GeneratedPrompt[]; pagination: any }>> {
+  } = {}): Promise<ApiResponse<{ prompts: GeneratedPrompt[]; pagination: PaginationInfo }>> {
     const params = new URLSearchParams({
       page: (options.page || 1).toString(),
       limit: (options.limit || 10).toString(),
@@ -389,7 +399,7 @@ export async function testApiConnectivity(): Promise<{
     success: boolean;
     error?: string;
     duration: number;
-    details?: any;
+    details?: unknown;
     critical: boolean;
   }>;
   summary: {
@@ -510,7 +520,7 @@ export async function testApiConnectivity(): Promise<{
 }
 
 // Utility for testing specific functionality
-export async function testSpecificFeature(feature: 'generation' | 'providers' | 'search'): Promise<ApiResponse<any>> {
+export async function testSpecificFeature(feature: 'generation' | 'providers' | 'search'): Promise<ApiResponse<unknown>> {
   switch (feature) {
     case 'generation':
       return await api.generatePrompts({
@@ -519,7 +529,7 @@ export async function testSpecificFeature(feature: 'generation' | 'providers' | 
         temperature: 0.7,
       });
     
-    case 'providers':
+    case 'providers': {
       const providersResult = await api.getProviders();
       if (providersResult.success && providersResult.data?.providers && providersResult.data.providers.length > 0) {
         // Test the first available provider
@@ -529,6 +539,7 @@ export async function testSpecificFeature(feature: 'generation' | 'providers' | 
         }
       }
       return providersResult;
+    }
     
     case 'search':
       return await api.searchPrompts('test query', { limit: 5 });

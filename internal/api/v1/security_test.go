@@ -561,15 +561,6 @@ func TestJSONBombProtection(t *testing.T) {
 
 // Helper functions
 
-func createTestHandler() *V1Handler {
-	logger := logrus.New()
-	logger.SetLevel(logrus.ErrorLevel)
-
-	// For security tests, we don't need actual engine functionality
-	// The tests are focused on security aspects, not prompt generation
-	return NewV1Handler(nil, providers.NewRegistry(), nil, nil, nil, logger)
-}
-
 func sanitizeTestName(name string) string {
 	// Replace special characters with underscores for test names
 	replacer := strings.NewReplacer(

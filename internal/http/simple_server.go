@@ -1406,7 +1406,9 @@ func (s *SimpleServer) handleSystemStatus(w http.ResponseWriter, r *http.Request
 
 			w.Header().Set("Content-Type", "text/html")
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(html))
+			if _, err := w.Write([]byte(html)); err != nil {
+				s.logger.WithError(err).Warn("handleSystemStatus: failed to write HTML response (header already sent)")
+			}
 			return
 		}
 
@@ -1446,7 +1448,9 @@ func (s *SimpleServer) handleSystemStatus(w http.ResponseWriter, r *http.Request
 
 		w.Header().Set("Content-Type", "text/html")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(html))
+		if _, err := w.Write([]byte(html)); err != nil {
+			s.logger.WithError(err).Warn("handleSystemStatus: failed to write collapsed HTML response (header already sent)")
+		}
 		return
 	}
 
@@ -1617,7 +1621,9 @@ func (s *SimpleServer) handleFlowInfo(w http.ResponseWriter, r *http.Request) {
 
 		w.Header().Set("Content-Type", "text/html")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(html))
+		if _, err := w.Write([]byte(html)); err != nil {
+			s.logger.WithError(err).Warn("handleFlowInfo: failed to write HTML response (header already sent)")
+		}
 		return
 	}
 
@@ -2020,6 +2026,23 @@ func (s *SimpleServer) handleViewportUpdate(w http.ResponseWriter, r *http.Reque
 	s.writeJSON(w, http.StatusOK, response)
 }
 
+// writeSSEData writes one Server-Sent Events data frame. The event is
+// encoded through encoding/json straight into the response writer (the same
+// pattern as writeJSON), so no request-derived string is ever interpolated
+// into the stream unescaped.
+func writeSSEData(w http.ResponseWriter, event interface{}) error {
+	if _, err := w.Write([]byte("data: ")); err != nil {
+		return err
+	}
+	if err := json.NewEncoder(w).Encode(event); err != nil {
+		return err
+	}
+	// json.Encoder terminates the JSON with one newline; add the blank line
+	// that ends the SSE frame.
+	_, err := w.Write([]byte("\n"))
+	return err
+}
+
 func (s *SimpleServer) handleFlowEvents(w http.ResponseWriter, r *http.Request) {
 	// Set headers for Server-Sent Events
 	w.Header().Set("Content-Type", "text/event-stream")
@@ -2028,7 +2051,13 @@ func (s *SimpleServer) handleFlowEvents(w http.ResponseWriter, r *http.Request) 
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	// Send initial connection event
-	fmt.Fprintf(w, "data: %s\n\n", `{"type":"connected","message":"Flow events stream connected","timestamp":"`+time.Now().Format(time.RFC3339)+`"}`)
+	if writeErr := writeSSEData(w, map[string]interface{}{
+		"type":      "connected",
+		"message":   "Flow events stream connected",
+		"timestamp": time.Now().Format(time.RFC3339),
+	}); writeErr != nil {
+		s.logger.WithError(writeErr).Warn("handleFlowEvents: failed to write initial SSE event (header already sent)")
+	}
 	w.(http.Flusher).Flush()
 
 	// Simulate periodic events
@@ -2051,8 +2080,9 @@ func (s *SimpleServer) handleFlowEvents(w http.ResponseWriter, r *http.Request) 
 				"timestamp": time.Now().Format(time.RFC3339),
 			}
 
-			eventJSON, _ := json.Marshal(event)
-			fmt.Fprintf(w, "data: %s\n\n", string(eventJSON))
+			if writeErr := writeSSEData(w, event); writeErr != nil {
+				s.logger.WithError(writeErr).Warn("handleFlowEvents: failed to write SSE heartbeat (header already sent)")
+			}
 			w.(http.Flusher).Flush()
 		}
 	}
@@ -2475,7 +2505,13 @@ func (s *SimpleServer) handleThinkingStream(w http.ResponseWriter, r *http.Reque
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	// Send initial connection event
-	fmt.Fprintf(w, "data: %s\n\n", `{"type":"connected","message":"AI thinking stream connected","timestamp":"`+time.Now().Format(time.RFC3339)+`"}`)
+	if writeErr := writeSSEData(w, map[string]interface{}{
+		"type":      "connected",
+		"message":   "AI thinking stream connected",
+		"timestamp": time.Now().Format(time.RFC3339),
+	}); writeErr != nil {
+		s.logger.WithError(writeErr).Warn("handleThinkingStream: failed to write initial SSE event (header already sent)")
+	}
 	w.(http.Flusher).Flush()
 
 	// Keep connection alive
@@ -2493,8 +2529,9 @@ func (s *SimpleServer) handleThinkingStream(w http.ResponseWriter, r *http.Reque
 				"type":      "heartbeat",
 				"timestamp": time.Now().Format(time.RFC3339),
 			}
-			eventJSON, _ := json.Marshal(event)
-			fmt.Fprintf(w, "data: %s\n\n", string(eventJSON))
+			if writeErr := writeSSEData(w, event); writeErr != nil {
+				s.logger.WithError(writeErr).Warn("handleThinkingStream: failed to write SSE heartbeat (header already sent)")
+			}
 			w.(http.Flusher).Flush()
 		}
 	}

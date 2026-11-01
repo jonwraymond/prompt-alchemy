@@ -15,7 +15,9 @@ func TestCalculateSemanticSimilarity(t *testing.T) {
 	mockProv := new(providers.MockProvider)
 	mockProv.SupportsEmbeddingsFunc = func() bool { return true }
 	registry := providers.NewRegistry()
-	registry.Register("mock", mockProv)
+	if err := registry.Register("mock", mockProv); err != nil {
+		t.Fatalf("failed to register provider: %v", err)
+	}
 
 	r := NewRanker(nil, registry, logrus.New())
 	r.embedProvider = "mock"
@@ -53,7 +55,9 @@ func TestRankPrompts(t *testing.T) {
 	mockProv := new(providers.MockProvider)
 	mockProv.SupportsEmbeddingsFunc = func() bool { return true }
 	registry := providers.NewRegistry()
-	registry.Register("openai", mockProv)
+	if err := registry.Register("openai", mockProv); err != nil {
+		t.Fatalf("failed to register provider: %v", err)
+	}
 
 	// Create ranker with proper mocks
 	logger := logrus.New()

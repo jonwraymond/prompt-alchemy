@@ -1,8 +1,7 @@
 import { test, expect } from '../fixtures/base-fixtures';
 import { 
   MockServiceManager, 
-  APIEndpointMocks, 
-  mockScenarios 
+  APIEndpointMocks 
 } from '../fixtures/mock-services';
 import { 
   TestDataFactory,
@@ -17,9 +16,7 @@ import {
   generateVisualTestReport
 } from '../helpers/visual-regression-utils';
 import { 
-  waitForHexGridLoaded,
-  typeIntoAIInput,
-  submitAIInput 
+  waitForHexGridLoaded 
 } from '../helpers/test-utils';
 
 /**
@@ -41,7 +38,7 @@ import {
 
 test.describe('Comprehensive UI Testing System', () => {
   let mockManager: MockServiceManager;
-  let testResults: Array<{ name: string; passed: boolean; diffPixels?: number }> = [];
+  const testResults: Array<{ name: string; passed: boolean; diffPixels?: number }> = [];
 
   test.beforeAll(async () => {
     // Seed test data for reproducible results
@@ -301,12 +298,12 @@ test.describe('Comprehensive UI Testing System', () => {
         await expect(focusedElement).toBeFocused();
         
         try {
-          await compareVisualState(page, selector, `focus-${selector.replace(/[\[\]"=\s#]/g, '-')}`, {
+          await compareVisualState(page, selector, `focus-${selector.replace(/[[\]"=\s#]/g, '-')}`, {
             threshold: 0.2
           });
-          testResults.push({ name: `focus-${selector.replace(/[\[\]"=\s#]/g, '-')}`, passed: true });
+          testResults.push({ name: `focus-${selector.replace(/[[\]"=\s#]/g, '-')}`, passed: true });
         } catch (error) {
-          testResults.push({ name: `focus-${selector.replace(/[\[\]"=\s#]/g, '-')}`, passed: false });
+          testResults.push({ name: `focus-${selector.replace(/[[\]"=\s#]/g, '-')}`, passed: false });
         }
       }
     });

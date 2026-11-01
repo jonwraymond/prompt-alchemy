@@ -3,8 +3,7 @@ import {
   typeIntoAIInput, 
   submitAIInput, 
   openAISuggestions,
-  waitForLoadingComplete,
-  expectVisibleAndEnabled 
+  waitForLoadingComplete
 } from '../helpers/test-utils';
 
 /**
@@ -67,7 +66,6 @@ test.describe('AI Input Component', () => {
     test('should hide original input elements', async ({ page }) => {
       // Original input should be hidden when AI input is active
       const originalInput = page.locator('#input');
-      const originalControls = page.locator('.horizontal-controls');
 
       // These elements might be hidden by CSS
       const originalInputStyle = await originalInput.evaluate(el => 
@@ -94,7 +92,7 @@ test.describe('AI Input Component', () => {
       await expect(elements.counter).toContainText(`${testText.length}/5000`);
     });
 
-    test('should enforce maximum character limit', async ({ page, aiInputPage }) => {
+    test('should enforce maximum character limit', async ({ aiInputPage }) => {
       const elements = await aiInputPage.getElements();
       const longText = 'A'.repeat(5001); // Exceeds 5000 character limit
 
@@ -161,7 +159,7 @@ test.describe('AI Input Component', () => {
       await typeIntoAIInput(page, 'Test prompt for submission');
 
       // Set up response interception
-      let submissionData: any = null;
+      let submissionData: string | null = null;
       await page.route('**/generate', (route) => {
         submissionData = route.request().postData();
         route.fulfill({
@@ -294,16 +292,16 @@ test.describe('AI Input Component', () => {
       const elements = await aiInputPage.getElements();
 
       // Set up file chooser handler
-      let fileChooserPromise = page.waitForEvent('filechooser');
+      const fileChooserPromise = page.waitForEvent('filechooser');
       
       await elements.attachmentBtn.click();
       
-      let fileChooser = await fileChooserPromise;
+      const fileChooser = await fileChooserPromise;
       expect(fileChooser).toBeTruthy();
     });
 
     test('should show attached files in the list', async ({ page, aiInputPage }) => {
-      const elements = await aiInputPage.getElements();
+      await aiInputPage.getElements();
 
       // Mock file selection
       await page.setInputFiles('.ai-attachment-input', {
@@ -318,7 +316,7 @@ test.describe('AI Input Component', () => {
     });
 
     test('should allow removing attached files', async ({ page, aiInputPage }) => {
-      const elements = await aiInputPage.getElements();
+      await aiInputPage.getElements();
 
       // Add file
       await page.setInputFiles('.ai-attachment-input', {
@@ -391,7 +389,7 @@ test.describe('AI Input Component', () => {
   });
 
   test.describe('Accessibility', () => {
-    test('should have proper ARIA attributes', async ({ page, aiInputPage }) => {
+    test('should have proper ARIA attributes', async ({ aiInputPage }) => {
       const elements = await aiInputPage.getElements();
 
       // Check button accessibility

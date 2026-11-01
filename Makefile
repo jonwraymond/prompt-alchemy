@@ -284,7 +284,8 @@ docker-build-frontend:
 .PHONY: docker-test
 docker-test: docker-build
 	@echo "Running tests in Docker..."
-	@docker run --rm prompt-alchemy:latest make test
+	@# The runtime image is slim (no Go toolchain, no make), so smoke-test the built binary.
+	@docker run --rm prompt-alchemy:latest ./prompt-alchemy version
 
 # Start Docker Compose stack (backend only)
 .PHONY: docker-up

@@ -1,19 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import { PhaseNode, Connection, Phase, NodeStatus } from './types';
+import { PhaseNode, Connection, Phase } from './types';
 import { api } from '../../utils/api';
-
-interface PhaseUpdate {
-  phase: Phase;
-  status: NodeStatus;
-  processingTime?: number;
-  prompt?: string;
-  progress?: number;
-}
 
 export const usePhaseUpdates = (
   nodes: PhaseNode[],
-  connections: Connection[],
-  onPhaseChange?: (phase: Phase, update: PhaseUpdate) => void
+  connections: Connection[]
 ) => {
   const [updatedNodes, setUpdatedNodes] = useState(nodes);
   const [updatedConnections, setUpdatedConnections] = useState(connections);
@@ -32,7 +23,7 @@ export const usePhaseUpdates = (
         // Update nodes based on API response
         setUpdatedNodes(prevNodes => 
           prevNodes.map(node => {
-            const apiNode = statusData.find((s: any) => s.id === node.id);
+            const apiNode = statusData.find((s) => s.id === node.id);
             if (apiNode) {
               return {
                 ...node,
@@ -53,7 +44,7 @@ export const usePhaseUpdates = (
   }, [isProcessing]);
 
   // Start phase processing
-  const startPhaseProcessing = useCallback((sessionId: string) => {
+  const startPhaseProcessing = useCallback((_sessionId: string) => {
     setIsProcessing(true);
     
     // Simulate phase progression (replace with actual API integration)
@@ -148,10 +139,10 @@ export const usePhaseUpdates = (
   useEffect(() => {
     // This would connect to your actual generation API
     // For now, expose the startPhaseProcessing function
-    (window as any).startAlchemyVisualization = startPhaseProcessing;
+    window.startAlchemyVisualization = startPhaseProcessing;
 
     return () => {
-      delete (window as any).startAlchemyVisualization;
+      delete window.startAlchemyVisualization;
     };
   }, [startPhaseProcessing]);
 

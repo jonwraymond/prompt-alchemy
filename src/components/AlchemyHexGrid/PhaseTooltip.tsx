@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, type Variants } from 'framer-motion';
 import { PhaseNode } from './types';
 
 interface PhaseTooltipProps {
@@ -47,7 +47,7 @@ const PhaseTooltip: React.FC<PhaseTooltipProps> = ({ node, position, onClose }) 
     }
   };
 
-  const tooltipVariants = {
+  const tooltipVariants: Variants = {
     initial: {
       opacity: 0,
       scale: 0.8,

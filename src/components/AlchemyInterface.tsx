@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { AlchemyInputComponent } from './AlchemyInputComponent';
+import { AlchemyInputComponent, type GenerateOptions } from './AlchemyInputComponent';
 import { SimpleHeader } from './SimpleHeader';
 import { HexagonGrid } from './HexagonGrid';
 import AlchemyHexGrid from './AlchemyHexGrid/AlchemyHexGrid';
@@ -43,7 +43,7 @@ export const AlchemyInterface: React.FC<AlchemyInterfaceProps> = ({ className = 
   const [testResults, setTestResults] = useState<{ passed: number; failed: number; total: number } | null>(null);
 
   // Handle prompt generation
-  const handleGenerate = useCallback(async (input: string, options?: any) => {
+  const handleGenerate = useCallback(async (input: string, options?: GenerateOptions) => {
     if (!input.trim()) return;
 
     setIsGenerating(true);

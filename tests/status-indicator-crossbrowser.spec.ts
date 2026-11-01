@@ -1,4 +1,4 @@
-import { test, expect, Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
 // Test status indicator across different browsers
 test.describe('StatusIndicator Cross-Browser Compatibility', () => {

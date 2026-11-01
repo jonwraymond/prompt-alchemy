@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { motion, type Variants } from 'framer-motion';
 import { Connection, PhaseNode } from './types';
 
 interface ConnectionPathProps {
@@ -43,7 +43,7 @@ const ConnectionPath: React.FC<ConnectionPathProps> = ({
   }, [sourceNode.position, targetNode.position, connection.id]);
 
   // Animation variants
-  const pathVariants = {
+  const pathVariants: Variants = {
     hidden: {
       pathLength: 0,
       opacity: 0
@@ -63,7 +63,7 @@ const ConnectionPath: React.FC<ConnectionPathProps> = ({
     }
   };
 
-  const glowVariants = {
+  const glowVariants: Variants = {
     inactive: {
       opacity: 0
     },
@@ -73,21 +73,6 @@ const ConnectionPath: React.FC<ConnectionPathProps> = ({
         duration: 2 * animationSpeed,
         repeat: Infinity,
         ease: "easeInOut"
-      }
-    }
-  };
-
-  const flowVariants = {
-    inactive: {
-      opacity: 0
-    },
-    active: {
-      opacity: [0, 1, 1, 0],
-      offset: [0, 0.2, 0.8, 1],
-      transition: {
-        duration: 2 * animationSpeed,
-        repeat: Infinity,
-        ease: "linear"
       }
     }
   };

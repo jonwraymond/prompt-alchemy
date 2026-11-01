@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import './AlchemyInputComponent.css';
 import { api } from '../utils/api';
 
-interface GenerateOptions {
+export interface GenerateOptions {
   persona: string;
   temperature: number;
   maxTokens: number;

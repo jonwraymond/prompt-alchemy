@@ -77,7 +77,11 @@ func main() {
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to initialize storage")
 	}
-	defer storage.Close()
+	defer func() {
+		if err := storage.Close(); err != nil {
+			logger.WithError(err).Error("Failed to close storage")
+		}
+	}()
 
 	// Initialize provider registry
 	registry := providers.NewRegistry()
@@ -312,7 +316,9 @@ func registerProviders(registry *providers.Registry, logger *logrus.Logger) erro
 			Timeout: int(viper.GetDuration("providers.openai.timeout").Seconds()),
 		}
 		provider := providers.NewOpenAIProvider(config)
-		registry.Register("openai", provider)
+		if err := registry.Register("openai", provider); err != nil {
+			return fmt.Errorf("failed to register openai provider: %w", err)
+		}
 		logger.Info("Registered OpenAI provider")
 	}
 
@@ -325,7 +331,9 @@ func registerProviders(registry *providers.Registry, logger *logrus.Logger) erro
 			Timeout: int(viper.GetDuration("providers.anthropic.timeout").Seconds()),
 		}
 		provider := providers.NewAnthropicProvider(config)
-		registry.Register("anthropic", provider)
+		if err := registry.Register("anthropic", provider); err != nil {
+			return fmt.Errorf("failed to register anthropic provider: %w", err)
+		}
 		logger.Info("Registered Anthropic provider")
 	}
 
@@ -337,7 +345,9 @@ func registerProviders(registry *providers.Registry, logger *logrus.Logger) erro
 			Timeout: int(viper.GetDuration("providers.google.timeout").Seconds()),
 		}
 		provider := providers.NewGoogleProvider(config)
-		registry.Register("google", provider)
+		if err := registry.Register("google", provider); err != nil {
+			return fmt.Errorf("failed to register google provider: %w", err)
+		}
 		logger.Info("Registered Google provider")
 	}
 
@@ -350,7 +360,9 @@ func registerProviders(registry *providers.Registry, logger *logrus.Logger) erro
 			Timeout: int(viper.GetDuration("providers.openrouter.timeout").Seconds()),
 		}
 		provider := providers.NewOpenRouterProvider(config)
-		registry.Register("openrouter", provider)
+		if err := registry.Register("openrouter", provider); err != nil {
+			return fmt.Errorf("failed to register openrouter provider: %w", err)
+		}
 		logger.Info("Registered OpenRouter provider")
 	}
 
@@ -362,7 +374,9 @@ func registerProviders(registry *providers.Registry, logger *logrus.Logger) erro
 			Timeout: int(viper.GetDuration("providers.ollama.timeout").Seconds()),
 		}
 		provider := providers.NewOllamaProvider(config)
-		registry.Register("ollama", provider)
+		if err := registry.Register("ollama", provider); err != nil {
+			return fmt.Errorf("failed to register ollama provider: %w", err)
+		}
 		logger.Info("Registered Ollama provider")
 	}
 
@@ -375,7 +389,9 @@ func registerProviders(registry *providers.Registry, logger *logrus.Logger) erro
 			Timeout: int(viper.GetDuration("providers.grok.timeout").Seconds()),
 		}
 		provider := providers.NewGrokProvider(config)
-		registry.Register("grok", provider)
+		if err := registry.Register("grok", provider); err != nil {
+			return fmt.Errorf("failed to register grok provider: %w", err)
+		}
 		logger.Info("Registered Grok provider")
 	}
 

@@ -14,7 +14,7 @@ interface TestResult {
   success: boolean;
   duration: number;
   error?: string;
-  details?: any;
+  details?: unknown;
 }
 
 interface UserFlowTesterProps {
@@ -360,7 +360,7 @@ export const UserFlowTester: React.FC<UserFlowTesterProps> = ({ onTestResults })
                     </div>
                   )}
                   
-                  {result.details && (
+                  {result.details !== undefined && (
                     <div className="test-result-data">
                       <strong>Details:</strong>
                       <pre>{JSON.stringify(result.details, null, 2)}</pre>

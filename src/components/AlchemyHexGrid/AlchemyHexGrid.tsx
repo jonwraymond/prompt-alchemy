@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import HexNode from './HexNode';
 import ConnectionPath from './ConnectionPath';
 import PhaseTooltip from './PhaseTooltip';
@@ -10,10 +10,8 @@ import {
   HexGridState, 
   PhaseNode, 
   Connection,
-  HexPosition,
   HexMetrics,
-  TooltipData,
-  Phase
+  TooltipData
 } from './types';
 import './AlchemyHexGrid.css';
 
@@ -23,6 +21,7 @@ declare global {
     AlchemyHexGrid?: {
       startProcessing?: (sessionId: string) => void;
     };
+    startAlchemyVisualization?: (sessionId: string) => void;
   }
 }
 
@@ -157,7 +156,7 @@ const AlchemyHexGrid: React.FC<AlchemyHexGridProps> = ({
   }, [nodes, connections, currentPhase]);
 
   const [tooltip, setTooltip] = useState<TooltipData>({
-    node: null as any,
+    node: null,
     position: { x: 0, y: 0 },
     visible: false
   });
@@ -313,7 +312,7 @@ const AlchemyHexGrid: React.FC<AlchemyHexGridProps> = ({
 
       {/* Tooltip */}
       <AnimatePresence>
-        {tooltip.visible && (
+        {tooltip.visible && tooltip.node && (
           <PhaseTooltip
             node={tooltip.node}
             position={tooltip.position}

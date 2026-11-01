@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { motion, type Variants } from 'framer-motion';
 import { PhaseNode, HexMetrics } from './types';
 
 interface HexNodeProps {
@@ -60,7 +60,7 @@ const HexNode: React.FC<HexNodeProps> = ({
   };
 
   // Animation variants
-  const nodeVariants = {
+  const nodeVariants: Variants = {
     initial: {
       scale: 0,
       opacity: 0,
@@ -91,7 +91,7 @@ const HexNode: React.FC<HexNodeProps> = ({
     }
   };
 
-  const glowVariants = {
+  const glowVariants: Variants = {
     active: {
       opacity: [0.3, 0.8, 0.3],
       scale: [1, 1.3, 1],

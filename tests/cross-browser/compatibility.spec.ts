@@ -13,8 +13,7 @@
 
 import { test, expect, devices } from '@playwright/test';
 import { 
-  compareVisualState,
-  generateVisualTestReport 
+  compareVisualState
 } from '../helpers/visual-regression-utils';
 import { waitForHexGridLoaded } from '../helpers/test-utils';
 
@@ -43,34 +42,6 @@ const BROWSER_CONFIGS = {
       userAgent: 'Mozilla/5.0 (Linux; Android 9; SM-T820) AppleWebKit/537.36'
     }
   }
-};
-
-/**
- * Feature detection tests for cross-browser compatibility
- */
-const FEATURE_TESTS = {
-  css: [
-    'CSS Grid Layout',
-    'CSS Flexbox',
-    'CSS Custom Properties',
-    'CSS Transforms',
-    'CSS Animations',
-    'CSS Backdrop Filter'
-  ],
-  javascript: [
-    'ES6 Modules',
-    'Async/Await',
-    'Fetch API',
-    'IntersectionObserver',
-    'ResizeObserver',
-    'WebSocket'
-  ],
-  dom: [
-    'Shadow DOM',
-    'Custom Elements',
-    'Web Components',
-    'MutationObserver'
-  ]
 };
 
 test.describe('Cross-Browser Compatibility Testing', () => {
@@ -336,7 +307,8 @@ test.describe('Cross-Browser Compatibility Testing', () => {
               // Get memory usage (if available)
               let memoryUsage = 0;
               if ('memory' in performance) {
-                memoryUsage = (performance as any).memory.usedJSHeapSize / 1024 / 1024; // MB
+                const perf = performance as Performance & { memory?: { usedJSHeapSize: number } };
+                memoryUsage = perf.memory!.usedJSHeapSize / 1024 / 1024; // MB
               }
               
               resolve({
