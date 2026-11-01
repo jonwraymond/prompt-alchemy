@@ -2026,17 +2026,20 @@ func (s *SimpleServer) handleViewportUpdate(w http.ResponseWriter, r *http.Reque
 	s.writeJSON(w, http.StatusOK, response)
 }
 
-// writeSSEData writes one Server-Sent Events data frame. The payload is
-// JSON-encoded by the caller before it reaches the response writer, so no
-// request-derived string is interpolated into the stream unescaped.
-func writeSSEData(w http.ResponseWriter, payload []byte) error {
+// writeSSEData writes one Server-Sent Events data frame. The event is
+// encoded through encoding/json straight into the response writer (the same
+// pattern as writeJSON), so no request-derived string is ever interpolated
+// into the stream unescaped.
+func writeSSEData(w http.ResponseWriter, event interface{}) error {
 	if _, err := w.Write([]byte("data: ")); err != nil {
 		return err
 	}
-	if _, err := w.Write(payload); err != nil {
+	if err := json.NewEncoder(w).Encode(event); err != nil {
 		return err
 	}
-	_, err := w.Write([]byte("\n\n"))
+	// json.Encoder terminates the JSON with one newline; add the blank line
+	// that ends the SSE frame.
+	_, err := w.Write([]byte("\n"))
 	return err
 }
 
@@ -2048,14 +2051,11 @@ func (s *SimpleServer) handleFlowEvents(w http.ResponseWriter, r *http.Request) 
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	// Send initial connection event
-	initialEvent, err := json.Marshal(map[string]interface{}{
+	if writeErr := writeSSEData(w, map[string]interface{}{
 		"type":      "connected",
 		"message":   "Flow events stream connected",
 		"timestamp": time.Now().Format(time.RFC3339),
-	})
-	if err != nil {
-		s.logger.WithError(err).Warn("handleFlowEvents: failed to encode initial SSE event")
-	} else if writeErr := writeSSEData(w, initialEvent); writeErr != nil {
+	}); writeErr != nil {
 		s.logger.WithError(writeErr).Warn("handleFlowEvents: failed to write initial SSE event (header already sent)")
 	}
 	w.(http.Flusher).Flush()
@@ -2080,10 +2080,7 @@ func (s *SimpleServer) handleFlowEvents(w http.ResponseWriter, r *http.Request) 
 				"timestamp": time.Now().Format(time.RFC3339),
 			}
 
-			eventJSON, err := json.Marshal(event)
-			if err != nil {
-				s.logger.WithError(err).Warn("handleFlowEvents: failed to encode SSE heartbeat")
-			} else if writeErr := writeSSEData(w, eventJSON); writeErr != nil {
+			if writeErr := writeSSEData(w, event); writeErr != nil {
 				s.logger.WithError(writeErr).Warn("handleFlowEvents: failed to write SSE heartbeat (header already sent)")
 			}
 			w.(http.Flusher).Flush()
@@ -2508,14 +2505,11 @@ func (s *SimpleServer) handleThinkingStream(w http.ResponseWriter, r *http.Reque
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	// Send initial connection event
-	initialEvent, err := json.Marshal(map[string]interface{}{
+	if writeErr := writeSSEData(w, map[string]interface{}{
 		"type":      "connected",
 		"message":   "AI thinking stream connected",
 		"timestamp": time.Now().Format(time.RFC3339),
-	})
-	if err != nil {
-		s.logger.WithError(err).Warn("handleThinkingStream: failed to encode initial SSE event")
-	} else if writeErr := writeSSEData(w, initialEvent); writeErr != nil {
+	}); writeErr != nil {
 		s.logger.WithError(writeErr).Warn("handleThinkingStream: failed to write initial SSE event (header already sent)")
 	}
 	w.(http.Flusher).Flush()
@@ -2535,10 +2529,7 @@ func (s *SimpleServer) handleThinkingStream(w http.ResponseWriter, r *http.Reque
 				"type":      "heartbeat",
 				"timestamp": time.Now().Format(time.RFC3339),
 			}
-			eventJSON, err := json.Marshal(event)
-			if err != nil {
-				s.logger.WithError(err).Warn("handleThinkingStream: failed to encode SSE heartbeat")
-			} else if writeErr := writeSSEData(w, eventJSON); writeErr != nil {
+			if writeErr := writeSSEData(w, event); writeErr != nil {
 				s.logger.WithError(writeErr).Warn("handleThinkingStream: failed to write SSE heartbeat (header already sent)")
 			}
 			w.(http.Flusher).Flush()
