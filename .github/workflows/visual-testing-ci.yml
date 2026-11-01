@@ -68,7 +68,7 @@ jobs:
           chmod +x ./prompt-alchemy
 
       - name: Upload Backend Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: backend-build
           path: |
@@ -101,7 +101,7 @@ jobs:
         run: npm run build
 
       - name: Upload Frontend Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: frontend-build
           path: |
@@ -191,7 +191,7 @@ jobs:
           CI: true
 
       - name: Upload Test Results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: test-results-${{ matrix.browser }}-${{ matrix.test-suite }}
@@ -201,7 +201,7 @@ jobs:
           retention-days: 30
 
       - name: Upload Visual Baseline Screenshots
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: github.ref == 'refs/heads/main'
         with:
           name: visual-baselines-${{ matrix.browser }}-${{ matrix.test-suite }}
@@ -258,7 +258,7 @@ jobs:
           curl -o integration-report.html http://localhost:9323 || echo "Report generation failed"
 
       - name: Upload Integration Results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: integration-test-results
@@ -331,7 +331,7 @@ jobs:
           " || echo "Metrics extraction failed"
 
       - name: Upload Performance Results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: performance-benchmarks
           path: |
@@ -554,7 +554,7 @@ jobs:
           "
 
       - name: Upload Comprehensive Report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: comprehensive-test-report
           path: |
