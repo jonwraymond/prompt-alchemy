@@ -46,8 +46,8 @@ WORKDIR /app
 # Copy the binary from builder
 COPY --from=builder --chown=appuser:appgroup /app/prompt-alchemy /app/prompt-alchemy
 
-# Copy configuration and templates
-COPY --from=builder --chown=appuser:appgroup /app/configs ./configs
+# Copy templates (the repo has no configs/ directory - nothing in the app or Makefile
+# references one, so copying it made the image build fail with "/app/configs": not found)
 COPY --from=builder --chown=appuser:appgroup /app/internal/templates ./internal/templates
 
 # Create data directory with proper permissions
