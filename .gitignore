@@ -5,9 +5,10 @@
 *.so
 *.dylib
 
-# Go executables
-prompt-alchemy
-prompt-alchemy-*
+# Go executables (root-level build artifacts only; the cmd/prompt-alchemy/
+# directory holds CLI source and must stay trackable)
+/prompt-alchemy
+/prompt-alchemy-*
 
 # Test binary, built with `go test -c`
 *.test
