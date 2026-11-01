@@ -15,6 +15,7 @@ TEST_DATA_DIR="/tmp/prompt-alchemy-e2e-$(date +%s)"
 TEST_CONFIG_DIR="$TEST_DATA_DIR/config"
 TEST_RESULTS_DIR="$TEST_DATA_DIR/results"
 LOG_FILE="$HOME/.claude/run-e2e-tests.log"
+mkdir -p "$(dirname "$LOG_FILE")"
 FEATURE_TOGGLE="${FEATURE_TOGGLE:-false}"
 
 # Logging function
