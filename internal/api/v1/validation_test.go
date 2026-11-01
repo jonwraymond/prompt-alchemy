@@ -20,7 +20,7 @@ import (
 
 // TestInputValidation tests comprehensive input validation scenarios
 func TestInputValidation(t *testing.T) {
-	handler := createValidationTestHandler()
+	handler := createValidationTestHandler(t)
 
 	tests := []struct {
 		name           string
@@ -374,18 +374,16 @@ func TestInputValidation(t *testing.T) {
 				assert.Contains(t, errInfo["message"], tt.expectedError)
 			}
 
-			// For successful requests, verify response structure
-			if rr.Code == http.StatusOK && tt.expectedError == "" {
-				// Note: With nil engine, successful requests will fail
-				// This is okay for validation tests which focus on input validation
-			}
+			// For successful requests, verify response structure.
+			// Note: With nil engine, successful requests will fail.
+			// This is okay for validation tests which focus on input validation.
 		})
 	}
 }
 
 // TestBoundaryValues tests edge cases for numeric inputs
 func TestBoundaryValues(t *testing.T) {
-	handler := createValidationTestHandler()
+	handler := createValidationTestHandler(t)
 
 	boundaryTests := []struct {
 		name           string
@@ -446,7 +444,7 @@ func TestBoundaryValues(t *testing.T) {
 
 // TestContentTypeValidation tests various content type scenarios
 func TestContentTypeValidation(t *testing.T) {
-	handler := createValidationTestHandler()
+	handler := createValidationTestHandler(t)
 
 	tests := []struct {
 		name           string
@@ -515,7 +513,7 @@ func TestContentTypeValidation(t *testing.T) {
 
 // TestEncodingValidation tests various character encodings
 func TestEncodingValidation(t *testing.T) {
-	handler := createValidationTestHandler()
+	handler := createValidationTestHandler(t)
 
 	tests := []struct {
 		name           string
@@ -549,7 +547,7 @@ func TestEncodingValidation(t *testing.T) {
 		},
 		{
 			name:           "zero-width characters",
-			input:          "test​with​zero​width​spaces", // Contains zero-width spaces
+			input:          "test\u200bwith\u200bzero\u200bwidth\u200bspaces", // Contains zero-width spaces
 			expectedStatus: http.StatusOK,
 		},
 		{
@@ -577,7 +575,7 @@ func TestEncodingValidation(t *testing.T) {
 
 // TestRequestSizeValidation tests various request sizes
 func TestRequestSizeValidation(t *testing.T) {
-	handler := createValidationTestHandler()
+	handler := createValidationTestHandler(t)
 
 	tests := []struct {
 		name           string
@@ -626,7 +624,7 @@ func TestRequestSizeValidation(t *testing.T) {
 
 // Helper functions
 
-func createValidationTestHandler() *V1Handler {
+func createValidationTestHandler(t *testing.T) *V1Handler {
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel)
 
@@ -647,10 +645,10 @@ func createValidationTestHandler() *V1Handler {
 	}
 
 	// Register for all providers that might be used
-	registry.Register("openai", mockProvider)
-	registry.Register("anthropic", mockProvider)
-	registry.Register("google", mockProvider)
-	registry.Register("mock", mockProvider)
+	require.NoError(t, registry.Register("openai", mockProvider))
+	require.NoError(t, registry.Register("anthropic", mockProvider))
+	require.NoError(t, registry.Register("google", mockProvider))
+	require.NoError(t, registry.Register("mock", mockProvider))
 
 	// Create engine with the registry
 	eng := engine.NewEngine(registry, logger)

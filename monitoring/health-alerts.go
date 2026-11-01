@@ -48,7 +48,9 @@ func (m *Monitor) CheckHealth() error {
 	if err != nil {
 		return fmt.Errorf("failed to connect to API: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close() // close error on a read-only health response is not actionable
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("unhealthy status code: %d", resp.StatusCode)
@@ -80,7 +82,9 @@ func (m *Monitor) CheckProviders() ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to check providers: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close() // close error on a read-only provider response is not actionable
+	}()
 
 	var result struct {
 		Providers []struct {
@@ -131,7 +135,9 @@ func (m *Monitor) sendDesktopNotification(message string, critical bool) {
 	// macOS notification
 	if _, err := exec.LookPath("osascript"); err == nil {
 		script := fmt.Sprintf(`display notification "%s" with title "%s"`, message, title)
-		exec.Command("osascript", "-e", script).Run()
+		if err := exec.Command("osascript", "-e", script).Run(); err != nil {
+			log.Printf("Failed to send macOS desktop notification: %v", err)
+		}
 		return
 	}
 
@@ -141,7 +147,9 @@ func (m *Monitor) sendDesktopNotification(message string, critical bool) {
 		if critical {
 			urgency = "critical"
 		}
-		exec.Command("notify-send", "-u", urgency, title, message).Run()
+		if err := exec.Command("notify-send", "-u", urgency, title, message).Run(); err != nil {
+			log.Printf("Failed to send Linux desktop notification: %v", err)
+		}
 	}
 }
 
@@ -156,16 +164,28 @@ func (m *Monitor) sendSlackAlert(message string, critical bool) {
 	}
 
 	jsonData, _ := json.Marshal(payload)
-	http.Post(m.config.SlackWebhook, "application/json", bytes.NewBuffer(jsonData))
+	resp, err := http.Post(m.config.SlackWebhook, "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		log.Printf("Failed to send Slack alert: %v", err)
+		return
+	}
+	defer func() {
+		_ = resp.Body.Close() // close error on a fire-and-forget webhook response is not actionable
+	}()
 }
 
 func (m *Monitor) logAlert(message string, critical bool) {
 	logFile := "/tmp/prompt-alchemy-alerts.log"
 	f, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
+		log.Printf("Failed to open alert log file %s: %v", logFile, err)
 		return
 	}
-	defer f.Close()
+	defer func() {
+		if err := f.Close(); err != nil {
+			log.Printf("Failed to close alert log file %s: %v", logFile, err)
+		}
+	}()
 
 	level := "WARNING"
 	if critical {
@@ -173,7 +193,9 @@ func (m *Monitor) logAlert(message string, critical bool) {
 	}
 
 	timestamp := time.Now().Format(time.RFC3339)
-	f.WriteString(fmt.Sprintf("[%s] %s: %s\n", timestamp, level, message))
+	if _, err := fmt.Fprintf(f, "[%s] %s: %s\n", timestamp, level, message); err != nil {
+		log.Printf("Failed to write alert to log file %s: %v", logFile, err)
+	}
 }
 
 // Run starts the monitoring loop

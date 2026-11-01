@@ -164,7 +164,7 @@ func (s *AISelector) formatPromptsForEvaluation(prompts []models.Prompt) string 
 	var sb strings.Builder
 	sb.WriteString("Please evaluate the following prompts:\n\n")
 	for _, p := range prompts {
-		sb.WriteString(fmt.Sprintf("---\nPrompt ID: %s\n%s\n", p.ID, p.Content))
+		fmt.Fprintf(&sb, "---\nPrompt ID: %s\n%s\n", p.ID, p.Content)
 	}
 	return sb.String()
 }

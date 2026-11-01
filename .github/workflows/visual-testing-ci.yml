@@ -11,7 +11,7 @@ on:
 
 env:
   NODE_VERSION: '18'
-  GO_VERSION: '1.21'
+  GO_VERSION: '1.24'
   PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/playwright-browsers
 
 jobs:
@@ -570,10 +570,3 @@ jobs:
               }
             }
 
-# Notification Configuration
-notifications:
-  on_success: change
-  on_failure: always
-  channels:
-    - email
-    - slack # Configure webhook URL in repository secrets as SLACK_WEBHOOK_URL

@@ -8,7 +8,6 @@ import (
 )
 
 const testAPIKey = "test-key"
-const unauthorizedError = "401 Unauthorized"
 
 func TestNewOpenAIProvider(t *testing.T) {
 	tests := []struct {

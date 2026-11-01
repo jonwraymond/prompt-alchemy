@@ -1406,7 +1406,9 @@ func (s *SimpleServer) handleSystemStatus(w http.ResponseWriter, r *http.Request
 
 			w.Header().Set("Content-Type", "text/html")
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(html))
+			if _, err := w.Write([]byte(html)); err != nil {
+				s.logger.WithError(err).Warn("handleSystemStatus: failed to write HTML response (header already sent)")
+			}
 			return
 		}
 
@@ -1446,7 +1448,9 @@ func (s *SimpleServer) handleSystemStatus(w http.ResponseWriter, r *http.Request
 
 		w.Header().Set("Content-Type", "text/html")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(html))
+		if _, err := w.Write([]byte(html)); err != nil {
+			s.logger.WithError(err).Warn("handleSystemStatus: failed to write collapsed HTML response (header already sent)")
+		}
 		return
 	}
 
@@ -1617,7 +1621,9 @@ func (s *SimpleServer) handleFlowInfo(w http.ResponseWriter, r *http.Request) {
 
 		w.Header().Set("Content-Type", "text/html")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(html))
+		if _, err := w.Write([]byte(html)); err != nil {
+			s.logger.WithError(err).Warn("handleFlowInfo: failed to write HTML response (header already sent)")
+		}
 		return
 	}
 
@@ -2028,7 +2034,9 @@ func (s *SimpleServer) handleFlowEvents(w http.ResponseWriter, r *http.Request) 
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	// Send initial connection event
-	fmt.Fprintf(w, "data: %s\n\n", `{"type":"connected","message":"Flow events stream connected","timestamp":"`+time.Now().Format(time.RFC3339)+`"}`)
+	if _, err := fmt.Fprintf(w, "data: %s\n\n", `{"type":"connected","message":"Flow events stream connected","timestamp":"`+time.Now().Format(time.RFC3339)+`"}`); err != nil {
+		s.logger.WithError(err).Warn("handleFlowEvents: failed to write initial SSE event (header already sent)")
+	}
 	w.(http.Flusher).Flush()
 
 	// Simulate periodic events
@@ -2052,7 +2060,9 @@ func (s *SimpleServer) handleFlowEvents(w http.ResponseWriter, r *http.Request) 
 			}
 
 			eventJSON, _ := json.Marshal(event)
-			fmt.Fprintf(w, "data: %s\n\n", string(eventJSON))
+			if _, err := fmt.Fprintf(w, "data: %s\n\n", string(eventJSON)); err != nil {
+				s.logger.WithError(err).Warn("handleFlowEvents: failed to write SSE heartbeat (header already sent)")
+			}
 			w.(http.Flusher).Flush()
 		}
 	}
@@ -2475,7 +2485,9 @@ func (s *SimpleServer) handleThinkingStream(w http.ResponseWriter, r *http.Reque
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	// Send initial connection event
-	fmt.Fprintf(w, "data: %s\n\n", `{"type":"connected","message":"AI thinking stream connected","timestamp":"`+time.Now().Format(time.RFC3339)+`"}`)
+	if _, err := fmt.Fprintf(w, "data: %s\n\n", `{"type":"connected","message":"AI thinking stream connected","timestamp":"`+time.Now().Format(time.RFC3339)+`"}`); err != nil {
+		s.logger.WithError(err).Warn("handleThinkingStream: failed to write initial SSE event (header already sent)")
+	}
 	w.(http.Flusher).Flush()
 
 	// Keep connection alive
@@ -2494,7 +2506,9 @@ func (s *SimpleServer) handleThinkingStream(w http.ResponseWriter, r *http.Reque
 				"timestamp": time.Now().Format(time.RFC3339),
 			}
 			eventJSON, _ := json.Marshal(event)
-			fmt.Fprintf(w, "data: %s\n\n", string(eventJSON))
+			if _, err := fmt.Fprintf(w, "data: %s\n\n", string(eventJSON)); err != nil {
+				s.logger.WithError(err).Warn("handleThinkingStream: failed to write SSE heartbeat (header already sent)")
+			}
 			w.(http.Flusher).Flush()
 		}
 	}

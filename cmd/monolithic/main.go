@@ -196,7 +196,9 @@ func initializeServices(serviceRegistry interfaces.ServiceRegistry, flags *featu
 		if err != nil {
 			return fmt.Errorf("failed to initialize storage: %w", err)
 		}
-		serviceRegistry.RegisterService("storage", store)
+		if err := serviceRegistry.RegisterService("storage", store); err != nil {
+			return fmt.Errorf("failed to register storage service: %w", err)
+		}
 	}
 
 	// Initialize providers registry
@@ -206,7 +208,9 @@ func initializeServices(serviceRegistry interfaces.ServiceRegistry, flags *featu
 		if err := registerProviders(providerRegistry, logger); err != nil {
 			return fmt.Errorf("failed to register providers: %w", err)
 		}
-		serviceRegistry.RegisterService("providers", providerRegistry)
+		if err := serviceRegistry.RegisterService("providers", providerRegistry); err != nil {
+			return fmt.Errorf("failed to register providers service: %w", err)
+		}
 	}
 
 	// Initialize generation engine
@@ -220,7 +224,9 @@ func initializeServices(serviceRegistry interfaces.ServiceRegistry, flags *featu
 		}
 
 		eng := engine.NewEngine(providerRegistry.(*providers.Registry), logger)
-		serviceRegistry.RegisterService("engine", eng)
+		if err := serviceRegistry.RegisterService("engine", eng); err != nil {
+			return fmt.Errorf("failed to register engine service: %w", err)
+		}
 	}
 
 	// Initialize ranking service
@@ -238,7 +244,9 @@ func initializeServices(serviceRegistry interfaces.ServiceRegistry, flags *featu
 		}
 
 		ranker := ranking.NewRanker(store.(*storage.Storage), providerRegistry.(*providers.Registry), logger)
-		serviceRegistry.RegisterService("ranking", ranker)
+		if err := serviceRegistry.RegisterService("ranking", ranker); err != nil {
+			return fmt.Errorf("failed to register ranking service: %w", err)
+		}
 	}
 
 	// Initialize learning engine if enabled
@@ -256,7 +264,9 @@ func initializeServices(serviceRegistry interfaces.ServiceRegistry, flags *featu
 		}
 
 		learner := learning.NewLearningEngine(store.(*storage.Storage), providerRegistry.(*providers.Registry), logger)
-		serviceRegistry.RegisterService("learning", learner)
+		if err := serviceRegistry.RegisterService("learning", learner); err != nil {
+			return fmt.Errorf("failed to register learning service: %w", err)
+		}
 	}
 
 	logger.Info("All services initialized successfully")

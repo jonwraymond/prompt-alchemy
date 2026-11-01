@@ -348,38 +348,6 @@ func (le *LearningEngine) StartBackgroundLearning(ctx context.Context) {
 	go le.worker.Start(ctx)
 }
 
-// runRelevanceDecay periodically decays relevance scores
-func (le *LearningEngine) runRelevanceDecay(ctx context.Context) {
-	ticker := time.NewTicker(1 * time.Hour)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			// if err := le.storage.DecayRelevanceScores(le.decayRate); err != nil {
-			// 	le.logger.WithError(err).Warn("Failed to decay relevance scores")
-			// }
-		}
-	}
-}
-
-// runPatternConsolidation consolidates learned patterns
-func (le *LearningEngine) runPatternConsolidation(ctx context.Context) {
-	ticker := time.NewTicker(6 * time.Hour)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			le.consolidatePatterns()
-		}
-	}
-}
-
 // consolidatePatterns merges similar patterns
 func (le *LearningEngine) consolidatePatterns() {
 	le.patternMutex.Lock()
@@ -393,21 +361,6 @@ func (le *LearningEngine) consolidatePatterns() {
 	}
 
 	le.logger.WithField("pattern_count", len(le.patterns)).Info("Consolidated patterns")
-}
-
-// runMetricsCleanup cleans up old metrics
-func (le *LearningEngine) runMetricsCleanup(ctx context.Context) {
-	ticker := time.NewTicker(24 * time.Hour)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			le.cleanupOldMetrics()
-		}
-	}
 }
 
 // cleanupOldMetrics removes metrics older than feedback window
