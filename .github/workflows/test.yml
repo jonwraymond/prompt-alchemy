@@ -388,14 +388,14 @@ jobs:
         output: 'trivy-results.sarif'
     
     - name: Upload Trivy scan results
-      uses: github/codeql-action/upload-sarif@v3
+      uses: github/codeql-action/upload-sarif@v4
       with:
         sarif_file: 'trivy-results.sarif'
     
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@v3
+      uses: github/codeql-action/init@v4
       with:
         languages: go
     
     - name: Run CodeQL analysis
-      uses: github/codeql-action/analyze@v3 
+      uses: github/codeql-action/analyze@v4 
