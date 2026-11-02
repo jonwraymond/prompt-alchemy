@@ -377,7 +377,7 @@ jobs:
       # (created by that dispatch run), skip release creation and asset
       # upload so a tag push never double-publishes.
       id: existing_release
-      uses: actions/github-script@v6
+      uses: actions/github-script@v9
       with:
         script: |
           const tag = '${{ needs.check-release.outputs.new_version }}';
